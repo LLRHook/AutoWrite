@@ -1,0 +1,158 @@
+# AutoWrite
+
+AutoWrite is a small Windows desktop app that types pasted text into the active field when the global `F7` hotkey is pressed.
+
+## Build
+
+Run:
+
+```powershell
+.\build.ps1
+```
+
+The executable is written to:
+
+```text
+dist\AutoWrite.exe
+```
+
+The build uses the Windows .NET Framework C# compiler and does not install any packages.
+
+The executable embeds the app icon from:
+
+```text
+assets\AutoWrite.ico
+```
+
+## Install in Start Menu
+
+Run:
+
+```powershell
+.\install-start-menu.ps1
+```
+
+This creates a current-user Start Menu shortcut at:
+
+```text
+%APPDATA%\Microsoft\Windows\Start Menu\Programs\AutoWrite.lnk
+```
+
+After that, open Start and search for `AutoWrite`. Windows generally requires pinning to Start to be done by the user, so pin it from the Start menu if you want it fixed there.
+
+## Use
+
+1. Open `dist\AutoWrite.exe`.
+2. Paste text into AutoWrite.
+3. Focus the destination text field in another window.
+4. Press `F7` to start typing. Press `F7` again to stop.
+
+The `Type in 3s` button can also start typing after the configured delay.
+
+## Settings
+
+- `Target WPM`: target typing speed. AutoWrite uses the common typing-test convention where one word is five characters, including spaces and punctuation. `80 WPM` is about `6.7 characters/sec`.
+- `Button delay s`: delay used by the button start mode.
+- `Jitter %`: log-normal random spread around the target character delay.
+- `Key-pair rhythm %`: adds simple QWERTY pair timing. Alternating hands type a little faster; same-hand and repeated-key pairs type a little slower.
+- `Burst drift %`: creates short faster/slower runs over several characters.
+- `Word pause ms`: extra pause after spaces.
+- `Sentence pause ms`: extra pause after `.`, `!`, and `?`.
+- `Thinking pause %`: chance of adding a longer pause at word or punctuation boundaries.
+- `Thinking max ms`: maximum length of those longer pauses.
+- `Keep target WPM`: when enabled, symbol-heavy text still aims for the target WPM while individual difficult keys pause longer.
+- `Uppercase delay %`: extra motor delay after uppercase letters.
+- `Number delay %`: extra motor delay after digits.
+- `Punctuation delay %`: extra motor delay after punctuation and symbols that do not require Shift.
+- `Shift-symbol delay %`: extra motor delay after symbols such as `@`, `?`, `:`, `"` and `_`.
+- `Corrected mistakes`: enables temporary mistakes that are corrected before continuing.
+- `Mistake rate %`: base target mistake rate over eligible letters, digits, punctuation, and symbols. The default `1%` plans an exact per-run count instead of rolling independently for every key.
+- `Number mistakes x`: multiplier applied to the base mistake rate for digits.
+- `Punct. mistakes x`: multiplier applied to the base mistake rate for punctuation and non-shift symbols.
+- `Shift mistakes x`: multiplier applied to the base mistake rate for shifted symbols. Shift-symbol mistakes often appear as missed-Shift corrections, such as `?` becoming `/` before repair.
+- `Duplicate share %`: share of planned mistakes that should be duplicate-key mistakes. The tested default is `0` because nearby-key substitutions are more reliable across target editors.
+- `Transpose share %`: share of planned mistakes that should be adjacent-character transpositions. The tested default is `0`.
+- `Notice delay ms`: pause before correcting a visible mistake.
+- `Detect after chars`: maximum number of additional characters to type before noticing a mistake. Word and punctuation boundaries can trigger earlier correction.
+- `Repair key pause ms`: pause around corrective backspaces and retyped characters.
+- `Resume pause ms`: pause after the correction is complete.
+
+Settings are stored at:
+
+```text
+%APPDATA%\AutoWrite\settings.ini
+```
+
+AutoWrite runs as the current user. Windows blocks lower-privilege apps from sending input into elevated administrator windows, so run AutoWrite elevated only when the destination app is also elevated.
+
+## Diagnostics
+
+Run this to verify Windows accepts AutoWrite's keyboard input call:
+
+```powershell
+Start-Process .\dist\AutoWrite.exe -ArgumentList '--sendinput-probe' -Wait -PassThru
+```
+
+Exit code `0` means the `SendInput` path is valid.
+
+Each run also writes telemetry to:
+
+```text
+%APPDATA%\AutoWrite\telemetry\autowrite-YYYYMMDD-HHMMSS-fff.tsv
+```
+
+The telemetry log records every key event, correction, pause, source index, intended character, sent character, elapsed timestamp, and gap since the previous emitted key. Use it to inspect actual WPM, correction count, pause length, and whether a target editor received the final text correctly.
+
+## Timing Data Notes
+
+AutoWrite does not try to impersonate a specific person's biometric typing signature. The defaults are a practical approximation based on public typing research:
+
+- Aalto University's 136M Keystrokes study reports data from 168,000 volunteers and highlights large individual variation, hand/finger pair effects, rollover behavior, and error differences between faster and slower typists.
+- The CMU Keystroke Dynamics benchmark provides hold-time and flight-time fields for 51 subjects typing the same password 400 times.
+- The PhysioNet Tappy dataset includes real-world keystroke logs with hold time, latency, flight time, and left/right hand direction fields.
+
+Useful starting profile for fast human-style drafting:
+
+```text
+Target WPM: 80
+Jitter %: 55
+Key-pair rhythm %: 80
+Burst drift %: 30
+Word pause ms: 120
+Sentence pause ms: 850
+Thinking pause %: 4
+Thinking max ms: 2200
+Keep target WPM: On
+Uppercase delay %: 10
+Number delay %: 25
+Punctuation delay %: 30
+Shift-symbol delay %: 55
+Mistake rate %: 1
+Number mistakes x: 1.75
+Punct. mistakes x: 2.00
+Shift mistakes x: 3.00
+Duplicate share %: 0
+Transpose share %: 0
+Notice delay ms: 850
+Detect after chars: 3
+Repair key pause ms: 120
+Resume pause ms: 260
+```
+
+Timing model notes:
+
+- `Target WPM` is calculated as five-character words over full elapsed time, including pauses and corrections.
+- Long thinking pauses are planned at run start and included in the base-delay math so that random long pauses do not pull the final speed far below the target.
+- Difficult-key delay penalties are also included in the base-delay math when `Keep target WPM` is enabled, so numbers and symbols look slower locally without dragging the whole run far below target.
+- Mistake planning uses weighted candidates, so digits, punctuation, and shifted symbols can receive a larger share of the planned corrections.
+- Corrections are delayed: AutoWrite can type a few more characters, pause, backspace the affected run, retype it correctly, and then pause before resuming.
+- The tested default uses nearby-key substitutions and missed-Shift substitutions because those paths are reliable in Notepad.
+
+Public references:
+
+- Aalto 136M Keystrokes: https://userinterfaces.aalto.fi/136Mkeystrokes/
+- Aalto CHI 2018 paper PDF: https://userinterfaces.aalto.fi/136Mkeystrokes/resources/chi-18-analysis.pdf
+- Cambridge summary of the same 136M-keystroke study: https://www.cam.ac.uk/research/news/what-makes-a-faster-typist
+- Pause thresholds in spontaneous writing: https://www.jowr.org/jowr/article/view/682
+- CMU Keystroke Dynamics benchmark: https://www.cs.cmu.edu/~keystroke/
+- PhysioNet Tappy keystroke data: https://physionet.org/content/tappy/1.0.0/
