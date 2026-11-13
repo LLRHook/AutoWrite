@@ -87,8 +87,10 @@ namespace AutoWrite.Tests
                 Assert(Math.Abs(result.Proposed.CorrectionNoticeMilliseconds - 460) <= 120, "notice estimator: " + result.Proposed.CorrectionNoticeMilliseconds);
                 Assert(Math.Abs(result.Proposed.CorrectionPauseMilliseconds - 80) <= 15, "repair estimator");
             });
+            ResultsTests();
             if (Environment.GetEnvironmentVariable("AUTOWRITE_TEST_SCOPE") == "estimators") { _skipped++; Console.WriteLine("SKIP D6 (scoped estimator check)"); } else D6();
         }
+        static partial void ResultsTests();
         internal static AppSettings Profile(int profile)
         {
             var s = AppSettings.Defaults();

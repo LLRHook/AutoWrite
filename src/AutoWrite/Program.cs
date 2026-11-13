@@ -38,7 +38,7 @@ namespace AutoWrite
         }
     }
 
-    internal sealed class MainForm : QuietForm
+    internal sealed partial class MainForm : QuietForm
     {
         private const int HotkeyId = 0xA701;
         private const int HotkeyVk = (int)Keys.F7;
@@ -72,6 +72,7 @@ namespace AutoWrite
         private readonly NumericUpDown _buttonDelayBox;
         private readonly Button _startButton;
         private readonly Button _stopButton;
+        private readonly Button _calibrateButton;
         private readonly Label _statusLabel;
         private readonly Label _hotkeyLabel;
         private readonly ProgressBar _progressBar;
@@ -294,11 +295,12 @@ namespace AutoWrite
             buttonPanel.Controls.Add(_stopButton);
 
             var calibrate = new Button();
+            _calibrateButton = calibrate;
             calibrate.Text = "Calibrate typing";
             calibrate.Name = "CalibrateTyping";
             calibrate.Width = 132;
             calibrate.Height = 32;
-            calibrate.Click += delegate { using (var dialog = new CalibrationDialog()) dialog.ShowDialog(this); };
+            calibrate.Click += delegate { OpenCalibration(); };
             buttonPanel.WrapContents = true;
             buttonPanel.Controls.Add(calibrate);
 
@@ -327,6 +329,7 @@ namespace AutoWrite
             _buttonDelayBox.ValueChanged += delegate { ApplyButtonDelayLabel(); };
             _typoCheckBox.CheckedChanged += delegate { UpdateTypoControlState(); };
             UpdateTypoControlState();
+            InitializeCalibrationControls();
             SetStatus("Ready", false);
         }
 
@@ -587,6 +590,7 @@ namespace AutoWrite
             _buttonDelayBox.Enabled = !running;
             _startButton.Enabled = !running;
             _stopButton.Enabled = running;
+            _calibrateButton.Enabled = !running;
         }
 
         private void SetStatus(string message, bool isError)
@@ -2168,7 +2172,7 @@ namespace AutoWrite
             return settings;
         }
 
-        public static void Save(AppSettings settings)
+        public static bool Save(AppSettings settings)
         {
             try
             {
@@ -2208,12 +2212,15 @@ namespace AutoWrite
                     "buttonDelaySeconds=" + settings.ButtonDelaySeconds
                 };
                 File.WriteAllLines(SettingsPath, lines);
+                return true;
             }
             catch (IOException)
             {
+                return false;
             }
             catch (UnauthorizedAccessException)
             {
+                return false;
             }
         }
 

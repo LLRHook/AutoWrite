@@ -107,7 +107,7 @@ namespace AutoWrite
         internal Action<int> Press;
         public CaptureTextBox()
         {
-            Name = "CalibrationInput"; Multiline = true; ReadOnly = true; ShortcutsEnabled = false;
+            Name = "CalibrationInput"; AccessibleName = "Typing input"; Multiline = true; ReadOnly = true; ShortcutsEnabled = false;
             AcceptsReturn = true; AcceptsTab = true; ScrollBars = ScrollBars.Vertical;
         }
         protected override bool IsInputKey(Keys keyData) { return true; }
@@ -153,7 +153,7 @@ namespace AutoWrite
             _length.Items.AddRange(new object[] { "30 seconds", "60 seconds" }); _length.SelectedIndex = 1; top.Controls.Add(_length);
             _clock.Text = "Clock starts with your first character"; _clock.AutoSize = true; top.Controls.Add(_clock); layout.Controls.Add(top);
             layout.Controls.Add(new Label { Text = "Copy the passage below. Corrections are Backspace only; paste, navigation and Tab are ignored.", Dock = DockStyle.Fill });
-            layout.Controls.Add(new TextBox { Text = CalibrationPassage.Text.Replace("\n", "\r\n"), Multiline = true, ReadOnly = true, ScrollBars = ScrollBars.Vertical, Dock = DockStyle.Fill, Font = new Font("Consolas", 12), Name = "CalibrationPassage" });
+            layout.Controls.Add(new TextBox { Text = CalibrationPassage.Text.Replace("\n", "\r\n"), Multiline = true, ReadOnly = true, ScrollBars = ScrollBars.Vertical, Dock = DockStyle.Fill, Font = new Font("Consolas", 12), Name = "CalibrationPassage", AccessibleName = "Calibration passage" });
             _input.Dock = DockStyle.Fill; _input.Font = new Font("Consolas", 12); layout.Controls.Add(_input);
             var cancel = new Button { Text = "Cancel", Name = "CalibrationCancel", Dock = DockStyle.Right }; cancel.Click += delegate { Close(); }; layout.Controls.Add(cancel); CancelButton = cancel;
             _input.Character = Accept;
