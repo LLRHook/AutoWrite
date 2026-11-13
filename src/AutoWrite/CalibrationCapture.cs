@@ -13,7 +13,7 @@ namespace AutoWrite
     {
         // Dense on purpose: the first 100 characters exercise all motor classes and two breaks.
         public const string Text =
-            "In eDNA [12], aX=42.5%; why?\n(Smith, 2021): n=128; p<0.05.\nWe cite NASA and/or 'A'.\n" +
+            "In eDNA [12], aX=42.5%; (why?)\n(Smith, 2021): n=128; p<0.05.\nWe cite NASA and/or 'A'.\n" +
             "Table 2.1: aB[34] cD(56) eF=78; gH:90 iJ%12 kL/34.\n" +
             "Figure 3: mN[56] oP(78) qR=90; sT:12 uV%34 wX/56.\n" +
             "At 42.5%, e.g., the US team calls it \"robust\"; is it?\n" +
@@ -55,7 +55,7 @@ namespace AutoWrite
     {
         public readonly List<CaptureKey> Keys = new List<CaptureKey>();
         public readonly List<string> Raw = new List<string>();
-        public readonly int Seconds;
+        public int Seconds;
         public int IgnoredKeys;
         public bool Started;
         public bool Finished;
@@ -82,7 +82,7 @@ namespace AutoWrite
         public string Save(bool completed)
         {
             var directory = Path.Combine(DataDirectory.PathRoot, "calibration"); Directory.CreateDirectory(directory);
-            var path = Path.Combine(directory, "capture-" + DateTime.UtcNow.ToString("yyyyMMdd-HHmmss-fff") + "-" + Guid.NewGuid().ToString("N") + ".tsv");
+            var path = Path.Combine(directory, "capture-" + DateTime.UtcNow.ToString("yyyyMMdd-HHmmss-fff") + "-" + Guid.NewGuid().ToString("N").Substring(0, 8) + ".tsv");
             var lines = new List<string>();
             lines.Add("# version=1;seconds=" + Seconds + ";completed=" + completed + ";ignored_keys=" + IgnoredKeys);
             lines.Add("elapsed_ms\tkind\tcharacter_code_or_reason"); lines.AddRange(Raw);
@@ -102,6 +102,7 @@ namespace AutoWrite
 
     internal sealed class CaptureTextBox : TextBox
     {
+        private char _suppressedCharacter;
         internal Action<char> Character;
         internal Action<string> Ignored;
         internal Action<int> Press;
@@ -115,18 +116,23 @@ namespace AutoWrite
         {
             if (m.Msg == 0x100 || m.Msg == 0x104)
             {
-                var key = (Keys)m.WParam.ToInt32(); if (Press != null) Press((int)key);
-                if (key == Keys.Back && (ModifierKeys & Keys.Control) != 0) { if (Ignored != null) Ignored("Ctrl+Backspace"); return; }
+                var key = (Keys)m.WParam.ToInt32(); int repeats = Math.Max(1, (int)(m.LParam.ToInt64() & 0xFFFF)); if (Press != null) for (int repeat = 0; repeat < repeats; repeat++) Press((int)key);
+                if (key == Keys.Back && (ModifierKeys & Keys.Control) != 0) { _suppressedCharacter = (char)127; if (Ignored != null) Ignored("Ctrl+Backspace"); return; }
                 if (key == Keys.Tab || key == Keys.Left || key == Keys.Right || key == Keys.Up || key == Keys.Down || key == Keys.Home || key == Keys.End || key == Keys.Delete || key == Keys.PageUp || key == Keys.PageDown || ((ModifierKeys & (Keys.Control | Keys.Alt)) != 0 && key != Keys.ControlKey && key != Keys.Menu))
-                { if (Ignored != null) Ignored("key " + key); return; }
+                { _suppressedCharacter = key == Keys.Tab ? '\t' : ((ModifierKeys & Keys.Control) != 0 && key >= Keys.A && key <= Keys.Z) ? (char)((int)key & 31) : '\0'; if (Ignored != null) Ignored("key " + key); return; }
             }
             if (m.Msg == 0x102)
             {
                 var value = (char)m.WParam.ToInt32();
+                if (_suppressedCharacter != '\0' && _suppressedCharacter == value) { _suppressedCharacter = '\0'; return; }
+                _suppressedCharacter = '\0';
                 if ((ModifierKeys & (Keys.Control | Keys.Alt)) != 0 || value == '\t' || value == 127)
                 { if (Ignored != null) Ignored("shortcut character " + (int)value); return; }
-                if (Character != null) Character(value); return;
+                int repeats = Math.Max(1, (int)(m.LParam.ToInt64() & 0xFFFF));
+                if (Character != null) for (int repeat = 0; repeat < repeats; repeat++) Character(value); return;
             }
+            if (m.Msg == 0x201 && !QuietForm.Diagnostic && FindForm() != null && FindForm().Visible)
+            { Focus(); SelectionStart = TextLength; }
             if (m.Msg == 0x302 || m.Msg == 0x300 || m.Msg == 0x303 || m.Msg == 0x304 || m.Msg == 0x201 || m.Msg == 0x203)
             { if (Ignored != null) Ignored("edit message " + m.Msg); return; }
             base.WndProc(ref m);
@@ -161,7 +167,11 @@ namespace AutoWrite
             _input.Press = delegate(int key) { EnsureSession(); _session.Raw.Add(_watch.Elapsed.TotalMilliseconds.ToString("F3", CultureInfo.InvariantCulture) + "\tkeydown\t" + key); };
             _timer.Interval = 20; _timer.Tick += delegate { if (_watch.IsRunning) { _clock.Text = Math.Max(0, _session.Seconds - _watch.Elapsed.TotalSeconds).ToString("F1") + " seconds remaining"; if (_watch.Elapsed.TotalSeconds >= _session.Seconds) Finish(); } }; _timer.Start();
         }
-        private void EnsureSession() { if (_session == null) _session = new CaptureSession(_length.SelectedIndex == 0 ? 30 : 60); }
+        protected override void OnShown(EventArgs e)
+        {
+            base.OnShown(e); if (!QuietForm.Diagnostic) _input.Focus();
+        }
+        private void EnsureSession() { if (_session == null) _session = new CaptureSession(_length.SelectedIndex == 0 ? 30 : 60); if (!_watch.IsRunning) _session.Seconds = _length.SelectedIndex == 0 ? 30 : 60; }
         private void Accept(char key)
         {
             EnsureSession(); if (!_watch.IsRunning) { _watch.Start(); _length.Enabled = false; }

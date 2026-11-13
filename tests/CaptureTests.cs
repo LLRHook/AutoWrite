@@ -17,7 +17,7 @@ namespace AutoWrite.Tests
                 Assert(prefix.Split('\n').Length >= 3, "two paragraph breaks not reached");
                 foreach (var c in new[] { '[', ']', '(', ')', 'X', '4', '%', ';', '?', '\'', '/', '=' })
                     Assert(prefix.IndexOf(c) >= 0, "missing class/example: " + c);
-                Assert(prefix.IndexOf("aX") >= 0 && prefix.IndexOf("p<") >= 0 && prefix.IndexOf(" (", StringComparison.Ordinal) < 0, "mid-word controls missing");
+                Assert(prefix.IndexOf("aX") >= 0 && prefix.IndexOf("p<") >= 0 && prefix.IndexOf(" (", StringComparison.Ordinal) >= 0, "mid-word controls missing");
                 Assert(passage.IndexOf(" (Smith", StringComparison.Ordinal) >= 0, "space then symbol contrast missing");
             });
             Test("capture repeats backspace, normalizes Enter, enforces deadline", delegate {
@@ -43,6 +43,17 @@ namespace AutoWrite.Tests
                     SendMessage(h, 0x201, IntPtr.Zero, IntPtr.Zero);
                     Assert(s.TypedText == "a" && s.Keys.Count == 3 && s.IgnoredKeys == 5, "edit policy drift");
                     var path = s.Save(false); Assert(File.ReadAllText(path).Contains("ignored_keys=5"), "ignored count not saved");
+                }
+            });
+            Test("held Backspace consumes every repeat; blocked Tab counts once", delegate {
+                using (var box = new CaptureTextBox())
+                {
+                    var s = new CaptureSession(30); box.Character = delegate(char c) { s.Accept(c, 0); }; box.Ignored = delegate(string reason) { s.Ignore(reason, 0); };
+                    SendMessage(box.Handle, 0x102, (IntPtr)'a', (IntPtr)3);
+                    SendMessage(box.Handle, 0x102, (IntPtr)'\b', (IntPtr)3);
+                    Assert(s.Keys.Count == 6 && s.TypedText == "", "held repeat batch lost keys");
+                    SendMessage(box.Handle, 0x100, (IntPtr)Keys.Tab, (IntPtr)1); SendMessage(box.Handle, 0x102, (IntPtr)'\t', (IntPtr)1);
+                    Assert(s.IgnoredKeys == 1 && s.Keys.Count == 6, "blocked Tab counted twice");
                 }
             });
             AnalysisTests();

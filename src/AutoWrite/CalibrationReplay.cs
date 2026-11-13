@@ -48,6 +48,7 @@ namespace AutoWrite
             var settings = result.Proposed; int original = settings.WordsPerMinute;
             settings.WordsPerMinute = 5; double slow = Predict(settings, seconds);
             settings.WordsPerMinute = 180; double fast = Predict(settings, seconds);
+            result.MinimumWpm = slow; result.MaximumWpm = fast;
             double measured = result.MeasuredWpm;
             int low = 5, high = 180, best = original; double bestError = Double.MaxValue, bestPrediction = 0;
             while (low <= high)
@@ -57,12 +58,15 @@ namespace AutoWrite
                 if (error < bestError) { bestError = error; best = mid; bestPrediction = predicted; }
                 if (predicted < measured) low = mid + 1; else high = mid - 1;
             }
+            if (Math.Abs(slow - measured) < bestError) { best = 5; bestPrediction = slow; bestError = Math.Abs(slow - measured); }
+            if (Math.Abs(fast - measured) < bestError) { best = 180; bestPrediction = fast; bestError = Math.Abs(fast - measured); }
             CalibrationAnalysis.Set(result, "WordsPerMinute", best, "Measured " + measured.ToString("F1") + " achieved WPM. Target chosen by forward replay of the recovered settings; predicted " + bestPrediction.ToString("F1") + " WPM (absolute forecast error " + bestError.ToString("F1") + ").");
+            result.PredictedWpm = bestPrediction;
             if (measured < slow * .95 || measured > fast * 1.05)
             {
-                result.Warning = "Measured speed cannot be reproduced with these settings and the engine's 45–220 ms motor limit (predicted range " + slow.ToString("F1") + "–" + fast.ToString("F1") + " WPM). Target WPM is kept.";
+                result.Warning = "Measured " + measured.ToString("F1") + " WPM cannot be reproduced with these settings and the engine's 45–220 ms motor limit. AutoWrite will type at approximately " + bestPrediction.ToString("F1") + " WPM with the proposed closest achievable Target WPM (" + best + ").";
                 foreach (var row in result.Estimates) if (row.Setting == "WordsPerMinute")
-                { row.Measured = false; row.Proposed = row.Current; settings.WordsPerMinute = (int)row.Current; row.Reason = "Kept: the measured speed is outside the engine's achievable range; see warning."; }
+                { row.ClosestAchievable = true; row.Reason = "Closest achievable: measured " + measured.ToString("F1") + " WPM; predicted " + bestPrediction.ToString("F1") + " WPM. Target chosen by forward replay; see warning."; }
             }
         }
     }

@@ -43,7 +43,7 @@ namespace AutoWrite
                 var path = Environment.GetEnvironmentVariable("AUTOWRITE_DATA_DIR");
                 if (!String.IsNullOrEmpty(path))
                 {
-                    if (!Path.IsPathRooted(path)) throw new ArgumentException("AUTOWRITE_DATA_DIR must be absolute.");
+                    if (!Path.IsPathRooted(path) || Path.GetPathRoot(path).Length < 3) throw new ArgumentException("AUTOWRITE_DATA_DIR must be absolute.");
                     return Path.GetFullPath(path);
                 }
                 return Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "AutoWrite");

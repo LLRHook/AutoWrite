@@ -5,6 +5,8 @@ if (-not $OutputDirectory) {
     $OutputDirectory = Join-Path ([IO.Path]::GetTempPath()) ('L1-autowrite-tests-' + [Guid]::NewGuid().ToString('N'))
 }
 $OutputDirectory = [IO.Path]::GetFullPath($OutputDirectory)
+$protected = [IO.Path]::GetFullPath((Join-Path ([Environment]::GetFolderPath('ApplicationData')) 'AutoWrite')).TrimEnd('\') + '\'
+if (($OutputDirectory.TrimEnd('\') + '\').StartsWith($protected, [StringComparison]::OrdinalIgnoreCase)) { throw 'Tests must use an isolated directory outside the real AutoWrite data directory.' }
 New-Item -ItemType Directory -Force -Path $OutputDirectory | Out-Null
 $compiler = Join-Path $env:WINDIR 'Microsoft.NET/Framework64/v4.0.30319/csc.exe'
 $sources = @(Get-ChildItem -LiteralPath (Join-Path $root 'src/AutoWrite') -Filter *.cs | ForEach-Object { $_.FullName })

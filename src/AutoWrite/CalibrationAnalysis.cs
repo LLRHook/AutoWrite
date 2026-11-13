@@ -10,7 +10,7 @@ namespace AutoWrite
     {
         public string Setting;
         public object Current, Proposed;
-        public bool Measured;
+        public bool Measured, ClosestAchievable;
         public string Reason;
     }
     internal sealed class CalibrationResult
@@ -18,6 +18,7 @@ namespace AutoWrite
         public AppSettings Proposed;
         public readonly List<CalibrationEstimate> Estimates = new List<CalibrationEstimate>();
         public double MeasuredWpm, Accuracy;
+        public double PredictedWpm, MinimumWpm, MaximumWpm;
         public string Warning = "";
         public int CorrectedMistakes, AlignedCharacters;
         public double BaseDelay;
@@ -120,7 +121,7 @@ namespace AutoWrite
                     Removed = before.Substring(before.Length - count), LastRetype = -1 };
                 episode.Expected = passage.Substring(episode.Start, Math.Max(0, episode.End - episode.Start));
                 episode.Kind = episode.Removed.Length > episode.Expected.Length ? "duplicate" :
-                    episode.Removed.Length == 2 && episode.Expected.Length == 2 && episode.Removed[0] == episode.Expected[1] && episode.Removed[1] == episode.Expected[0] ? "transpose" :
+                    episode.Removed.Length == episode.Expected.Length && episode.Expected.Length >= 2 && episode.Removed[0] == episode.Expected[1] && episode.Removed[1] == episode.Expected[0] && episode.Removed.Substring(2) == episode.Expected.Substring(2) ? "transpose" :
                     episode.Expected.Length > 0 && episode.Removed.Length > 0 && IsMissedShift(episode.Expected[0], episode.Removed[0]) ? "missed-shift" : "nearby";
                 for (int j = first + 1; j < i; j++) episode.Repair.Add(keys[j].Milliseconds - keys[j - 1].Milliseconds);
                 int retype = 0;
@@ -213,7 +214,7 @@ namespace AutoWrite
             double elapsed = Math.Max(1, seconds * 1000D - (keys.Count == 0 ? 0 : keys[0].Milliseconds));
             result.MeasuredWpm = alignment.End * 12000D / elapsed;
             result.Accuracy = alignment.End == 0 ? 0 : Math.Max(0, 100D * (1 - (corrections.Count + alignment.Distance) / (double)alignment.End));
-            if (gaps.Count < 30) return result;
+            if (gaps.Count < 30) { Keep(result, "WordsPerMinute", "Kept: " + gaps.Count + " consecutive aligned gaps; need 30 for a replay target."); return result; }
             var fit = Fit(gaps, current); result.BaseDelay = fit[0];
             var counts = new int[9];
             foreach (var r in gaps)
@@ -243,10 +244,23 @@ namespace AutoWrite
                 foreach (double l in logs) variance += (l - mean) * (l - mean); variance /= logs.Count;
                 foreach (var pair in byEvent) { double previous; if (byEvent.TryGetValue(pair.Key - 1, out previous)) { covariance += (pair.Value - mean) * (previous - mean); pairs++; } }
                 covariance = pairs > 0 ? Math.Max(0, covariance / pairs) : 0;
-                double burstVariance = Math.Min(variance, covariance / .935);
-                double burst = Math.Min(1, Math.Sqrt(burstVariance * 3));
-                Set(result, "BurstPercent", (int)Math.Round(burst * 100), "Serial residual covariance over " + pairs + " adjacent pairs (8–23-key bursts).");
-                Set(result, "JitterPercent", (int)Math.Round(Math.Sqrt(Math.Max(0, variance - burstVariance)) / .65 * 100), "Log motor residual variance minus burst variance; n=" + logs.Count + ".");
+                if (pairs < 20)
+                {
+                    Keep(result, "BurstPercent", "Kept: " + pairs + " adjacent ordinary residual pairs; need 20 to separate drift from jitter.");
+                    Keep(result, "JitterPercent", "Kept: " + pairs + " adjacent ordinary residual pairs; need 20 to separate jitter from drift.");
+                }
+                else
+                {
+                    double burstVariance = Math.Min(variance, covariance / .935);
+                    double burst = Math.Min(1, Math.Sqrt(burstVariance * 3));
+                    Set(result, "BurstPercent", (int)Math.Round(burst * 100), "Serial residual covariance over " + pairs + " adjacent pairs (8–23-key bursts).");
+                    Set(result, "JitterPercent", (int)Math.Round(Math.Sqrt(Math.Max(0, variance - burstVariance)) / .65 * 100), "Log motor residual variance minus burst variance; n=" + logs.Count + ".");
+                }
+            }
+            else
+            {
+                Keep(result, "JitterPercent", "Kept: " + logs.Count + " ordinary motor residuals; need 60.");
+                Keep(result, "BurstPercent", "Kept: " + logs.Count + " ordinary motor residuals; need 60.");
             }
             var thinking = new List<double>(); int boundaries = 0;
             foreach (var r in gaps) if (Boundary(r.Previous))
@@ -258,6 +272,11 @@ namespace AutoWrite
             {
                 Set(result, "ThinkingPauseChancePercent", (int)Math.Round(thinking.Count * 100D / boundaries), "Long boundary residuals; n=" + thinking.Count + ". Transcription underestimates composing pauses.");
                 Set(result, "ThinkingPauseMilliseconds", (int)Math.Round(Mean(thinking) * 1.5), "Uniform [max/3,max] pause model; n=" + thinking.Count + ".");
+            }
+            else
+            {
+                Keep(result, "ThinkingPauseChancePercent", "Kept: " + thinking.Count + " long pauses / " + boundaries + " boundaries; need 4 / 30. Transcription reads composing pauses low.");
+                Keep(result, "ThinkingPauseMilliseconds", "Kept: " + thinking.Count + " long pauses; need 4 across at least 30 boundaries.");
             }
             if (corrections.Count >= 3)
             {
@@ -323,6 +342,11 @@ namespace AutoWrite
             {
                 Keep(result, "EnableTypos", "Kept: fewer than 3 corrected episodes; no mistakes does not establish a zero mistake rate.");
                 Keep(result, "TypoChancePercent", "Kept: fewer than 3 corrected episodes; need 3.");
+            }
+            if (corrections.Count < 20)
+            {
+                Keep(result, "DuplicateChancePercent", "Kept: " + corrections.Count + " corrected episodes; need 20 to estimate kind shares.");
+                Keep(result, "TransposeChancePercent", "Kept: " + corrections.Count + " corrected episodes; need 20 to estimate kind shares.");
             }
             // Multipliers need enough errors in EACH class, rather than arbitrary pseudo-counts.
             var classErrors = new int[5]; var classEligible = new int[5];

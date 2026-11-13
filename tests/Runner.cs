@@ -104,6 +104,19 @@ namespace AutoWrite.Tests
                 Assert(TelemetryLogger.CreatePath().StartsWith(DataDirectory.PathRoot), "telemetry escaped isolation");
                 Assert(File.Exists(Path.Combine(DataDirectory.PathRoot, "settings.ini")), "settings escaped isolation");
             });
+            Test("data override rejects relative and drive-relative paths", delegate {
+                var previous = Environment.GetEnvironmentVariable("AUTOWRITE_DATA_DIR");
+                try
+                {
+                    foreach (var invalid in new[] { "L1-relative", "C:L1-relative", "\\L1-relative" })
+                    {
+                        Environment.SetEnvironmentVariable("AUTOWRITE_DATA_DIR", invalid); bool rejected = false;
+                        try { var unused = DataDirectory.PathRoot; } catch (ArgumentException) { rejected = true; }
+                        Assert(rejected, "relative data path accepted");
+                    }
+                }
+                finally { Environment.SetEnvironmentVariable("AUTOWRITE_DATA_DIR", previous); }
+            });
             MoreTests();
             Console.WriteLine("TOTAL passed=" + _passed + " failed=" + _failed + " skipped=" + _skipped);
             return _failed == 0 ? 0 : 1;

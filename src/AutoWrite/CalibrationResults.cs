@@ -50,7 +50,7 @@ namespace AutoWrite
                 table.Controls.Add(new Label { Text = label, Dock = DockStyle.Fill, AutoSize = true, Margin = new Padding(3, 8, 3, 8) }, 0, row);
                 table.Controls.Add(ValueBox("Current " + label, SettingNames.Format(estimate.Setting, estimate.Current)), 1, row);
                 table.Controls.Add(ValueBox("Proposed " + label, SettingNames.Format(estimate.Setting, estimate.Proposed)), 2, row);
-                string evidence = estimate.Measured ? "Measured: " + estimate.Reason : estimate.Reason;
+                string evidence = estimate.Measured && !estimate.ClosestAchievable ? "Measured: " + estimate.Reason : estimate.Reason;
                 table.Controls.Add(new Label { Text = evidence, AutoSize = true, Dock = DockStyle.Fill, Margin = new Padding(8, 8, 3, 8), MaximumSize = new Size(550, 0) }, 3, row);
             }
             var buttons = new FlowLayoutPanel { Dock = DockStyle.Fill, FlowDirection = FlowDirection.RightToLeft, Padding = new Padding(0, 12, 0, 0) }; root.Controls.Add(buttons);
@@ -66,6 +66,7 @@ namespace AutoWrite
 
     internal sealed partial class MainForm
     {
+        private bool _calibrationOpen;
         private readonly Dictionary<string, Control> _calibrationControls = new Dictionary<string, Control>();
         private void InitializeCalibrationControls()
         {
@@ -104,19 +105,24 @@ namespace AutoWrite
             if (SettingsStore.Save(CurrentSettings())) return true;
             SetCalibrationControls(previous); return false;
         }
+        private void ReleaseCalibration()
+        {
+            _calibrationOpen = false; _calibrateButton.Enabled = _typingCancellation == null; _startButton.Enabled = _typingCancellation == null;
+        }
         private void OpenCalibration()
         {
-            if (_typingCancellation != null) return;
+            if (_typingCancellation != null || _calibrationOpen) return;
+            _calibrationOpen = true; _startButton.Enabled = false;
             var current = CurrentSettings(); var dialog = new CalibrationDialog(); _calibrateButton.Enabled = false;
             dialog.FormClosed += delegate {
                 if (!IsDisposed && !Disposing)
                 {
-                    _calibrateButton.Enabled = true;
+                    if (dialog.CompletedSession == null) ReleaseCalibration();
                     if (dialog.CompletedSession != null)
                     {
                         var result = CalibrationAnalysis.Analyze(dialog.CompletedSession.Keys, dialog.CompletedSession.Seconds, current);
                         var results = new CalibrationResultsDialog(result, ApplyCalibration);
-                        results.FormClosed += delegate { results.Dispose(); };
+                        results.FormClosed += delegate { ReleaseCalibration(); results.Dispose(); };
                         if (QuietForm.Diagnostic) results.Show(this); else results.ShowDialog(this);
                     }
                 }

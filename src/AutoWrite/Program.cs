@@ -33,6 +33,13 @@ namespace AutoWrite
                 return SelfTest.RunSendInputProbe();
             }
 
+            if (args != null && args.Length > 0 && String.Equals(args[0], "--typing-smoke-probe", StringComparison.OrdinalIgnoreCase))
+            {
+                int idleSeconds = 0;
+                if (args.Length > 1 && (args.Length != 3 || args[1] != "--require-idle-seconds" || !Int32.TryParse(args[2], out idleSeconds) || idleSeconds < 1 || idleSeconds > 86400)) return 4;
+                return LiveTypingProbe.Run(idleSeconds);
+            }
+
             Application.Run(new MainForm());
             return 0;
         }
@@ -409,6 +416,7 @@ namespace AutoWrite
 
         private void StartTyping(bool useButtonDelay)
         {
+            if (_calibrationOpen) return;
             if (_typingCancellation != null)
             {
                 StopTyping();
