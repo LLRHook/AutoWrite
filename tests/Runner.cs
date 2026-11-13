@@ -50,8 +50,8 @@ namespace AutoWrite.Tests
 
     internal static partial class Runner
     {
-        private static int _passed, _failed;
-        internal static string Output;
+        private static int _passed, _failed, _skipped;
+        internal static string Output, SourceRoot;
         internal static void Assert(bool condition, string message)
         {
             if (!condition) throw new Exception(message);
@@ -73,17 +73,18 @@ namespace AutoWrite.Tests
             Directory.CreateDirectory(DataDirectory.PathRoot);
             return options;
         }
-        internal static VirtualRuntime RunEngine(string text, AppSettings settings, int seed, long limit)
+        internal static VirtualRuntime RunEngine(string text, AppSettings settings, int seed, long limit, bool telemetry = true)
         {
             var runtime = new VirtualRuntime(seed); runtime.Limit = limit;
-            try { new TypingEngine(runtime).TypeText(text, Options(settings), null, CancellationToken.None); }
+            var options = Options(settings); if (!telemetry) options.TelemetryPath = "-";
+            try { new TypingEngine(runtime).TypeText(text, options, null, CancellationToken.None); }
             catch (OperationCanceledException) { if (limit == Int64.MaxValue) throw; }
             return runtime;
         }
         [STAThread]
         private static int Main(string[] args)
         {
-            Output = args[0];
+            Output = args[0]; SourceRoot = args[1];
             Test("fixed seed reproduces real engine output and exact final text", delegate {
                 var text = "A report (Smith, 2021) tests 42.5%: useful?\nSecond paragraph.\nThird and final line.";
                 var settings = AppSettings.Defaults(); settings.TypoChancePercent = 8;
@@ -104,7 +105,7 @@ namespace AutoWrite.Tests
                 Assert(File.Exists(Path.Combine(DataDirectory.PathRoot, "settings.ini")), "settings escaped isolation");
             });
             MoreTests();
-            Console.WriteLine("TOTAL passed=" + _passed + " failed=" + _failed + " skipped=0");
+            Console.WriteLine("TOTAL passed=" + _passed + " failed=" + _failed + " skipped=" + _skipped);
             return _failed == 0 ? 0 : 1;
         }
         static partial void MoreTests();

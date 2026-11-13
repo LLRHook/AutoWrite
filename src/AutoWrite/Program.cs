@@ -50,6 +50,7 @@ namespace AutoWrite
         private readonly NumericUpDown _burstBox;
         private readonly NumericUpDown _wordPauseBox;
         private readonly NumericUpDown _sentencePauseBox;
+        private readonly NumericUpDown _paragraphPauseBox;
         private readonly NumericUpDown _thinkingChanceBox;
         private readonly NumericUpDown _thinkingPauseBox;
         private readonly CheckBox _keepTargetWpmCheckBox;
@@ -193,6 +194,9 @@ namespace AutoWrite
 
             _sentencePauseBox = CreateNumberBox(0, 3000, settings.SentencePauseMilliseconds);
             AddLabeledControl(settingsPanel, "Sentence pause ms", _sentencePauseBox);
+
+            _paragraphPauseBox = CreateNumberBox(0, 3000, settings.ParagraphPauseMilliseconds);
+            AddLabeledControl(settingsPanel, "Paragraph pause ms", _paragraphPauseBox);
 
             _thinkingChanceBox = CreateNumberBox(0, 25, settings.ThinkingPauseChancePercent);
             AddLabeledControl(settingsPanel, "Thinking pause %", _thinkingChanceBox);
@@ -497,6 +501,7 @@ namespace AutoWrite
                 BurstPercent = (int)_burstBox.Value,
                 WordPauseMilliseconds = (int)_wordPauseBox.Value,
                 SentencePauseMilliseconds = (int)_sentencePauseBox.Value,
+                ParagraphPauseMilliseconds = (int)_paragraphPauseBox.Value,
                 ThinkingPauseChancePercent = (int)_thinkingChanceBox.Value,
                 ThinkingPauseMilliseconds = (int)_thinkingPauseBox.Value,
                 KeepTargetWpm = _keepTargetWpmCheckBox.Checked,
@@ -528,6 +533,7 @@ namespace AutoWrite
                 BurstPercent = (int)_burstBox.Value,
                 WordPauseMilliseconds = (int)_wordPauseBox.Value,
                 SentencePauseMilliseconds = (int)_sentencePauseBox.Value,
+                ParagraphPauseMilliseconds = (int)_paragraphPauseBox.Value,
                 ThinkingPauseChancePercent = (int)_thinkingChanceBox.Value,
                 ThinkingPauseMilliseconds = (int)_thinkingPauseBox.Value,
                 KeepTargetWpm = _keepTargetWpmCheckBox.Checked,
@@ -559,6 +565,7 @@ namespace AutoWrite
             _burstBox.Enabled = !running;
             _wordPauseBox.Enabled = !running;
             _sentencePauseBox.Enabled = !running;
+            _paragraphPauseBox.Enabled = !running;
             _thinkingChanceBox.Enabled = !running;
             _thinkingPauseBox.Enabled = !running;
             _keepTargetWpmCheckBox.Enabled = !running;
@@ -704,6 +711,7 @@ namespace AutoWrite
         public int BurstPercent { get; set; }
         public int WordPauseMilliseconds { get; set; }
         public int SentencePauseMilliseconds { get; set; }
+        public int ParagraphPauseMilliseconds { get; set; }
         public int ThinkingPauseChancePercent { get; set; }
         public int ThinkingPauseMilliseconds { get; set; }
         public bool KeepTargetWpm { get; set; }
@@ -1335,6 +1343,9 @@ namespace AutoWrite
                     budget += options.WordPauseMilliseconds;
                 }
 
+                if (current == '\n' || (current == '\r' && (index + 1 >= text.Length || text[index + 1] != '\n')))
+                    budget += options.ParagraphPauseMilliseconds;
+
                 int thinkingDelay;
                 if (rhythmPlan != null && rhythmPlan.ThinkingPauses.TryGetValue(index, out thinkingDelay))
                 {
@@ -1395,7 +1406,7 @@ namespace AutoWrite
             var next = index + 1 < text.Length ? text[index + 1] : '\0';
 
             delay *= KeyPairFactor(current, next, options.KeyPairRhythmPercent);
-            delay *= CharacterDelayFactor(current, options);
+            delay *= CharacterDelayFactor(next, options);
 
             if (state.BurstRemaining <= 0)
             {
@@ -1423,6 +1434,9 @@ namespace AutoWrite
             {
                 delay += options.WordPauseMilliseconds * (0.65D + random.NextDouble() * 0.7D);
             }
+
+            if (options.ParagraphPauseMilliseconds > 0 && (current == '\n' || current == '\r'))
+                delay += options.ParagraphPauseMilliseconds * (0.65D + random.NextDouble() * 0.7D);
 
             int thinkingDelay;
             if (state.ThinkingPauses != null && state.ThinkingPauses.TryGetValue(index, out thinkingDelay))
@@ -1777,6 +1791,7 @@ namespace AutoWrite
                 path = CreatePath();
             }
 
+            if (path == "-") return new TelemetryLogger(null);
             var writer = new StreamWriter(path, false, new UTF8Encoding(false));
             var logger = new TelemetryLogger(writer);
             logger.WriteHeader();
@@ -1791,6 +1806,7 @@ namespace AutoWrite
                 ";number_typo_multiplier_percent=" + options.NumberTypoMultiplierPercent +
                 ";punctuation_typo_multiplier_percent=" + options.PunctuationTypoMultiplierPercent +
                 ";shift_symbol_typo_multiplier_percent=" + options.ShiftSymbolTypoMultiplierPercent +
+                ";paragraph_pause_ms=" + options.ParagraphPauseMilliseconds +
                 ";notice_ms=" + options.CorrectionNoticeMilliseconds +
                 ";detect_chars=" + options.CorrectionDetectChars +
                 ";repair_ms=" + options.CorrectionPauseMilliseconds +
@@ -1821,6 +1837,7 @@ namespace AutoWrite
 
         private void WriteEvent(string eventName, int sourceIndex, char intended, char sent, int? delayMilliseconds, string note)
         {
+            if (_writer == null) return;
             lock (_syncRoot)
             {
                 var elapsed = _stopwatch.ElapsedMilliseconds;
@@ -1910,7 +1927,7 @@ namespace AutoWrite
 
         public void Dispose()
         {
-            _writer.Dispose();
+            if (_writer != null) _writer.Dispose();
         }
     }
 
@@ -1922,6 +1939,7 @@ namespace AutoWrite
         public int BurstPercent { get; set; }
         public int WordPauseMilliseconds { get; set; }
         public int SentencePauseMilliseconds { get; set; }
+        public int ParagraphPauseMilliseconds { get; set; }
         public int ThinkingPauseChancePercent { get; set; }
         public int ThinkingPauseMilliseconds { get; set; }
         public bool KeepTargetWpm { get; set; }
@@ -2041,6 +2059,10 @@ namespace AutoWrite
                 {
                     settings.SentencePauseMilliseconds = ReadInt(value, settings.SentencePauseMilliseconds);
                 }
+                else if (String.Equals(key, "paragraphPauseMilliseconds", StringComparison.OrdinalIgnoreCase))
+                {
+                    settings.ParagraphPauseMilliseconds = ReadInt(value, settings.ParagraphPauseMilliseconds);
+                }
                 else if (String.Equals(key, "thinkingPauseChancePercent", StringComparison.OrdinalIgnoreCase))
                 {
                     settings.ThinkingPauseChancePercent = ReadInt(value, settings.ThinkingPauseChancePercent);
@@ -2125,6 +2147,7 @@ namespace AutoWrite
             settings.BurstPercent = Clamp(settings.BurstPercent, 0, 100);
             settings.WordPauseMilliseconds = Clamp(settings.WordPauseMilliseconds, 0, 1000);
             settings.SentencePauseMilliseconds = Clamp(settings.SentencePauseMilliseconds, 0, 3000);
+            settings.ParagraphPauseMilliseconds = Clamp(settings.ParagraphPauseMilliseconds, 0, 3000);
             settings.ThinkingPauseChancePercent = Clamp(settings.ThinkingPauseChancePercent, 0, 25);
             settings.ThinkingPauseMilliseconds = Clamp(settings.ThinkingPauseMilliseconds, 0, 5000);
             settings.UppercaseDelayPenaltyPercent = Clamp(settings.UppercaseDelayPenaltyPercent, 0, 200);
@@ -2163,6 +2186,7 @@ namespace AutoWrite
                     "burstPercent=" + settings.BurstPercent,
                     "wordPauseMilliseconds=" + settings.WordPauseMilliseconds,
                     "sentencePauseMilliseconds=" + settings.SentencePauseMilliseconds,
+                    "paragraphPauseMilliseconds=" + settings.ParagraphPauseMilliseconds,
                     "thinkingPauseChancePercent=" + settings.ThinkingPauseChancePercent,
                     "thinkingPauseMilliseconds=" + settings.ThinkingPauseMilliseconds,
                     "keepTargetWpm=" + settings.KeepTargetWpm,

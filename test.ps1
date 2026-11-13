@@ -15,7 +15,7 @@ if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
 $previous = $env:AUTOWRITE_DATA_DIR
 try {
     $env:AUTOWRITE_DATA_DIR = Join-Path $OutputDirectory 'L1-data'
-    & $exe $OutputDirectory
+    & $exe $OutputDirectory $root
     $testExit = $LASTEXITCODE
 } finally { $env:AUTOWRITE_DATA_DIR = $previous }
 exit $testExit
