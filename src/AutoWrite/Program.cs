@@ -723,8 +723,13 @@ namespace AutoWrite
         private readonly Dictionary<char, char[]> _nearbyKeys;
         private readonly Dictionary<char, int> _keyboardHands;
 
-        public TypingEngine()
+        private readonly IEngineRuntime _runtime;
+
+        public TypingEngine() : this(new WindowsEngineRuntime()) { }
+
+        public TypingEngine(IEngineRuntime runtime)
         {
+            _runtime = runtime;
             _nearbyKeys = new Dictionary<char, char[]>();
             _keyboardHands = new Dictionary<char, int>();
             AddNearby('a', "qwsz");
@@ -795,10 +800,10 @@ namespace AutoWrite
                     WaitForVirtualKeyRelease(options.TriggerVirtualKey, token);
                 }
 
-                NativeMethods.ReleaseModifierKeys();
+                _runtime.ReleaseModifiers();
 
-                var targetWindow = NativeMethods.GetForegroundWindow();
-                var random = new Random();
+                var targetWindow = _runtime.ForegroundWindow();
+                var random = _runtime.CreateRandom();
                 var mistakePlan = CreateMistakePlan(text, options, random);
                 var rhythmPlan = CreateRhythmPlan(text, options, random);
                 var baseDelay = CalculateBaseDelay(text, options, mistakePlan.Count, rhythmPlan);
@@ -1564,21 +1569,12 @@ namespace AutoWrite
             return Math.Sqrt(-2D * Math.Log(u1)) * Math.Sin(2D * Math.PI * u2);
         }
 
-        private static void Sleep(int milliseconds, CancellationToken token)
+        private void Sleep(int milliseconds, CancellationToken token)
         {
-            if (milliseconds <= 0)
-            {
-                token.ThrowIfCancellationRequested();
-                return;
-            }
-
-            if (token.WaitHandle.WaitOne(milliseconds))
-            {
-                token.ThrowIfCancellationRequested();
-            }
+            _runtime.Sleep(milliseconds, token);
         }
 
-        private static void Pause(int milliseconds, CancellationToken token, TelemetryLogger telemetry, string eventName, int sourceIndex, string note)
+        private void Pause(int milliseconds, CancellationToken token, TelemetryLogger telemetry, string eventName, int sourceIndex, string note)
         {
             if (milliseconds > 0 && telemetry != null)
             {
@@ -1588,7 +1584,7 @@ namespace AutoWrite
             Sleep(milliseconds, token);
         }
 
-        private static void SendUnicodeChar(
+        private void SendUnicodeChar(
             char value,
             IntPtr targetWindow,
             CancellationToken token,
@@ -1599,14 +1595,14 @@ namespace AutoWrite
             string note)
         {
             WaitForTargetWindow(targetWindow, token);
-            NativeMethods.SendUnicodeChar(value);
+            _runtime.SendCharacter(value);
             if (telemetry != null)
             {
                 telemetry.LogKey(action, sourceIndex, intended, value, note);
             }
         }
 
-        private static void SendBackspace(
+        private void SendBackspace(
             IntPtr targetWindow,
             CancellationToken token,
             TelemetryLogger telemetry,
@@ -1616,14 +1612,14 @@ namespace AutoWrite
             string note)
         {
             WaitForTargetWindow(targetWindow, token);
-            NativeMethods.SendBackspace();
+            _runtime.SendCharacter('\b');
             if (telemetry != null)
             {
                 telemetry.LogKey(action, sourceIndex, intended, '\b', note);
             }
         }
 
-        private static void SendEnter(
+        private void SendEnter(
             IntPtr targetWindow,
             CancellationToken token,
             TelemetryLogger telemetry,
@@ -1633,30 +1629,30 @@ namespace AutoWrite
             string note)
         {
             WaitForTargetWindow(targetWindow, token);
-            NativeMethods.SendEnter();
+            _runtime.SendCharacter('\n');
             if (telemetry != null)
             {
                 telemetry.LogKey(action, sourceIndex, intended, '\n', note);
             }
         }
 
-        private static void WaitForTargetWindow(IntPtr targetWindow, CancellationToken token)
+        private void WaitForTargetWindow(IntPtr targetWindow, CancellationToken token)
         {
             if (targetWindow == IntPtr.Zero)
             {
                 return;
             }
 
-            while (NativeMethods.GetForegroundWindow() != targetWindow)
+            while (_runtime.ForegroundWindow() != targetWindow)
             {
                 Sleep(50, token);
             }
         }
 
-        private static void WaitForVirtualKeyRelease(int virtualKey, CancellationToken token)
+        private void WaitForVirtualKeyRelease(int virtualKey, CancellationToken token)
         {
             var deadline = Environment.TickCount + 1000;
-            while (NativeMethods.IsKeyDown(virtualKey) && Environment.TickCount < deadline)
+            while (_runtime.IsKeyDown(virtualKey) && Environment.TickCount < deadline)
             {
                 Sleep(10, token);
             }
@@ -1759,8 +1755,7 @@ namespace AutoWrite
         public static string CreatePath()
         {
             var directory = Path.Combine(
-                Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData),
-                "AutoWrite",
+                DataDirectory.PathRoot,
                 "telemetry");
             Directory.CreateDirectory(directory);
             return Path.Combine(directory, "autowrite-" + DateTime.Now.ToString("yyyyMMdd-HHmmss-fff", CultureInfo.InvariantCulture) + ".tsv");
@@ -2194,8 +2189,7 @@ namespace AutoWrite
             get
             {
                 return Path.Combine(
-                    Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData),
-                    "AutoWrite",
+                    DataDirectory.PathRoot,
                     "settings.ini");
             }
         }
