@@ -38,7 +38,7 @@ namespace AutoWrite
         }
     }
 
-    internal sealed class MainForm : Form
+    internal sealed class MainForm : QuietForm
     {
         private const int HotkeyId = 0xA701;
         private const int HotkeyVk = (int)Keys.F7;
@@ -289,6 +289,15 @@ namespace AutoWrite
             _stopButton.Click += delegate { StopTyping(); };
             buttonPanel.Controls.Add(_stopButton);
 
+            var calibrate = new Button();
+            calibrate.Text = "Calibrate typing";
+            calibrate.Name = "CalibrateTyping";
+            calibrate.Width = 132;
+            calibrate.Height = 32;
+            calibrate.Click += delegate { using (var dialog = new CalibrationDialog()) dialog.ShowDialog(this); };
+            buttonPanel.WrapContents = true;
+            buttonPanel.Controls.Add(calibrate);
+
             var footer = new Panel();
             footer.Dock = DockStyle.Fill;
             footer.Padding = new Padding(16, 4, 16, 6);
@@ -336,7 +345,7 @@ namespace AutoWrite
         protected override void OnShown(EventArgs e)
         {
             base.OnShown(e);
-            RegisterHotkey();
+            if (!QuietForm.Diagnostic) RegisterHotkey();
         }
 
         protected override void OnFormClosing(FormClosingEventArgs e)
