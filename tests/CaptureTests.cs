@@ -10,6 +10,7 @@ namespace AutoWrite.Tests
         private static extern IntPtr SendMessage(IntPtr window, int message, IntPtr wparam, IntPtr lparam);
         static partial void MoreTests()
         {
+            CaptureFailureTests();
             Test("D2 dense first 100 characters and 900-character runway", delegate
             {
                 var passage = CalibrationPassage.Text;

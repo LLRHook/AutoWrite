@@ -262,6 +262,7 @@ namespace AutoWrite
         private readonly Timer _timer = new Timer();
         private CaptureSession _session;
         internal CaptureSession CompletedSession;
+        internal string SaveWarning = "";
         public CalibrationDialog()
         {
             Text = "Typing calibration";
@@ -418,7 +419,18 @@ namespace AutoWrite
             _timer.Dispose();
             if (_session != null)
             {
-                _session.Save(CompletedSession != null);
+                try
+                {
+                    _session.Save(CompletedSession != null);
+                }
+                catch (IOException)
+                {
+                    SaveWarning = "The recording could not be saved. You can still review and apply these settings.";
+                }
+                catch (UnauthorizedAccessException)
+                {
+                    SaveWarning = "The recording could not be saved. You can still review and apply these settings.";
+                }
             }
             base.OnFormClosed(e);
         }

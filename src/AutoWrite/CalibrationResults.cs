@@ -192,7 +192,7 @@ namespace AutoWrite
             CancelButton = discard;
             var accept = new Button
             {
-                Text = "Apply", AccessibleName = "Apply calibration", Width = 100
+                Text = "Apply", Name = "CalibrationApply", AccessibleName = "Apply calibration", Width = 100
             };
             accept.Click += delegate
             {
@@ -327,6 +327,10 @@ namespace AutoWrite
                     if (dialog.CompletedSession != null)
                     {
                         var result = CalibrationAnalysis.Analyze(dialog.CompletedSession.Keys, dialog.CompletedSession.Seconds, current);
+                        if (!String.IsNullOrEmpty(dialog.SaveWarning))
+                        {
+                            result.Warning = dialog.SaveWarning + " " + result.Warning;
+                        }
                         var results = new CalibrationResultsDialog(result, ApplyCalibration);
                         results.FormClosed += delegate
                         {
