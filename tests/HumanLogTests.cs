@@ -36,14 +36,15 @@ namespace AutoWrite.Tests
                     if (placement == 3) gaps[i] += 95;
                 }
             }
+            var extra = new double[text.Length];
             if (hesitation)
             {
                 int changed = 0;
                 for (int i = 10; i < text.Length && changed < 3; i++)
                     if (Char.IsLower(text[i - 1]) && Char.IsLower(text[i]))
-                    { gaps[i] += 2000 + changed * 500; changed++; i += 20; }
+                    { extra[i] += 2000 + changed * 500; changed++; i += 20; }
                 for (int i = 100; i < text.Length; i++)
-                    if (shifted.IndexOf(text[i]) >= 0) { gaps[i] += 4000; break; }
+                    if (shifted.IndexOf(text[i]) >= 0) { extra[i] += 4000; break; }
             }
             var keys = new List<CaptureKey>();
             double time = 0;
@@ -51,10 +52,12 @@ namespace AutoWrite.Tests
             for (int i = 0; i < text.Length; i++)
             {
                 time += gaps[i];
-                if (time >= 60000) break;
+                if (time >= 45000) break;
                 if (errors && i >= skip && i < skip + 6) continue;
                 char c = errors && (i == 15 || i == 95) ? 'z' : text[i];
-                keys.Add(new CaptureKey(time, c));
+                double delay = 0;
+                for (int j = 0; j <= i; j++) delay += extra[j];
+                keys.Add(new CaptureKey(time + delay, c));
             }
             return keys;
         }
@@ -67,6 +70,27 @@ namespace AutoWrite.Tests
         }
         private static void HumanLogTests()
         {
+            Test("human hesitations errors and skipped words do not move bounded estimates", delegate {
+                var clean = CalibrationAnalysis.Analyze(HumanLog(0, false, false), 60, HumanCurrent());
+                foreach (bool errors in new[] { false, true })
+                {
+                    var log = HumanLog(0, true, errors);
+                    var result = CalibrationAnalysis.Analyze(log, 60, HumanCurrent());
+                    foreach (string setting in GateSettings)
+                    {
+                        double baseline = Convert.ToDouble(typeof(AppSettings).GetProperty(setting).GetValue(clean.Proposed, null));
+                        double actual = Convert.ToDouble(typeof(AppSettings).GetProperty(setting).GetValue(result.Proposed, null));
+                        Assert(Math.Abs(actual - baseline) <= Bound(setting, baseline), "hesitation " + setting + " errors=" + errors);
+                    }
+                    Assert(Math.Abs(result.Proposed.WordsPerMinute - clean.Proposed.WordsPerMinute) <= clean.Proposed.WordsPerMinute * .05,
+                        "hesitation changed replay speed");
+                    if (errors)
+                    {
+                        Assert(result.AlignedCharacters > log.Count && result.Accuracy < 100, "skipped word was not aligned");
+                        Assert(Math.Abs(result.AlignedCharacters - clean.AlignedCharacters) <= 1, "lost alignment after skipped word");
+                    }
+                }
+            });
             Test("human boundary units recover relocated word sentence and paragraph pauses", delegate {
                 var clean = CalibrationAnalysis.Analyze(HumanLog(0, false, false), 60, HumanCurrent());
                 for (int placement = 1; placement <= 4; placement++)

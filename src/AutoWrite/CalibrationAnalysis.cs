@@ -201,7 +201,6 @@ namespace AutoWrite
                 foreach (var unit in units)
                 {
                     double expected = 0, observed = 0, variance = 0;
-                    bool boundary = false;
                     var d = new double[9];
                     foreach (var r in unit)
                     {
@@ -209,7 +208,6 @@ namespace AutoWrite
                         expected += prediction;
                         observed += r.Gap;
                         variance += motor * motor * .12 + Math.Pow(prediction - motor, 2) * .041 + 25;
-                        boundary |= Boundary(r.Previous);
                         int c = Class(r.Current); double pair = Pair(r.Previous, r.Current);
                         d[0] += motor / p[0];
                         if (c > 0) d[c] += p[0] * (1 + pair * p[5]);
@@ -220,8 +218,10 @@ namespace AutoWrite
                     }
                     double residual = observed - expected;
                     double z = residual / Math.Sqrt(variance);
-                    if (boundary && z > 6) continue;
-                    double weight = 1 / variance;
+                    if (Math.Abs(z) > 6) continue;
+                    // Huber influence is bounded for every retained boundary or ordinary-key unit.
+                    double influence = Math.Min(1, 3 / Math.Max(3, Math.Abs(z)));
+                    double weight = influence / variance;
                     for (int j = 0; j < 9; j++)
                     {
                         b[j] += weight * d[j] * residual;

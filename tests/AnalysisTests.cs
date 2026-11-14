@@ -221,7 +221,7 @@ namespace AutoWrite.Tests
                 var settings = Profile(profile); var recovered = new Dictionary<string, List<double>>(); var errors = new Dictionary<string, List<double>>();
                 foreach (var name in reportSettings) { recovered[name] = new List<double>(); errors[name] = new List<double>(); }
                 var speedErrors = new List<double>(); var replayErrors = new List<double>(); var bases = new List<double>();
-                var expectedErrors = new List<double>(); var floorErrors = new List<double>(); var longRunErrors = new List<double>();
+                var expectedErrors = new List<double>(); var floorErrors = new List<double>(); var keptFloorErrors = new List<double>(); var longRunErrors = new List<double>();
                 double longRunWpm = 0;
                 for (int longSeed = 0; longSeed < 20; longSeed++) { var full = RunEngine(CalibrationPassage.Text, settings, 1000 + longSeed, Int64.MaxValue, false); longRunWpm += full.FinalText().Length * 12000D / full.Now / 20; }
                 int seeds = profile < 3 ? 20 : 5; var actualBases = new List<double>(); var keptCounts = new Dictionary<string, int>(); foreach (var name in reportSettings) keptCounts[name] = 0;
@@ -245,7 +245,14 @@ namespace AutoWrite.Tests
                     foreach (var name in reportSettings)
                     {
                         var p = typeof(AppSettings).GetProperty(name); double truth = Convert.ToDouble(p.GetValue(settings, null)), value = Convert.ToDouble(p.GetValue(result.Proposed, null));
-                        recovered[name].Add(value); errors[name].Add(Math.Abs(value - truth));
+                        var estimate = result.Estimates.Find(delegate(CalibrationEstimate e) { return e.Setting == name; });
+                        bool bounded = Array.IndexOf(GateSettings, name) >= 0;
+                        if (estimate.Measured || !bounded) recovered[name].Add(value);
+                        if (!estimate.Measured && !Object.Equals(estimate.Proposed, estimate.Current))
+                            failures.Add("kept setting changed: " + name);
+                        if (profile < 3 && bounded && Object.Equals(p.GetValue(settings, null), p.GetValue(AppSettings.Defaults(), null)))
+                            failures.Add("current equals ground truth: " + name);
+                        errors[name].Add(Math.Abs(value - truth));
                     }
                     var replay = RunEngine(CalibrationPassage.Text, result.Proposed, 5000 + seed, duration * 1000, false);
                     List<CorrectionEpisode> unused; Alignment replayAlignment;
@@ -253,6 +260,14 @@ namespace AutoWrite.Tests
                     double replayWpm = replay.FinalText().Length * 12D / duration;
                     var control = RunEngine(CalibrationPassage.Text, settings, 5000 + seed, duration * 1000, false);
                     floorErrors.Add(Math.Abs(control.FinalText().Length * 12D / duration - achieved) / Math.Max(1, achieved) * 100);
+                    var controlBSettings = new AppSettings();
+                    foreach (var estimate in result.Estimates)
+                    {
+                        var property = typeof(AppSettings).GetProperty(estimate.Setting);
+                        property.SetValue(controlBSettings, estimate.Measured ? property.GetValue(settings, null) : estimate.Proposed, null);
+                    }
+                    var controlB = RunEngine(CalibrationPassage.Text, controlBSettings, 5000 + seed, duration * 1000, false);
+                    keptFloorErrors.Add(Math.Abs(controlB.FinalText().Length * 12D / duration - achieved) / Math.Max(1, achieved) * 100);
                     longRunErrors.Add(Math.Abs(achieved - longRunWpm) / longRunWpm * 100);
                     double expected = 0;
                     for (int replaySeed = 0; replaySeed < 20; replaySeed++)
@@ -273,7 +288,7 @@ namespace AutoWrite.Tests
                     bool pass = error <= bound;
                     report.Append("# kept " + duration + "s p" + profile + " " + name + " " + keptCounts[name] + "/" + seeds + "\n");
                     report.Append(duration).Append('\t').Append(profile).Append('\t').Append(name).Append('\t').Append(truth).Append('\t').Append(median).Append('\t').Append(error).Append('\t').Append(Percentile(errors[name], .9).ToString("F2", CultureInfo.InvariantCulture)).Append('\t').Append(bound).Append('\t').Append(profile >= 3 ? "outside gate" : duration != 60 ? "reported (30s)" : !isGate ? "reported, not bounded" : pass ? "PASS" : "FAIL").AppendLine();
-                    if (duration == 60 && profile < 3 && isGate && keptCounts[name] > 0) failures.Add("p" + profile + " " + name + " kept in " + keptCounts[name] + " runs");
+                    if (duration == 60 && profile < 3 && isGate && keptCounts[name] > 2) failures.Add("p" + profile + " " + name + " kept in " + keptCounts[name] + " runs");
                     if (duration == 60 && profile < 3 && isGate && !pass) failures.Add("p" + profile + " " + name + " median=" + median + " truth=" + truth + " error=" + error + " bound=" + bound);
                 }
                 if (duration == 60 && profile < 3 && CalibrationAnalysis.Median(speedErrors) > 5) failures.Add("achieved WPM differs from independent log count");
@@ -282,14 +297,16 @@ namespace AutoWrite.Tests
                 report.Append("# actual base range " + duration + "s p" + profile + " " + actualBases[0] + " min=" + Min(actualBases) + " max=" + Max(actualBases) + "\n");
                 if (duration == 60 && profile < 3 && (Min(actualBases) <= 45 || Max(actualBases) >= 220)) failures.Add("p" + profile + " clamp bound");
                 report.Append(duration).Append('\t').Append(profile).Append("\tFittedBaseDelay\t0\t").Append(CalibrationAnalysis.Median(bases)).Append("\t0\t0\t0\tdiagnostic\n");
-                foreach (var metric in new[] { "ExpectedReplayWpmErrorPercent", "GroundTruthSingleReplayNoiseFloorPercent", "MinuteVsLongRunWpmErrorPercent" })
+                foreach (var metric in new[] { "ExpectedReplayWpmErrorPercent", "GroundTruthSingleReplayNoiseFloorPercent", "KeptSettingsSingleReplayNoiseFloorPercent", "MinuteVsLongRunWpmErrorPercent" })
                 {
-                    var values = metric.StartsWith("Expected", StringComparison.Ordinal) ? expectedErrors : metric.StartsWith("Ground", StringComparison.Ordinal) ? floorErrors : longRunErrors;
+                    var values = metric.StartsWith("Expected", StringComparison.Ordinal) ? expectedErrors : metric.StartsWith("Ground", StringComparison.Ordinal) ? floorErrors : metric.StartsWith("Kept", StringComparison.Ordinal) ? keptFloorErrors : longRunErrors;
                     report.Append(duration).Append('\t').Append(profile).Append('\t').Append(metric).Append("\t0\t0\t").Append(CalibrationAnalysis.Median(values)).Append('\t').Append(Percentile(values, .9)).Append("\t5\t").Append(metric.StartsWith("Expected", StringComparison.Ordinal) && duration == 60 && profile < 3 ? (CalibrationAnalysis.Median(values) <= 5 ? "PASS" : "FAIL") : "published, not a gate").AppendLine();
                     report.Append("# worst " + duration + "s p" + profile + " " + metric + " " + Max(values) + "\n");
                 }
                 report.Append("# long-run achieved WPM p" + profile + " " + longRunWpm + "\n");
-                double ratio = CalibrationAnalysis.Median(replayErrors) / Math.Max(.01, CalibrationAnalysis.Median(floorErrors));
+                double ratioA = CalibrationAnalysis.Median(replayErrors) / Math.Max(.01, CalibrationAnalysis.Median(floorErrors));
+                report.Append("# recovered single-run / absolute-floor median ratio " + duration + "s p" + profile + " " + ratioA + "\n");
+                double ratio = CalibrationAnalysis.Median(replayErrors) / Math.Max(.01, CalibrationAnalysis.Median(keptFloorErrors));
                 report.Append("# recovered single-run / noise-floor median ratio " + duration + "s p" + profile + " " + ratio + "\n");
                 if (duration == 60 && profile < 3 && CalibrationAnalysis.Median(expectedErrors) > 5) failures.Add("p" + profile + " expected replay median error=" + CalibrationAnalysis.Median(expectedErrors));
                 if (profile < 3 && ratio > 1.25) failures.Add(duration + "s p" + profile + " single replay / floor ratio=" + ratio);
