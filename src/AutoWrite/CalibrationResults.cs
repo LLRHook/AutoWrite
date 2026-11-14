@@ -169,7 +169,7 @@ namespace AutoWrite
                 }, 0, row);
                 table.Controls.Add(ValueBox("Current " + label, SettingNames.Format(estimate.Setting, estimate.Current)), 1, row);
                 table.Controls.Add(ValueBox("Proposed " + label, SettingNames.Format(estimate.Setting, estimate.Proposed)), 2, row);
-                string evidence = estimate.Measured && !estimate.ClosestAchievable ? "Measured: " + estimate.Reason : estimate.Reason;
+                string evidence = estimate.Reason;
                 table.Controls.Add(new Label
                 {
                     Text = evidence, AutoSize = true, Dock = DockStyle.Fill, Margin = new Padding(8, 8, 3, 8), MaximumSize = new Size(550,

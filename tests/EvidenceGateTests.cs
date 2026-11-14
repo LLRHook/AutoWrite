@@ -16,6 +16,21 @@ namespace AutoWrite.Tests
         private static void EvidenceGateTests()
         {
             GoldenTests();
+            Test("measured evidence names observations and flags sparse samples without changing eligibility", delegate
+            {
+                var result = CalibrationAnalysis.Analyze(HumanLog(0, false, false), 60, HumanCurrent());
+                foreach (var row in result.Estimates)
+                {
+                    if (row.Measured && row.Setting != "WordsPerMinute")
+                    {
+                        Assert(row.Reason.StartsWith("Measured from ", StringComparison.Ordinal), "method jargon: " + row.Reason);
+                    }
+                }
+                Assert(CalibrationEvidence.Describe("ParagraphPauseMilliseconds", 4, "paragraph breaks") ==
+                    "Measured from 4 paragraph breaks (few samples; rerun for a steadier value).", "few samples not labelled");
+                Assert(!CalibrationEvidence.Describe("ParagraphPauseMilliseconds", 6, "paragraph breaks").Contains("few samples"),
+                    "few-sample boundary");
+            });
             Test("one to three long pauses keep both thinking settings", delegate
             {
                 for (int count = 1; count <= 3; count++)

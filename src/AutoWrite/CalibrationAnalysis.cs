@@ -22,6 +22,7 @@ namespace AutoWrite
         public int CorrectedMistakes, AlignedCharacters;
         public double BaseDelay;
         public double OrdinaryGapMilliseconds, PredictedOrdinaryGapMilliseconds;
+        public int OrdinaryGapCount;
         public string ActivityDescription = "";
     }
     internal sealed class AlignedGap
@@ -60,6 +61,11 @@ namespace AutoWrite
         // Genuine 10% uncorrected errors remain above 89%; wrong-start,
         // unrelated and random text are below 40% in both speed fixtures.
         internal const double MinimumAlignmentQuality = 70;
+        private static readonly string[] FitEvidenceNames =
+        {
+            "uppercase key gaps", "digit key gaps", "punctuation key gaps", "shifted-symbol key gaps",
+            "key pairs", "word gaps", "sentence endings", "paragraph breaks"
+        };
         internal static readonly string[] FitNames =
         {
             "UppercaseDelayPenaltyPercent", "NumberDelayPenaltyPercent", "PunctuationDelayPenaltyPercent",
@@ -518,6 +524,7 @@ namespace AutoWrite
             var metrics = CalibrationMetrics.Measure(keys);
             result.MeasuredWpm = metrics.Wpm;
             result.OrdinaryGapMilliseconds = metrics.OrdinaryGapMilliseconds;
+            result.OrdinaryGapCount = metrics.OrdinaryGapCount;
             result.ActivityDescription = metrics.ActivityDescription();
             result.Accuracy = alignment.End == 0 ? 0 : Math.Max(0, 100D * (1 - (corrections.Count + alignment.Distance) / (double)
             alignment.End));
@@ -565,7 +572,7 @@ namespace AutoWrite
                 if (counts[i] >= minimum)
                 {
                     Set(result, FitNames[i - 1], (int)Math.Round(fit[i] * (i <= 5 ? 100 : 1)),
-                    "Joint incoming-key / outgoing-pause fit; n=" + counts[i] + ".");
+                        CalibrationEvidence.Describe(FitNames[i - 1], counts[i], FitEvidenceNames[i - 1]));
                 }
                 else Keep(result, FitNames[i - 1], "Kept: n=" + counts[i] + "; need " + minimum + " independent gaps.");
             }
@@ -611,10 +618,10 @@ namespace AutoWrite
                 {
                     double burstVariance = Math.Min(variance, covariance / .935);
                     double burst = Math.Min(1, Math.Sqrt(burstVariance * 3));
-                    Set(result, "BurstPercent", (int)Math.Round(burst * 100), "Serial residual covariance over " + pairs +
-                    " adjacent pairs (8–23-key bursts).");
+                    Set(result, "BurstPercent", (int)Math.Round(burst * 100),
+                        CalibrationEvidence.Describe("BurstPercent", pairs, "adjacent key pairs"));
                     Set(result, "JitterPercent", (int)Math.Round(Math.Sqrt(Math.Max(0, variance - burstVariance)) / .65 * 100),
-                    "Log motor residual variance minus burst variance; n=" + logs.Count + ".");
+                        CalibrationEvidence.Describe("JitterPercent", logs.Count, "ordinary key gaps"));
                 }
             }
             else
@@ -647,9 +654,9 @@ namespace AutoWrite
             if (thinking.Count >= 4 && boundaries >= 30)
             {
                 Set(result, "ThinkingPauseChancePercent", (int)Math.Round(thinking.Count * 100D / boundaries),
-                "Long boundary residuals; n=" + thinking.Count + ". Transcription underestimates composing pauses.");
-                Set(result, "ThinkingPauseMilliseconds", (int)Math.Round(Mean(thinking) * 1.5), "Uniform [max/3,max] pause model; n=" +
-                thinking.Count + ".");
+                        CalibrationEvidence.Describe("ThinkingPauseChancePercent", thinking.Count, "long pauses"));
+                Set(result, "ThinkingPauseMilliseconds", (int)Math.Round(Mean(thinking) * 1.5),
+                        CalibrationEvidence.Describe("ThinkingPauseMilliseconds", thinking.Count, "long pauses"));
             }
             else
             {
@@ -674,8 +681,9 @@ namespace AutoWrite
                         result.Proposed.ShiftSymbolTypoMultiplierPercent / 100D : 1;
                 }
                 Set(result, "TypoChancePercent", (int)Math.Round(corrections.Count * 100D / Math.Max(1, weighted)),
-                "Corrected episodes / weighted eligible keys; episodes=" + corrections.Count + ".");
-                Set(result, "EnableTypos", true, "Observed " + corrections.Count + " corrected episodes.");
+                        CalibrationEvidence.Describe("TypoChancePercent", corrections.Count, "corrected mistakes"));
+                Set(result, "EnableTypos", true,
+                        CalibrationEvidence.Describe("EnableTypos", corrections.Count, "corrected mistakes"));
                 var notice = new List<double>();
                 var repair = new List<double>();
                 var resume = new List<double>();
@@ -708,17 +716,17 @@ namespace AutoWrite
                     }
                 }
                 double repairMean = Mean(repair);
-                Set(result, "CorrectionNoticeMilliseconds", (int)Math.Round(Mean(notice)), "Mean latency into first Backspace; episodes="
-                + notice.Count + ".");
+                Set(result, "CorrectionNoticeMilliseconds", (int)Math.Round(Mean(notice)),
+                        CalibrationEvidence.Describe("CorrectionNoticeMilliseconds", notice.Count, "first Backspace presses"));
                 if (repair.Count >= 8)
                 {
-                    Set(result, "CorrectionPauseMilliseconds", (int)Math.Round(repairMean), "Within-correction key gaps; n=" +
-                    repair.Count + ".");
+                    Set(result, "CorrectionPauseMilliseconds", (int)Math.Round(repairMean),
+                        CalibrationEvidence.Describe("CorrectionPauseMilliseconds", repair.Count, "repair key gaps"));
                 }
                 if (resume.Count >= 3)
                 {
                     Set(result, "CorrectionResumeMilliseconds", (int)Math.Round(Mean(resume) - repairMean),
-                    "After-retype gap minus motor, boundary and final repair gap; n=" + resume.Count + ".");
+                        CalibrationEvidence.Describe("CorrectionResumeMilliseconds", resume.Count, "resumes after a correction"));
                 }
                 if (corrections.Count >= 8)
                 {
@@ -772,7 +780,7 @@ namespace AutoWrite
                     if (bestScore - secondScore >= Math.Log(3))
                     {
                         Set(result, "CorrectionDetectChars", bestMax,
-                        "Likelihood of fixed detection-distance distribution, censored at boundaries; n=" + corrections.Count + ".");
+                        CalibrationEvidence.Describe("CorrectionDetectChars", corrections.Count, "corrected mistakes"));
                     }
                     else Keep(result, "CorrectionDetectChars", (
                     ("Kept: boundary-censored detection distances do not distinguish maximum distances (likelihood rat") +
@@ -792,10 +800,10 @@ namespace AutoWrite
                             trans++;
                         }
                     }
-                    Set(result, "DuplicateChancePercent", (int)Math.Round(dup * 100D / corrections.Count), "Observed episode kinds; n=" +
-                    corrections.Count + ".");
-                    Set(result, "TransposeChancePercent", (int)Math.Round(trans * 100D / corrections.Count), "Observed episode kinds; n="
-                    + corrections.Count + ".");
+                    Set(result, "DuplicateChancePercent", (int)Math.Round(dup * 100D / corrections.Count),
+                        CalibrationEvidence.Describe("DuplicateChancePercent", corrections.Count, "corrected mistakes"));
+                    Set(result, "TransposeChancePercent", (int)Math.Round(trans * 100D / corrections.Count),
+                        CalibrationEvidence.Describe("TransposeChancePercent", corrections.Count, "corrected mistakes"));
                 }
             }
             else
@@ -841,17 +849,16 @@ namespace AutoWrite
                 {
                     Set(result, multiplierNames[cl - 2], (int)Math.Round(classErrors[cl] / (double)classEligible[cl] / (letterErrors / (
                     double
-                    )letterEligible) * 100), "Class error frequency / letter error frequency; errors=" + classErrors[cl] + "/" +
-                    letterErrors
-                    + ".");
+                    )letterEligible) * 100),
+                        CalibrationEvidence.Describe(multiplierNames[cl - 2], classErrors[cl], "class mistakes"));
                 }
                 else Keep(result, multiplierNames[cl - 2], "Kept: class/letter errors=" + classErrors[cl] + "/" + letterErrors +
                 "; need at least 10 each and 30 class opportunities.");
             }
             if (letterErrors >= 10)
             {
-                Set(result, "TypoChancePercent", (int)Math.Round(letterErrors * 100D / letterEligible), "Letter-error base rate; n=" +
-                letterErrors + ".");
+                Set(result, "TypoChancePercent", (int)Math.Round(letterErrors * 100D / letterEligible),
+                        CalibrationEvidence.Describe("TypoChancePercent", letterErrors, "corrected mistakes"));
             }
             Keep(result, "KeepTargetWpm", "Kept: timing-budget preference is not identifiable from a single typing recording.");
             CalibrationReplay.MatchSpeed(result, seconds);

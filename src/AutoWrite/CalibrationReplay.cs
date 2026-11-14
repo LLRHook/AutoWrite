@@ -133,7 +133,7 @@ namespace AutoWrite
                 bestPrediction = fast;
             }
             CalibrationAnalysis.Set(result, "WordsPerMinute", best,
-                "Ordinary letter gaps: " + measured.ToString("F1") + " ms; replay: " +
+                "Measured from " + result.OrdinaryGapCount + " ordinary letter gaps: " + measured.ToString("F1") + " ms; replay: " +
                 bestPrediction.OrdinaryGapMilliseconds.ToString("F1") + " ms. Target chosen by forward replay.");
             result.PredictedWpm = bestPrediction.Wpm;
             result.PredictedOrdinaryGapMilliseconds = bestPrediction.OrdinaryGapMilliseconds;

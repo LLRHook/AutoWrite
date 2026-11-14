@@ -9,6 +9,7 @@ namespace AutoWrite
         // whole gap, and report every omission; shorter hesitations remain in speed.
         internal const double InterruptionMilliseconds = 10000;
         internal double Wpm, OrdinaryGapMilliseconds, ActiveMilliseconds;
+        internal int OrdinaryGapCount;
         internal readonly List<double> ExcludedPauses = new List<double>();
 
         internal static CalibrationMetrics Measure(IList<CaptureKey> keys)
@@ -72,6 +73,7 @@ namespace AutoWrite
                 }
             }
             result.OrdinaryGapMilliseconds = CalibrationAnalysis.Median(ordinary);
+            result.OrdinaryGapCount = ordinary.Count;
             return result;
         }
 
