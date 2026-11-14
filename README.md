@@ -1,6 +1,7 @@
 # AutoWrite
 
-AutoWrite is a small Windows desktop app that types pasted text into the active field when the global `F7` hotkey is pressed.
+AutoWrite is a small Windows desktop app that types pasted text into the active field when the
+global `F7` hotkey is pressed.
 
 ## Build
 
@@ -38,16 +39,65 @@ This creates a current-user Start Menu shortcut at:
 %APPDATA%\Microsoft\Windows\Start Menu\Programs\AutoWrite.lnk
 ```
 
-After that, open Start and search for `AutoWrite`. Windows generally requires pinning to Start to be done by the user, so pin it from the Start menu if you want it fixed there.
+After that, open Start and search for `AutoWrite`. Windows generally requires pinning to Start to be
+done by the user, so pin it from the Start menu if you want it fixed there.
 
 ## Use
 
-1. Open `dist\AutoWrite.exe`.
-2. Paste text into AutoWrite.
-3. Focus the destination text field in another window.
-4. Press `F7` to start typing. Press `F7` again to stop.
+1. Open `dist\AutoWrite.exe`. 2. Paste text into AutoWrite. 3. Focus the destination text field in
+another window. 4. Press `F7` to start typing. Press `F7` again to stop.
 
 The `Type in 3s` button can also start typing after the configured delay.
+
+## Calibrate typing
+
+Click **Calibrate typing**, choose 30 or 60 seconds, and copy the report
+passage from the beginning. The default is 60 seconds; the clock starts with
+your first character. Use Backspace for corrections and Enter for paragraph
+breaks. Paste, Tab and caret navigation are ignored. The passage follows and
+marks your position. Printable AltGr characters are accepted.
+
+Review your active typing speed, AutoWrite's expected speed, accuracy, and
+each proposed setting. **Apply** updates the controls and saves immediately.
+**Discard** or **Cancel** leaves settings unchanged. Sparse evidence keeps
+the previous value or is labelled “few samples.” A poor passage match keeps
+every setting and asks you to retry. Button delay and Keep target WPM remain
+your preferences.
+
+Calibration matches your ordinary letter-to-letter rhythm, rather than
+slowing every key to fill the clock. Active speed runs from first to last
+key; gaps of ten seconds or longer are omitted and listed in the results.
+Shorter hesitations remain counted. AutoWrite may have a different overall
+speed because it adds pauses and corrections at the proposed or kept values.
+
+Copying is not composing. Thinking pauses are not measured unless the test
+contains at least four long pauses; otherwise they stay at their previous
+values. A single minute can be a fast or a slow minute, so rerun the test if
+the measured speed looks wrong.
+
+AutoWrite cannot make its ordinary motor gap longer than about 220 ms.
+In the slow-letter example on this passage that means roughly **46 WPM**;
+below that it types faster than the person. Other settings affect the limit.
+When this limit prevents matching your rhythm, results propose the closest
+achievable target and show both speeds. The fast motor limit is 45 ms.
+
+Synthetic tests suggest a minute gives a closer rhythm match than half a
+minute. The table shows typical (median) and 90th-percentile errors across
+three timing models; these are simulation results, not a promise about a
+person. Expected speed assumes thinking pauses already match the person;
+keeping different thinking settings can increase its difference.
+
+| Test | Rhythm error, median / 90th percentile | Expected speed error, median / 90th percentile |
+| --- | --- | --- |
+| 30 seconds | 3.7–6.2% / 5.5–9.7% | 5.5–12.6% / 15.8–22.2% |
+| 60 seconds | 1.0–2.8% / 2.4–9.5% | 2.6–4.3% / 7.3–12.6% |
+
+The match is closest on report-like text such as the passage. On plain prose
+AutoWrite runs somewhat slower than you at the same finger speed; turning
+**Keep target WPM** off narrows that difference.
+
+[Accuracy measurements and estimation methods](docs/calibration-accuracy.md)
+include test-to-test variation, individual setting errors and cross-text limits.
 
 ## Settings
 
@@ -61,10 +111,11 @@ The `Type in 3s` button can also start typing after the configured delay.
 - `Thinking pause %`: chance of adding a longer pause at word or punctuation boundaries.
 - `Thinking max ms`: maximum length of those longer pauses.
 - `Keep target WPM`: when enabled, symbol-heavy text still aims for the target WPM while individual difficult keys pause longer.
-- `Uppercase delay %`: extra motor delay after uppercase letters.
-- `Number delay %`: extra motor delay after digits.
-- `Punctuation delay %`: extra motor delay after punctuation and symbols that do not require Shift.
-- `Shift-symbol delay %`: extra motor delay after symbols such as `@`, `?`, `:`, `"` and `_`.
+- `Paragraph pause ms`: extra pause after a line break, in addition to the existing whitespace pause. Default `0` preserves existing timing. CRLF is one paragraph break.
+- `Uppercase delay %`: extra motor delay before uppercase letters.
+- `Number delay %`: extra motor delay before digits.
+- `Punctuation delay %`: extra motor delay before punctuation and symbols that do not require Shift.
+- `Shift-symbol delay %`: extra motor delay before symbols such as `@`, `?`, `:`, `"` and `_`.
 - `Corrected mistakes`: enables temporary mistakes that are corrected before continuing.
 - `Mistake rate %`: base target mistake rate over eligible letters, digits, punctuation, and symbols. The default `1%` plans an exact per-run count instead of rolling independently for every key.
 - `Number mistakes x`: multiplier applied to the base mistake rate for digits.
@@ -83,17 +134,63 @@ Settings are stored at:
 %APPDATA%\AutoWrite\settings.ini
 ```
 
-AutoWrite runs as the current user. Windows blocks lower-privilege apps from sending input into elevated administrator windows, so run AutoWrite elevated only when the destination app is also elevated.
+AutoWrite runs as the current user. Windows blocks lower-privilege apps from sending input into
+elevated administrator windows, so run AutoWrite elevated only when the destination app is also
+elevated.
 
 ## Diagnostics
 
-Run this to verify Windows accepts AutoWrite's keyboard input call:
+Tests and probes can override the data directory with the absolute-path environment variable
+`AUTOWRITE_DATA_DIR`. The override covers settings, telemetry and calibration captures. Normal use
+retains the location above. Do not point diagnostics at the real settings directory.
 
 ```powershell
-Start-Process .\dist\AutoWrite.exe -ArgumentList '--sendinput-probe' -Wait -PassThru
+.\test.ps1 -OutputDirectory "$env:TEMP\autowrite-tests"
+.\e2e.ps1 -OutputDirectory "$env:TEMP\autowrite-evidence"
+.\smoke.ps1 -OutputDirectory "$env:TEMP\autowrite-probes"
 ```
 
-Exit code `0` means the `SendInput` path is valid.
+Run `build.ps1` first for the last two commands. `test.ps1` compiles the app sources and the console
+assert harness with the same in-box 64-bit .NET Framework compiler, prints each result and totals,
+and returns nonzero on failure. It includes the real engine's seeded virtual-clock recovery
+benchmark. Without an output argument it creates an isolated temporary directory.
+`AUTOWRITE_TEST_SCOPE=estimators` explicitly skips the expensive recovery benchmark for focused debugging
+and reports that skip; leave it unset for the complete test suite.
+
+`e2e.ps1` drives the built `dist\AutoWrite.exe` through UI Automation and window messages, never
+through global input. Its windows are shown without activation; it verifies the foreground stays
+unchanged, selects 30 seconds from the default 60, enters the actual passage, reads all proposals,
+exercises Discard, Apply and Cancel, and checks every main control and saved value. PNGs contain
+only the app's own windows, captured with `PrintWindow`. The test enables
+`AUTOWRITE_DIAGNOSTIC_NOACTIVATE=1`, which also suppresses the F7 registration; this environment
+switch is inert in normal use.
+
+`smoke.ps1` runs the existing `--sendinput-probe` (one Shift press); exit `0` means Windows accepted
+`SendInput`. The separately explicit command below performs a live text check. It temporarily
+activates only a window the probe creates, types `AutoWrite: aB [12] (3.5%)?` and a second line
+`OK`, checks the exact text, then closes. It stops if its window loses the foreground. An internal
+watchdog and an external 15-second process timeout bound it. Do this only when the temporary focus
+change is acceptable:
+
+```powershell
+.\smoke.ps1 -OutputDirectory "$env:TEMP\autowrite-live" -LiveTyping
+.\smoke.ps1 -OutputDirectory "$env:TEMP\autowrite-idle" -LiveTyping -RequireIdleSeconds 240
+```
+
+The fixed-seed check deliberately makes and repairs mistakes and reports the number of Backspaces
+sent. Received text is never printed.
+
+That invokes `--typing-smoke-probe`, an otherwise inert diagnostic switch. The optional idle
+precondition uses `GetLastInputInfo` in the current Windows session before creating a window. If
+idle time is below the requested seconds, it sends nothing and returns `3`, `skipped: user active`,
+with the measured idle time. It does not wait for the desktop to become idle. Without that option
+the check starts immediately, for an owner launching it from their terminal. If its own window
+cannot acquire foreground within 500 ms, it exits `2` without typing; foreground loss or timeout
+also returns `2`. The app switch accepts `--require-idle-seconds N`; malformed options return `4`.
+The isolated diagnostic directory contains `live-probe.txt` with the outcome and elapsed time, and
+the script prints it. A mismatch reports expected length, received length and first differing index
+only; received text is never saved or printed. The calibration and virtual-engine test suites send
+no global input. Diagnostics close the processes they create and use isolated data directories.
 
 Each run also writes telemetry to:
 
@@ -101,11 +198,14 @@ Each run also writes telemetry to:
 %APPDATA%\AutoWrite\telemetry\autowrite-YYYYMMDD-HHMMSS-fff.tsv
 ```
 
-The telemetry log records every key event, correction, pause, source index, intended character, sent character, elapsed timestamp, and gap since the previous emitted key. Use it to inspect actual WPM, correction count, pause length, and whether a target editor received the final text correctly.
+The telemetry log records every key event, correction, pause, source index, intended character, sent
+character, elapsed timestamp, and gap since the previous emitted key. Use it to inspect actual WPM,
+correction count, pause length, and whether a target editor received the final text correctly.
 
 ## Timing Data Notes
 
-AutoWrite does not try to impersonate a specific person's biometric typing signature. The defaults are a practical approximation based on public typing research:
+Calibration learns speed, rhythm, boundary pauses and correction habits from one transcription test.
+The initial defaults remain a practical approximation based on public typing research:
 
 - Aalto University's 136M Keystrokes study reports data from 168,000 volunteers and highlights large individual variation, hand/finger pair effects, rollover behavior, and error differences between faster and slower typists.
 - The CMU Keystroke Dynamics benchmark provides hold-time and flight-time fields for 51 subjects typing the same password 400 times.
@@ -120,6 +220,7 @@ Key-pair rhythm %: 80
 Burst drift %: 30
 Word pause ms: 120
 Sentence pause ms: 850
+Paragraph pause ms: 0
 Thinking pause %: 4
 Thinking max ms: 2200
 Keep target WPM: On

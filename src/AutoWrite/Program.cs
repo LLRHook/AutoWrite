@@ -33,12 +33,23 @@ namespace AutoWrite
                 return SelfTest.RunSendInputProbe();
             }
 
+            if (args != null && args.Length > 0 && String.Equals(args[0], "--typing-smoke-probe", StringComparison.OrdinalIgnoreCase))
+            {
+                int idleSeconds = 0;
+                if (args.Length > 1 && (args.Length != 3 || args[1] != "--require-idle-seconds" ||
+                    !Int32.TryParse(args[2], out idleSeconds) || idleSeconds < 1 || idleSeconds > 86400))
+                {
+                    return 4;
+                }
+                return LiveTypingProbe.Run(idleSeconds);
+            }
+
             Application.Run(new MainForm());
             return 0;
         }
     }
 
-    internal sealed class MainForm : Form
+    internal sealed partial class MainForm : QuietForm
     {
         private const int HotkeyId = 0xA701;
         private const int HotkeyVk = (int)Keys.F7;
@@ -50,6 +61,7 @@ namespace AutoWrite
         private readonly NumericUpDown _burstBox;
         private readonly NumericUpDown _wordPauseBox;
         private readonly NumericUpDown _sentencePauseBox;
+        private readonly NumericUpDown _paragraphPauseBox;
         private readonly NumericUpDown _thinkingChanceBox;
         private readonly NumericUpDown _thinkingPauseBox;
         private readonly CheckBox _keepTargetWpmCheckBox;
@@ -71,6 +83,7 @@ namespace AutoWrite
         private readonly NumericUpDown _buttonDelayBox;
         private readonly Button _startButton;
         private readonly Button _stopButton;
+        private readonly Button _calibrateButton;
         private readonly Label _statusLabel;
         private readonly Label _hotkeyLabel;
         private readonly ProgressBar _progressBar;
@@ -171,33 +184,56 @@ namespace AutoWrite
 
             AddSectionLabel(settingsPanel, "Typing");
 
-            _wpmBox = CreateNumberBox(5, 180, settings.WordsPerMinute);
+            _wpmBox = CreateNumberBox(
+                SettingRanges.Minimum("WordsPerMinute"),
+                SettingRanges.Maximum("WordsPerMinute"), settings.WordsPerMinute);
             AddLabeledControl(settingsPanel, "Target WPM", _wpmBox);
 
-            _buttonDelayBox = CreateNumberBox(0, 10, settings.ButtonDelaySeconds);
+            _buttonDelayBox = CreateNumberBox(
+                SettingRanges.Minimum("ButtonDelaySeconds"),
+                SettingRanges.Maximum("ButtonDelaySeconds"), settings.ButtonDelaySeconds);
             AddLabeledControl(settingsPanel, "Button delay s", _buttonDelayBox);
 
             AddSectionLabel(settingsPanel, "Rhythm");
 
-            _jitterBox = CreateNumberBox(0, 100, settings.JitterPercent);
+            _jitterBox = CreateNumberBox(
+                SettingRanges.Minimum("JitterPercent"),
+                SettingRanges.Maximum("JitterPercent"), settings.JitterPercent);
             AddLabeledControl(settingsPanel, "Jitter %", _jitterBox);
 
-            _keyPairRhythmBox = CreateNumberBox(0, 100, settings.KeyPairRhythmPercent);
+            _keyPairRhythmBox = CreateNumberBox(
+                SettingRanges.Minimum("KeyPairRhythmPercent"),
+                SettingRanges.Maximum("KeyPairRhythmPercent"), settings.KeyPairRhythmPercent);
             AddLabeledControl(settingsPanel, "Key-pair rhythm %", _keyPairRhythmBox);
 
-            _burstBox = CreateNumberBox(0, 100, settings.BurstPercent);
+            _burstBox = CreateNumberBox(
+                SettingRanges.Minimum("BurstPercent"),
+                SettingRanges.Maximum("BurstPercent"), settings.BurstPercent);
             AddLabeledControl(settingsPanel, "Burst drift %", _burstBox);
 
-            _wordPauseBox = CreateNumberBox(0, 1000, settings.WordPauseMilliseconds);
+            _wordPauseBox = CreateNumberBox(
+                SettingRanges.Minimum("WordPauseMilliseconds"),
+                SettingRanges.Maximum("WordPauseMilliseconds"), settings.WordPauseMilliseconds);
             AddLabeledControl(settingsPanel, "Word pause ms", _wordPauseBox);
 
-            _sentencePauseBox = CreateNumberBox(0, 3000, settings.SentencePauseMilliseconds);
+            _sentencePauseBox = CreateNumberBox(
+                SettingRanges.Minimum("SentencePauseMilliseconds"),
+                SettingRanges.Maximum("SentencePauseMilliseconds"), settings.SentencePauseMilliseconds);
             AddLabeledControl(settingsPanel, "Sentence pause ms", _sentencePauseBox);
 
-            _thinkingChanceBox = CreateNumberBox(0, 25, settings.ThinkingPauseChancePercent);
+            _paragraphPauseBox = CreateNumberBox(
+                SettingRanges.Minimum("ParagraphPauseMilliseconds"),
+                SettingRanges.Maximum("ParagraphPauseMilliseconds"), settings.ParagraphPauseMilliseconds);
+            AddLabeledControl(settingsPanel, "Paragraph pause ms", _paragraphPauseBox);
+
+            _thinkingChanceBox = CreateNumberBox(
+                SettingRanges.Minimum("ThinkingPauseChancePercent"),
+                SettingRanges.Maximum("ThinkingPauseChancePercent"), settings.ThinkingPauseChancePercent);
             AddLabeledControl(settingsPanel, "Thinking pause %", _thinkingChanceBox);
 
-            _thinkingPauseBox = CreateNumberBox(0, 5000, settings.ThinkingPauseMilliseconds);
+            _thinkingPauseBox = CreateNumberBox(
+                SettingRanges.Minimum("ThinkingPauseMilliseconds"),
+                SettingRanges.Maximum("ThinkingPauseMilliseconds"), settings.ThinkingPauseMilliseconds);
             AddLabeledControl(settingsPanel, "Thinking max ms", _thinkingPauseBox);
 
             AddSectionLabel(settingsPanel, "Difficult keys");
@@ -212,25 +248,39 @@ namespace AutoWrite
             settingsPanel.Controls.Add(_keepTargetWpmCheckBox, 0, keepWpmRow);
             settingsPanel.SetColumnSpan(_keepTargetWpmCheckBox, 2);
 
-            _uppercasePenaltyBox = CreateNumberBox(0, 200, settings.UppercaseDelayPenaltyPercent);
+            _uppercasePenaltyBox = CreateNumberBox(
+                SettingRanges.Minimum("UppercaseDelayPenaltyPercent"),
+                SettingRanges.Maximum("UppercaseDelayPenaltyPercent"), settings.UppercaseDelayPenaltyPercent);
             AddLabeledControl(settingsPanel, "Uppercase delay %", _uppercasePenaltyBox);
 
-            _numberPenaltyBox = CreateNumberBox(0, 200, settings.NumberDelayPenaltyPercent);
+            _numberPenaltyBox = CreateNumberBox(
+                SettingRanges.Minimum("NumberDelayPenaltyPercent"),
+                SettingRanges.Maximum("NumberDelayPenaltyPercent"), settings.NumberDelayPenaltyPercent);
             AddLabeledControl(settingsPanel, "Number delay %", _numberPenaltyBox);
 
-            _punctuationPenaltyBox = CreateNumberBox(0, 200, settings.PunctuationDelayPenaltyPercent);
+            _punctuationPenaltyBox = CreateNumberBox(
+                SettingRanges.Minimum("PunctuationDelayPenaltyPercent"),
+                SettingRanges.Maximum("PunctuationDelayPenaltyPercent"), settings.PunctuationDelayPenaltyPercent);
             AddLabeledControl(settingsPanel, "Punctuation delay %", _punctuationPenaltyBox);
 
-            _shiftSymbolPenaltyBox = CreateNumberBox(0, 300, settings.ShiftSymbolDelayPenaltyPercent);
+            _shiftSymbolPenaltyBox = CreateNumberBox(
+                SettingRanges.Minimum("ShiftSymbolDelayPenaltyPercent"),
+                SettingRanges.Maximum("ShiftSymbolDelayPenaltyPercent"), settings.ShiftSymbolDelayPenaltyPercent);
             AddLabeledControl(settingsPanel, "Shift-symbol delay %", _shiftSymbolPenaltyBox);
 
-            _numberTypoMultiplierBox = CreateMultiplierBox(0, 500, settings.NumberTypoMultiplierPercent);
+            _numberTypoMultiplierBox = CreateMultiplierBox(
+                SettingRanges.Minimum("NumberTypoMultiplierPercent"),
+                SettingRanges.Maximum("NumberTypoMultiplierPercent"), settings.NumberTypoMultiplierPercent);
             AddLabeledControl(settingsPanel, "Number mistakes x", _numberTypoMultiplierBox);
 
-            _punctuationTypoMultiplierBox = CreateMultiplierBox(0, 500, settings.PunctuationTypoMultiplierPercent);
+            _punctuationTypoMultiplierBox = CreateMultiplierBox(
+                SettingRanges.Minimum("PunctuationTypoMultiplierPercent"),
+                SettingRanges.Maximum("PunctuationTypoMultiplierPercent"), settings.PunctuationTypoMultiplierPercent);
             AddLabeledControl(settingsPanel, "Punct. mistakes x", _punctuationTypoMultiplierBox);
 
-            _shiftSymbolTypoMultiplierBox = CreateMultiplierBox(0, 500, settings.ShiftSymbolTypoMultiplierPercent);
+            _shiftSymbolTypoMultiplierBox = CreateMultiplierBox(
+                SettingRanges.Minimum("ShiftSymbolTypoMultiplierPercent"),
+                SettingRanges.Maximum("ShiftSymbolTypoMultiplierPercent"), settings.ShiftSymbolTypoMultiplierPercent);
             AddLabeledControl(settingsPanel, "Shift mistakes x", _shiftSymbolTypoMultiplierBox);
 
             AddSectionLabel(settingsPanel, "Correction");
@@ -245,25 +295,39 @@ namespace AutoWrite
             settingsPanel.Controls.Add(_typoCheckBox, 0, typoRow);
             settingsPanel.SetColumnSpan(_typoCheckBox, 2);
 
-            _typoChanceBox = CreateNumberBox(0, 10, settings.TypoChancePercent);
+            _typoChanceBox = CreateNumberBox(
+                SettingRanges.Minimum("TypoChancePercent"),
+                SettingRanges.Maximum("TypoChancePercent"), settings.TypoChancePercent);
             AddLabeledControl(settingsPanel, "Mistake rate %", _typoChanceBox);
 
-            _duplicateChanceBox = CreateNumberBox(0, 100, settings.DuplicateChancePercent);
+            _duplicateChanceBox = CreateNumberBox(
+                SettingRanges.Minimum("DuplicateChancePercent"),
+                SettingRanges.Maximum("DuplicateChancePercent"), settings.DuplicateChancePercent);
             AddLabeledControl(settingsPanel, "Duplicate share %", _duplicateChanceBox);
 
-            _transposeChanceBox = CreateNumberBox(0, 100, settings.TransposeChancePercent);
+            _transposeChanceBox = CreateNumberBox(
+                SettingRanges.Minimum("TransposeChancePercent"),
+                SettingRanges.Maximum("TransposeChancePercent"), settings.TransposeChancePercent);
             AddLabeledControl(settingsPanel, "Transpose share %", _transposeChanceBox);
 
-            _noticeDelayBox = CreateNumberBox(0, 3000, settings.CorrectionNoticeMilliseconds);
+            _noticeDelayBox = CreateNumberBox(
+                SettingRanges.Minimum("CorrectionNoticeMilliseconds"),
+                SettingRanges.Maximum("CorrectionNoticeMilliseconds"), settings.CorrectionNoticeMilliseconds);
             AddLabeledControl(settingsPanel, "Notice delay ms", _noticeDelayBox);
 
-            _detectCharsBox = CreateNumberBox(0, 8, settings.CorrectionDetectChars);
+            _detectCharsBox = CreateNumberBox(
+                SettingRanges.Minimum("CorrectionDetectChars"),
+                SettingRanges.Maximum("CorrectionDetectChars"), settings.CorrectionDetectChars);
             AddLabeledControl(settingsPanel, "Detect after chars", _detectCharsBox);
 
-            _correctionPauseBox = CreateNumberBox(0, 1000, settings.CorrectionPauseMilliseconds);
+            _correctionPauseBox = CreateNumberBox(
+                SettingRanges.Minimum("CorrectionPauseMilliseconds"),
+                SettingRanges.Maximum("CorrectionPauseMilliseconds"), settings.CorrectionPauseMilliseconds);
             AddLabeledControl(settingsPanel, "Repair key pause ms", _correctionPauseBox);
 
-            _resumePauseBox = CreateNumberBox(0, 2000, settings.CorrectionResumeMilliseconds);
+            _resumePauseBox = CreateNumberBox(
+                SettingRanges.Minimum("CorrectionResumeMilliseconds"),
+                SettingRanges.Maximum("CorrectionResumeMilliseconds"), settings.CorrectionResumeMilliseconds);
             AddLabeledControl(settingsPanel, "Resume pause ms", _resumePauseBox);
 
             var buttonPanel = new FlowLayoutPanel();
@@ -288,6 +352,16 @@ namespace AutoWrite
             _stopButton.Enabled = false;
             _stopButton.Click += delegate { StopTyping(); };
             buttonPanel.Controls.Add(_stopButton);
+
+            var calibrate = new Button();
+            _calibrateButton = calibrate;
+            calibrate.Text = "Calibrate typing";
+            calibrate.Name = "CalibrateTyping";
+            calibrate.Width = 132;
+            calibrate.Height = 32;
+            calibrate.Click += delegate { OpenCalibration(); };
+            buttonPanel.WrapContents = true;
+            buttonPanel.Controls.Add(calibrate);
 
             var footer = new Panel();
             footer.Dock = DockStyle.Fill;
@@ -314,6 +388,7 @@ namespace AutoWrite
             _buttonDelayBox.ValueChanged += delegate { ApplyButtonDelayLabel(); };
             _typoCheckBox.CheckedChanged += delegate { UpdateTypoControlState(); };
             UpdateTypoControlState();
+            InitializeCalibrationControls();
             SetStatus("Ready", false);
         }
 
@@ -336,7 +411,7 @@ namespace AutoWrite
         protected override void OnShown(EventArgs e)
         {
             base.OnShown(e);
-            RegisterHotkey();
+            if (!QuietForm.Diagnostic) RegisterHotkey();
         }
 
         protected override void OnFormClosing(FormClosingEventArgs e)
@@ -393,6 +468,7 @@ namespace AutoWrite
 
         private void StartTyping(bool useButtonDelay)
         {
+            if (_calibrationOpen) return;
             if (_typingCancellation != null)
             {
                 StopTyping();
@@ -488,6 +564,7 @@ namespace AutoWrite
                 BurstPercent = (int)_burstBox.Value,
                 WordPauseMilliseconds = (int)_wordPauseBox.Value,
                 SentencePauseMilliseconds = (int)_sentencePauseBox.Value,
+                ParagraphPauseMilliseconds = (int)_paragraphPauseBox.Value,
                 ThinkingPauseChancePercent = (int)_thinkingChanceBox.Value,
                 ThinkingPauseMilliseconds = (int)_thinkingPauseBox.Value,
                 KeepTargetWpm = _keepTargetWpmCheckBox.Checked,
@@ -519,6 +596,7 @@ namespace AutoWrite
                 BurstPercent = (int)_burstBox.Value,
                 WordPauseMilliseconds = (int)_wordPauseBox.Value,
                 SentencePauseMilliseconds = (int)_sentencePauseBox.Value,
+                ParagraphPauseMilliseconds = (int)_paragraphPauseBox.Value,
                 ThinkingPauseChancePercent = (int)_thinkingChanceBox.Value,
                 ThinkingPauseMilliseconds = (int)_thinkingPauseBox.Value,
                 KeepTargetWpm = _keepTargetWpmCheckBox.Checked,
@@ -550,6 +628,7 @@ namespace AutoWrite
             _burstBox.Enabled = !running;
             _wordPauseBox.Enabled = !running;
             _sentencePauseBox.Enabled = !running;
+            _paragraphPauseBox.Enabled = !running;
             _thinkingChanceBox.Enabled = !running;
             _thinkingPauseBox.Enabled = !running;
             _keepTargetWpmCheckBox.Enabled = !running;
@@ -571,6 +650,7 @@ namespace AutoWrite
             _buttonDelayBox.Enabled = !running;
             _startButton.Enabled = !running;
             _stopButton.Enabled = running;
+            _calibrateButton.Enabled = !running;
         }
 
         private void SetStatus(string message, bool isError)
@@ -695,6 +775,7 @@ namespace AutoWrite
         public int BurstPercent { get; set; }
         public int WordPauseMilliseconds { get; set; }
         public int SentencePauseMilliseconds { get; set; }
+        public int ParagraphPauseMilliseconds { get; set; }
         public int ThinkingPauseChancePercent { get; set; }
         public int ThinkingPauseMilliseconds { get; set; }
         public bool KeepTargetWpm { get; set; }
@@ -723,8 +804,13 @@ namespace AutoWrite
         private readonly Dictionary<char, char[]> _nearbyKeys;
         private readonly Dictionary<char, int> _keyboardHands;
 
-        public TypingEngine()
+        private readonly IEngineRuntime _runtime;
+
+        public TypingEngine() : this(new WindowsEngineRuntime()) { }
+
+        public TypingEngine(IEngineRuntime runtime)
         {
+            _runtime = runtime;
             _nearbyKeys = new Dictionary<char, char[]>();
             _keyboardHands = new Dictionary<char, int>();
             AddNearby('a', "qwsz");
@@ -795,10 +881,10 @@ namespace AutoWrite
                     WaitForVirtualKeyRelease(options.TriggerVirtualKey, token);
                 }
 
-                NativeMethods.ReleaseModifierKeys();
+                _runtime.ReleaseModifiers();
 
-                var targetWindow = NativeMethods.GetForegroundWindow();
-                var random = new Random();
+                var targetWindow = _runtime.ForegroundWindow();
+                var random = _runtime.CreateRandom();
                 var mistakePlan = CreateMistakePlan(text, options, random);
                 var rhythmPlan = CreateRhythmPlan(text, options, random);
                 var baseDelay = CalculateBaseDelay(text, options, mistakePlan.Count, rhythmPlan);
@@ -1321,6 +1407,9 @@ namespace AutoWrite
                     budget += options.WordPauseMilliseconds;
                 }
 
+                if (current == '\n' || (current == '\r' && (index + 1 >= text.Length || text[index + 1] != '\n')))
+                    budget += options.ParagraphPauseMilliseconds;
+
                 int thinkingDelay;
                 if (rhythmPlan != null && rhythmPlan.ThinkingPauses.TryGetValue(index, out thinkingDelay))
                 {
@@ -1381,7 +1470,7 @@ namespace AutoWrite
             var next = index + 1 < text.Length ? text[index + 1] : '\0';
 
             delay *= KeyPairFactor(current, next, options.KeyPairRhythmPercent);
-            delay *= CharacterDelayFactor(current, options);
+            delay *= CharacterDelayFactor(next, options);
 
             if (state.BurstRemaining <= 0)
             {
@@ -1409,6 +1498,9 @@ namespace AutoWrite
             {
                 delay += options.WordPauseMilliseconds * (0.65D + random.NextDouble() * 0.7D);
             }
+
+            if (options.ParagraphPauseMilliseconds > 0 && (current == '\n' || current == '\r'))
+                delay += options.ParagraphPauseMilliseconds * (0.65D + random.NextDouble() * 0.7D);
 
             int thinkingDelay;
             if (state.ThinkingPauses != null && state.ThinkingPauses.TryGetValue(index, out thinkingDelay))
@@ -1564,21 +1656,12 @@ namespace AutoWrite
             return Math.Sqrt(-2D * Math.Log(u1)) * Math.Sin(2D * Math.PI * u2);
         }
 
-        private static void Sleep(int milliseconds, CancellationToken token)
+        private void Sleep(int milliseconds, CancellationToken token)
         {
-            if (milliseconds <= 0)
-            {
-                token.ThrowIfCancellationRequested();
-                return;
-            }
-
-            if (token.WaitHandle.WaitOne(milliseconds))
-            {
-                token.ThrowIfCancellationRequested();
-            }
+            _runtime.Sleep(milliseconds, token);
         }
 
-        private static void Pause(int milliseconds, CancellationToken token, TelemetryLogger telemetry, string eventName, int sourceIndex, string note)
+        private void Pause(int milliseconds, CancellationToken token, TelemetryLogger telemetry, string eventName, int sourceIndex, string note)
         {
             if (milliseconds > 0 && telemetry != null)
             {
@@ -1588,7 +1671,7 @@ namespace AutoWrite
             Sleep(milliseconds, token);
         }
 
-        private static void SendUnicodeChar(
+        private void SendUnicodeChar(
             char value,
             IntPtr targetWindow,
             CancellationToken token,
@@ -1599,14 +1682,14 @@ namespace AutoWrite
             string note)
         {
             WaitForTargetWindow(targetWindow, token);
-            NativeMethods.SendUnicodeChar(value);
+            _runtime.SendCharacter(value);
             if (telemetry != null)
             {
                 telemetry.LogKey(action, sourceIndex, intended, value, note);
             }
         }
 
-        private static void SendBackspace(
+        private void SendBackspace(
             IntPtr targetWindow,
             CancellationToken token,
             TelemetryLogger telemetry,
@@ -1616,14 +1699,14 @@ namespace AutoWrite
             string note)
         {
             WaitForTargetWindow(targetWindow, token);
-            NativeMethods.SendBackspace();
+            _runtime.SendCharacter('\b');
             if (telemetry != null)
             {
                 telemetry.LogKey(action, sourceIndex, intended, '\b', note);
             }
         }
 
-        private static void SendEnter(
+        private void SendEnter(
             IntPtr targetWindow,
             CancellationToken token,
             TelemetryLogger telemetry,
@@ -1633,30 +1716,30 @@ namespace AutoWrite
             string note)
         {
             WaitForTargetWindow(targetWindow, token);
-            NativeMethods.SendEnter();
+            _runtime.SendCharacter('\n');
             if (telemetry != null)
             {
                 telemetry.LogKey(action, sourceIndex, intended, '\n', note);
             }
         }
 
-        private static void WaitForTargetWindow(IntPtr targetWindow, CancellationToken token)
+        private void WaitForTargetWindow(IntPtr targetWindow, CancellationToken token)
         {
             if (targetWindow == IntPtr.Zero)
             {
                 return;
             }
 
-            while (NativeMethods.GetForegroundWindow() != targetWindow)
+            while (_runtime.ForegroundWindow() != targetWindow)
             {
                 Sleep(50, token);
             }
         }
 
-        private static void WaitForVirtualKeyRelease(int virtualKey, CancellationToken token)
+        private void WaitForVirtualKeyRelease(int virtualKey, CancellationToken token)
         {
             var deadline = Environment.TickCount + 1000;
-            while (NativeMethods.IsKeyDown(virtualKey) && Environment.TickCount < deadline)
+            while (_runtime.IsKeyDown(virtualKey) && Environment.TickCount < deadline)
             {
                 Sleep(10, token);
             }
@@ -1759,8 +1842,7 @@ namespace AutoWrite
         public static string CreatePath()
         {
             var directory = Path.Combine(
-                Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData),
-                "AutoWrite",
+                DataDirectory.PathRoot,
                 "telemetry");
             Directory.CreateDirectory(directory);
             return Path.Combine(directory, "autowrite-" + DateTime.Now.ToString("yyyyMMdd-HHmmss-fff", CultureInfo.InvariantCulture) + ".tsv");
@@ -1773,6 +1855,7 @@ namespace AutoWrite
                 path = CreatePath();
             }
 
+            if (path == "-") return new TelemetryLogger(null);
             var writer = new StreamWriter(path, false, new UTF8Encoding(false));
             var logger = new TelemetryLogger(writer);
             logger.WriteHeader();
@@ -1787,6 +1870,7 @@ namespace AutoWrite
                 ";number_typo_multiplier_percent=" + options.NumberTypoMultiplierPercent +
                 ";punctuation_typo_multiplier_percent=" + options.PunctuationTypoMultiplierPercent +
                 ";shift_symbol_typo_multiplier_percent=" + options.ShiftSymbolTypoMultiplierPercent +
+                ";paragraph_pause_ms=" + options.ParagraphPauseMilliseconds +
                 ";notice_ms=" + options.CorrectionNoticeMilliseconds +
                 ";detect_chars=" + options.CorrectionDetectChars +
                 ";repair_ms=" + options.CorrectionPauseMilliseconds +
@@ -1817,6 +1901,7 @@ namespace AutoWrite
 
         private void WriteEvent(string eventName, int sourceIndex, char intended, char sent, int? delayMilliseconds, string note)
         {
+            if (_writer == null) return;
             lock (_syncRoot)
             {
                 var elapsed = _stopwatch.ElapsedMilliseconds;
@@ -1906,7 +1991,7 @@ namespace AutoWrite
 
         public void Dispose()
         {
-            _writer.Dispose();
+            if (_writer != null) _writer.Dispose();
         }
     }
 
@@ -1918,6 +2003,7 @@ namespace AutoWrite
         public int BurstPercent { get; set; }
         public int WordPauseMilliseconds { get; set; }
         public int SentencePauseMilliseconds { get; set; }
+        public int ParagraphPauseMilliseconds { get; set; }
         public int ThinkingPauseChancePercent { get; set; }
         public int ThinkingPauseMilliseconds { get; set; }
         public bool KeepTargetWpm { get; set; }
@@ -2006,7 +2092,7 @@ namespace AutoWrite
                     {
                         settings.WordsPerMinute = charactersPerSecond == 15
                             ? settings.WordsPerMinute
-                            : Clamp((int)Math.Round(charactersPerSecond * 60D / 5D), 5, 180);
+                            : SettingRanges.Clamp("WordsPerMinute", (int)Math.Round(charactersPerSecond * 60D / 5D));
                     }
                 }
                 else if (String.Equals(key, "wordsPerMinute", StringComparison.OrdinalIgnoreCase))
@@ -2036,6 +2122,10 @@ namespace AutoWrite
                 else if (String.Equals(key, "sentencePauseMilliseconds", StringComparison.OrdinalIgnoreCase))
                 {
                     settings.SentencePauseMilliseconds = ReadInt(value, settings.SentencePauseMilliseconds);
+                }
+                else if (String.Equals(key, "paragraphPauseMilliseconds", StringComparison.OrdinalIgnoreCase))
+                {
+                    settings.ParagraphPauseMilliseconds = ReadInt(value, settings.ParagraphPauseMilliseconds);
                 }
                 else if (String.Equals(key, "thinkingPauseChancePercent", StringComparison.OrdinalIgnoreCase))
                 {
@@ -2115,33 +2205,58 @@ namespace AutoWrite
                 }
             }
 
-            settings.WordsPerMinute = Clamp(settings.WordsPerMinute, 5, 180);
-            settings.JitterPercent = Clamp(settings.JitterPercent, 0, 100);
-            settings.KeyPairRhythmPercent = Clamp(settings.KeyPairRhythmPercent, 0, 100);
-            settings.BurstPercent = Clamp(settings.BurstPercent, 0, 100);
-            settings.WordPauseMilliseconds = Clamp(settings.WordPauseMilliseconds, 0, 1000);
-            settings.SentencePauseMilliseconds = Clamp(settings.SentencePauseMilliseconds, 0, 3000);
-            settings.ThinkingPauseChancePercent = Clamp(settings.ThinkingPauseChancePercent, 0, 25);
-            settings.ThinkingPauseMilliseconds = Clamp(settings.ThinkingPauseMilliseconds, 0, 5000);
-            settings.UppercaseDelayPenaltyPercent = Clamp(settings.UppercaseDelayPenaltyPercent, 0, 200);
-            settings.NumberDelayPenaltyPercent = Clamp(settings.NumberDelayPenaltyPercent, 0, 200);
-            settings.PunctuationDelayPenaltyPercent = Clamp(settings.PunctuationDelayPenaltyPercent, 0, 200);
-            settings.ShiftSymbolDelayPenaltyPercent = Clamp(settings.ShiftSymbolDelayPenaltyPercent, 0, 300);
-            settings.NumberTypoMultiplierPercent = Clamp(settings.NumberTypoMultiplierPercent, 0, 500);
-            settings.PunctuationTypoMultiplierPercent = Clamp(settings.PunctuationTypoMultiplierPercent, 0, 500);
-            settings.ShiftSymbolTypoMultiplierPercent = Clamp(settings.ShiftSymbolTypoMultiplierPercent, 0, 500);
-            settings.TypoChancePercent = Clamp(settings.TypoChancePercent, 0, 10);
-            settings.DuplicateChancePercent = Clamp(settings.DuplicateChancePercent, 0, 100);
-            settings.TransposeChancePercent = Clamp(settings.TransposeChancePercent, 0, 100);
-            settings.CorrectionNoticeMilliseconds = Clamp(settings.CorrectionNoticeMilliseconds, 0, 3000);
-            settings.CorrectionDetectChars = Clamp(settings.CorrectionDetectChars, 0, 8);
-            settings.CorrectionPauseMilliseconds = Clamp(settings.CorrectionPauseMilliseconds, 0, 1000);
-            settings.CorrectionResumeMilliseconds = Clamp(settings.CorrectionResumeMilliseconds, 0, 2000);
-            settings.ButtonDelaySeconds = Clamp(settings.ButtonDelaySeconds, 0, 10);
+            settings.WordsPerMinute = SettingRanges.Clamp("WordsPerMinute",
+                settings.WordsPerMinute);
+            settings.JitterPercent = SettingRanges.Clamp("JitterPercent",
+                settings.JitterPercent);
+            settings.KeyPairRhythmPercent = SettingRanges.Clamp("KeyPairRhythmPercent",
+                settings.KeyPairRhythmPercent);
+            settings.BurstPercent = SettingRanges.Clamp("BurstPercent",
+                settings.BurstPercent);
+            settings.WordPauseMilliseconds = SettingRanges.Clamp("WordPauseMilliseconds",
+                settings.WordPauseMilliseconds);
+            settings.SentencePauseMilliseconds = SettingRanges.Clamp("SentencePauseMilliseconds",
+                settings.SentencePauseMilliseconds);
+            settings.ParagraphPauseMilliseconds = SettingRanges.Clamp("ParagraphPauseMilliseconds",
+                settings.ParagraphPauseMilliseconds);
+            settings.ThinkingPauseChancePercent = SettingRanges.Clamp("ThinkingPauseChancePercent",
+                settings.ThinkingPauseChancePercent);
+            settings.ThinkingPauseMilliseconds = SettingRanges.Clamp("ThinkingPauseMilliseconds",
+                settings.ThinkingPauseMilliseconds);
+            settings.UppercaseDelayPenaltyPercent = SettingRanges.Clamp("UppercaseDelayPenaltyPercent",
+                settings.UppercaseDelayPenaltyPercent);
+            settings.NumberDelayPenaltyPercent = SettingRanges.Clamp("NumberDelayPenaltyPercent",
+                settings.NumberDelayPenaltyPercent);
+            settings.PunctuationDelayPenaltyPercent = SettingRanges.Clamp("PunctuationDelayPenaltyPercent",
+                settings.PunctuationDelayPenaltyPercent);
+            settings.ShiftSymbolDelayPenaltyPercent = SettingRanges.Clamp("ShiftSymbolDelayPenaltyPercent",
+                settings.ShiftSymbolDelayPenaltyPercent);
+            settings.NumberTypoMultiplierPercent = SettingRanges.Clamp("NumberTypoMultiplierPercent",
+                settings.NumberTypoMultiplierPercent);
+            settings.PunctuationTypoMultiplierPercent = SettingRanges.Clamp("PunctuationTypoMultiplierPercent",
+                settings.PunctuationTypoMultiplierPercent);
+            settings.ShiftSymbolTypoMultiplierPercent = SettingRanges.Clamp("ShiftSymbolTypoMultiplierPercent",
+                settings.ShiftSymbolTypoMultiplierPercent);
+            settings.TypoChancePercent = SettingRanges.Clamp("TypoChancePercent",
+                settings.TypoChancePercent);
+            settings.DuplicateChancePercent = SettingRanges.Clamp("DuplicateChancePercent",
+                settings.DuplicateChancePercent);
+            settings.TransposeChancePercent = SettingRanges.Clamp("TransposeChancePercent",
+                settings.TransposeChancePercent);
+            settings.CorrectionNoticeMilliseconds = SettingRanges.Clamp("CorrectionNoticeMilliseconds",
+                settings.CorrectionNoticeMilliseconds);
+            settings.CorrectionDetectChars = SettingRanges.Clamp("CorrectionDetectChars",
+                settings.CorrectionDetectChars);
+            settings.CorrectionPauseMilliseconds = SettingRanges.Clamp("CorrectionPauseMilliseconds",
+                settings.CorrectionPauseMilliseconds);
+            settings.CorrectionResumeMilliseconds = SettingRanges.Clamp("CorrectionResumeMilliseconds",
+                settings.CorrectionResumeMilliseconds);
+            settings.ButtonDelaySeconds = SettingRanges.Clamp("ButtonDelaySeconds",
+                settings.ButtonDelaySeconds);
             return settings;
         }
 
-        public static void Save(AppSettings settings)
+        public static bool Save(AppSettings settings)
         {
             try
             {
@@ -2159,6 +2274,7 @@ namespace AutoWrite
                     "burstPercent=" + settings.BurstPercent,
                     "wordPauseMilliseconds=" + settings.WordPauseMilliseconds,
                     "sentencePauseMilliseconds=" + settings.SentencePauseMilliseconds,
+                    "paragraphPauseMilliseconds=" + settings.ParagraphPauseMilliseconds,
                     "thinkingPauseChancePercent=" + settings.ThinkingPauseChancePercent,
                     "thinkingPauseMilliseconds=" + settings.ThinkingPauseMilliseconds,
                     "keepTargetWpm=" + settings.KeepTargetWpm,
@@ -2180,12 +2296,15 @@ namespace AutoWrite
                     "buttonDelaySeconds=" + settings.ButtonDelaySeconds
                 };
                 File.WriteAllLines(SettingsPath, lines);
+                return true;
             }
             catch (IOException)
             {
+                return false;
             }
             catch (UnauthorizedAccessException)
             {
+                return false;
             }
         }
 
@@ -2194,8 +2313,7 @@ namespace AutoWrite
             get
             {
                 return Path.Combine(
-                    Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData),
-                    "AutoWrite",
+                    DataDirectory.PathRoot,
                     "settings.ini");
             }
         }
