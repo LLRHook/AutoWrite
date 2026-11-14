@@ -11,37 +11,25 @@ namespace AutoWrite
 {
     internal static class CalibrationPassage
     {
-        // Dense on purpose: the first 100 characters exercise all motor classes and two breaks.
+        // Short report paragraphs provide natural variety without invented typing tokens.
         public const string Text =
-            "In eDNA [12], aX=42.5%; (why?)\n(Smith, 2021): n=128; p<0.05.\nWe cite NASA and/or 'A'.\n" +
-            "Table 2.1: aB[34] cD(56) eF=78; gH:90 iJ%12 kL/34.\n" +
-            "Figure 3: mN[56] oP(78) qR=90; sT:12 uV%34 wX/56.\n" +
-            "At 42.5%, e.g., the US team calls it \"robust\"; is it?\n" +
-            "Their aA[12] bB(34) cC=56; dD:78 eE%90 fF/12.\n" +
-            "Data (Smith et al., 2021) support H2: p < 0.05, n = 128.\n" +
-            "A report's Table 2.1 tests 42.5% and/or 67.8% [12].\n" +
-            "Here gG[34] hH(56) iI=78; jJ:90 kK%12 lL/34.\n" +
-            "Figure 3 shows NASA's eDNA: \"A mixed result\"; why?\n" +
-            "Next mM[56] nN(78) oO=90; pP:12 qQ%34 rR/56.\n" +
-            "We compare aX=12 with bY=34, cZ=56 and dW=78 [90].\n" +
-            "Can Table 4.2 separate cause/effect? Yes: p=0.01.\n" +
-            "Also sS[78] tT(90) uU=12; vV:34 wW%56 xX/78.\n" +
-            "A second review (Jones et al., 2022) tests H3 [24].\n" +
-            "Quote \"aB:12\" then \"cD:34\"; keep EFG and HiJ.\n" +
-            "Under Model 5, yY[90] zZ(12) aB=34; cD:56 eF%78.\n" +
-            "R&D may compare 12+34=46, 8*9=72 and (42-7)/5=7.\n" +
-            "The review asks: \"Is p<0.05 enough?\" No; cite [36].\n" +
-            "Again gH[12] iJ(34) kL=56; mN:78 oP%90 qR/12.\n" +
-            "A new Figure 6.1 uses eDNA, RNA and US data (2023).\n" +
-            "Measure sT[34] uV(56) wX=78; yZ:90 aC%12 bD/34.\n" +
-            "Use E=mc^2; a+b<c; x_y and {z} or [w] remain valid.\n" +
-            "A final Table 7.2 cites [48]: 42.5%, n=256, p=0.02.\n" +
-            "Repeat eF[56] gH(78) iJ=90; kL:12 mN%34 oP/56.\n" +
-            "The author's NASA report checks and/or revises H4.\n" +
-            "In closing qR[78] sT(90) uV=12; wX:34 yZ%56 aB/78.\n" +
-            "A masters-level report quotes \"limits\" (Lee, 2024).\n" +
-            "Figure 8: cD[90] eF(12) gH=34; iJ:56 kL%78 mN/90.\n" +
-            "Do results agree? Use Table 9.3 and [60]; p < 0.05.\n";
+            "Smith et al. (2021) found a 42.5% rise [12].\n" +
+            "Is it \"robust\"? Yes: p < 0.05.\n" +
+            "NASA and the US call the study's n = 128 cases \"reliable\".\n" +
+            "R&D needs long-term evidence (Smith et al., 2021).\n" +
+            "Table 2.1 lists costs and/or gains. Figure 3 shows them.\n" +
+            "Figure 3 compares the UK and US samples (Lee et al., 2022). The report calls the trend \"stable\"; e.g., both groups improved by 12.8%.\n" +
+            "The methods cover three stages: recruitment, review, and analysis. Participants read the same instructions, and the team recorded each response [24].\n" +
+            "The R&D review found a 36.2% reduction in waste (Jones et al., 2023). Could this reflect a change in demand? The authors tested that explanation before accepting the result.\n" +
+            "Table 4.2 reports the mean, range, and sample size: n = 256, p < 0.01. Its notes distinguish short-term variation from a sustained change; the difference matters for planning.\n" +
+            "A second NASA study assessed water quality [36]. It found that 18.4% of samples exceeded the threshold, while the control group remained within the expected range.\n" +
+            "The analysis follows the same sequence in each region: collect evidence, compare estimates, and report uncertainty. A missing value is marked as unavailable rather than treated as zero (Brown et al., 2020).\n" +
+            "Figure 5 shows the distribution before and after the policy change. The central estimate rose from 21.6% to 34.9%, but the intervals overlap. The report therefore describes the evidence as \"promising, with limits\".\n" +
+            "The review considers cost and/or reliability when comparing options. Long-term maintenance may outweigh an initial saving; the discussion separates those effects and states the assumptions [48].\n" +
+            "The final model includes age, location, and prior experience. Table 6.1 gives the adjusted estimates (Smith et al., 2024), with n = 512 and p < 0.05 for the main comparison.\n" +
+            "These findings support further evaluation rather than an immediate change in policy. What additional evidence would resolve the uncertainty? A larger sample and an independent replication would strengthen the case.\n" +
+            "The conclusion returns to the research question and weighs the evidence fairly. Future R&D should test the mechanism in other settings, publish the full methods, and explain any departures from the plan [60].\n";
+
     }
 
     internal sealed class CaptureKey

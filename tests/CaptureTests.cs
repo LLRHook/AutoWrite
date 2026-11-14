@@ -15,10 +15,11 @@ namespace AutoWrite.Tests
                 var passage = CalibrationPassage.Text; var prefix = passage.Substring(0, 100);
                 Assert(passage.Length > 900, "fast typist runs out");
                 Assert(prefix.Split('\n').Length >= 3, "two paragraph breaks not reached");
-                foreach (var c in new[] { '[', ']', '(', ')', 'X', '4', '%', ';', '?', '\'', '/', '=' })
+                foreach (var c in new[] { '[', ']', '(', ')', 'S', '4', '%', '?', '"', '<', ':' })
                     Assert(prefix.IndexOf(c) >= 0, "missing class/example: " + c);
-                Assert(prefix.IndexOf("aX") >= 0 && prefix.IndexOf("p<") >= 0 && prefix.IndexOf(" (", StringComparison.Ordinal) >= 0, "mid-word controls missing");
-                Assert(passage.IndexOf(" (Smith", StringComparison.Ordinal) >= 0, "space then symbol contrast missing");
+                foreach (var example in new[] { "(Smith et al., 2021)", "[12]", "42.5%", "p < 0.05", "n = 128", "Table 2.1", "Figure 3", "study's", "and/or", "long-term", "R&D", "NASA", "e.g.," })
+                    Assert(passage.Contains(example), "missing natural report example: " + example);
+                Assert(!System.Text.RegularExpressions.Regex.IsMatch(passage, "[a-z][A-Z]\\["), "invented pair token");
             });
             Test("capture repeats backspace, normalizes Enter, enforces deadline", delegate {
                 var s = new CaptureSession(30);

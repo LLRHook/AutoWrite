@@ -24,16 +24,17 @@ namespace AutoWrite.Tests
                 Assert(LiveTypingProbe.DifferenceSummary("abc", "abc").EndsWith("first_difference=-1"), "equal text index");
             });
             Test("alignment reconstructs nearby, missed shift, duplicate and transpose corrections", delegate {
+                const string passage = "In eDNA [12], aX=42.5%; (why?)";
                 var fixtures = new[] { "An\b\bIn ", "In eDNa\bA", "IIn\b\b\bIn", "nI\b\bIn", "nI e\b\b\b\bIn e" };
                 var kinds = new[] { "nearby", "missed-shift", "duplicate", "transpose", "transpose" };
                 for (int i = 0; i < fixtures.Length; i++)
                 {
                     var session = Fixture(fixtures[i]); List<CorrectionEpisode> corrections; Alignment alignment;
-                    CalibrationAnalysis.Gaps(session.Keys, CalibrationPassage.Text, out corrections, out alignment);
+                    CalibrationAnalysis.Gaps(session.Keys, passage, out corrections, out alignment);
                     Assert(corrections.Count == 1 && corrections[0].Kind == kinds[i], "wrong correction kind in " + fixtures[i]);
                 }
-                Assert(CalibrationAnalysis.AlignPrefix("In eDNA [12]", CalibrationPassage.Text).Distance == 0, "exact alignment");
-                Assert(CalibrationAnalysis.AlignPrefix("In eDNA [21]", CalibrationPassage.Text).Distance == 1, "transpose distance");
+                Assert(CalibrationAnalysis.AlignPrefix("In eDNA [12]", passage).Distance == 0, "exact alignment");
+                Assert(CalibrationAnalysis.AlignPrefix("In eDNA [21]", passage).Distance == 1, "transpose distance");
             });
             Test("thin recordings and no mistakes keep unsupported values", delegate {
                 var current = AppSettings.Defaults();
@@ -180,7 +181,7 @@ namespace AutoWrite.Tests
         internal static AppSettings Profile(int profile)
         {
             var s = AppSettings.Defaults();
-            s.WordsPerMinute = new[] { 36, 42, 52, 5, 180 }[profile];
+            s.WordsPerMinute = new[] { 40, 42, 52, 5, 180 }[profile];
             int i = profile < 3 ? profile : 1;
             s.JitterPercent = new[] { 25, 45, 70 }[i]; s.KeyPairRhythmPercent = new[] { 30, 60, 95 }[i]; s.BurstPercent = new[] { 15, 25, 40 }[i];
             s.WordPauseMilliseconds = new[] { 60, 100, 40 }[i]; s.SentencePauseMilliseconds = new[] { 300, 450, 180 }[i]; s.ParagraphPauseMilliseconds = new[] { 130, 210, 80 }[i];
