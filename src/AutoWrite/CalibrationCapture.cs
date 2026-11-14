@@ -270,6 +270,8 @@ namespace AutoWrite
         private readonly Stopwatch _watch = new Stopwatch();
         private readonly Timer _timer = new Timer();
         private CaptureSession _session;
+        private bool _progressDirty;
+        internal int ProgressUpdates;
         internal CaptureSession CompletedSession;
         internal string SaveWarning = "";
         public CalibrationDialog()
@@ -347,6 +349,7 @@ namespace AutoWrite
             _timer.Interval = 20;
             _timer.Tick += delegate
             {
+                RefreshPendingProgress();
                 if (_watch.IsRunning)
                 {
                     _clock.Text = Math.Max(0, _session.Seconds - _watch.Elapsed.TotalSeconds).ToString("F1") + " seconds remaining";
@@ -390,10 +393,18 @@ namespace AutoWrite
             }
             if (_session.Accept(key, _watch.Elapsed.TotalMilliseconds))
             {
-                _input.Text = _session.TypedText.Replace("\n", "\r\n");
-                _input.SelectionStart = _input.TextLength;
-                _input.ScrollToCaret();
-                UpdateProgress(_session.TypedText);
+                if (key == '\b')
+                {
+                    int remove = _input.Text.EndsWith("\r\n", StringComparison.Ordinal) ? 2 : 1;
+                    remove = Math.Min(remove, _input.TextLength);
+                    _input.Select(_input.TextLength - remove, remove);
+                    _input.SelectedText = "";
+                }
+                else
+                {
+                    _input.AppendText(key == '\r' || key == '\n' ? "\r\n" : key.ToString());
+                }
+                _progressDirty = true;
             }
             if (_session.Finished)
             {
@@ -403,6 +414,7 @@ namespace AutoWrite
 
         internal void UpdateProgress(string typed)
         {
+            ProgressUpdates++;
             int reached = Math.Min(_passage.TextLength, CalibrationAnalysis.AlignPrefix(typed, CalibrationPassage.Text).End);
             _passage.Select(0, _passage.TextLength);
             _passage.SelectionColor = SystemColors.WindowText;
@@ -412,6 +424,15 @@ namespace AutoWrite
             _passage.Select(reached, reached < _passage.TextLength ? 1 : 0);
             _passage.SelectionBackColor = Color.LightGoldenrodYellow;
             _passage.ScrollToCaret();
+        }
+
+        internal void RefreshPendingProgress()
+        {
+            if (_progressDirty)
+            {
+                _progressDirty = false;
+                UpdateProgress(_session.TypedText);
+            }
         }
 
         private void Finish()
@@ -442,6 +463,15 @@ namespace AutoWrite
                 }
             }
             base.OnFormClosed(e);
+        }
+
+        protected override void Dispose(bool disposing)
+        {
+            if (disposing)
+            {
+                _timer.Dispose();
+            }
+            base.Dispose(disposing);
         }
     }
 }
