@@ -8,7 +8,7 @@ New-Item -ItemType Directory -Force -Path $OutputDirectory | Out-Null
 $compilerRoot = Join-Path $env:WINDIR 'Microsoft.NET/Framework64/v4.0.30319'
 $compiler = Join-Path $compilerRoot 'csc.exe'
 $wpf = Join-Path $compilerRoot 'WPF'
-$exe = Join-Path $OutputDirectory 'L1-CalibrationE2E.exe'
+$exe = Join-Path $OutputDirectory 'CalibrationE2E.exe'
 $source = Join-Path $root 'diagnostics/CalibrationE2E.cs'
 & $compiler /nologo /target:exe /out:$exe /reference:System.dll /reference:System.Core.dll /reference:System.Drawing.dll /reference:System.Windows.Forms.dll /reference:Accessibility.dll "/reference:$wpf/UIAutomationClient.dll" "/reference:$wpf/UIAutomationTypes.dll" "/reference:$wpf/WindowsBase.dll" $source
 if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }

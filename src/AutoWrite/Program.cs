@@ -36,7 +36,11 @@ namespace AutoWrite
             if (args != null && args.Length > 0 && String.Equals(args[0], "--typing-smoke-probe", StringComparison.OrdinalIgnoreCase))
             {
                 int idleSeconds = 0;
-                if (args.Length > 1 && (args.Length != 3 || args[1] != "--require-idle-seconds" || !Int32.TryParse(args[2], out idleSeconds) || idleSeconds < 1 || idleSeconds > 86400)) return 4;
+                if (args.Length > 1 && (args.Length != 3 || args[1] != "--require-idle-seconds" ||
+                    !Int32.TryParse(args[2], out idleSeconds) || idleSeconds < 1 || idleSeconds > 86400))
+                {
+                    return 4;
+                }
                 return LiveTypingProbe.Run(idleSeconds);
             }
 
@@ -180,36 +184,56 @@ namespace AutoWrite
 
             AddSectionLabel(settingsPanel, "Typing");
 
-            _wpmBox = CreateNumberBox(5, 180, settings.WordsPerMinute);
+            _wpmBox = CreateNumberBox(
+                SettingRanges.Minimum("WordsPerMinute"),
+                SettingRanges.Maximum("WordsPerMinute"), settings.WordsPerMinute);
             AddLabeledControl(settingsPanel, "Target WPM", _wpmBox);
 
-            _buttonDelayBox = CreateNumberBox(0, 10, settings.ButtonDelaySeconds);
+            _buttonDelayBox = CreateNumberBox(
+                SettingRanges.Minimum("ButtonDelaySeconds"),
+                SettingRanges.Maximum("ButtonDelaySeconds"), settings.ButtonDelaySeconds);
             AddLabeledControl(settingsPanel, "Button delay s", _buttonDelayBox);
 
             AddSectionLabel(settingsPanel, "Rhythm");
 
-            _jitterBox = CreateNumberBox(0, 100, settings.JitterPercent);
+            _jitterBox = CreateNumberBox(
+                SettingRanges.Minimum("JitterPercent"),
+                SettingRanges.Maximum("JitterPercent"), settings.JitterPercent);
             AddLabeledControl(settingsPanel, "Jitter %", _jitterBox);
 
-            _keyPairRhythmBox = CreateNumberBox(0, 100, settings.KeyPairRhythmPercent);
+            _keyPairRhythmBox = CreateNumberBox(
+                SettingRanges.Minimum("KeyPairRhythmPercent"),
+                SettingRanges.Maximum("KeyPairRhythmPercent"), settings.KeyPairRhythmPercent);
             AddLabeledControl(settingsPanel, "Key-pair rhythm %", _keyPairRhythmBox);
 
-            _burstBox = CreateNumberBox(0, 100, settings.BurstPercent);
+            _burstBox = CreateNumberBox(
+                SettingRanges.Minimum("BurstPercent"),
+                SettingRanges.Maximum("BurstPercent"), settings.BurstPercent);
             AddLabeledControl(settingsPanel, "Burst drift %", _burstBox);
 
-            _wordPauseBox = CreateNumberBox(0, 1000, settings.WordPauseMilliseconds);
+            _wordPauseBox = CreateNumberBox(
+                SettingRanges.Minimum("WordPauseMilliseconds"),
+                SettingRanges.Maximum("WordPauseMilliseconds"), settings.WordPauseMilliseconds);
             AddLabeledControl(settingsPanel, "Word pause ms", _wordPauseBox);
 
-            _sentencePauseBox = CreateNumberBox(0, 3000, settings.SentencePauseMilliseconds);
+            _sentencePauseBox = CreateNumberBox(
+                SettingRanges.Minimum("SentencePauseMilliseconds"),
+                SettingRanges.Maximum("SentencePauseMilliseconds"), settings.SentencePauseMilliseconds);
             AddLabeledControl(settingsPanel, "Sentence pause ms", _sentencePauseBox);
 
-            _paragraphPauseBox = CreateNumberBox(0, 3000, settings.ParagraphPauseMilliseconds);
+            _paragraphPauseBox = CreateNumberBox(
+                SettingRanges.Minimum("ParagraphPauseMilliseconds"),
+                SettingRanges.Maximum("ParagraphPauseMilliseconds"), settings.ParagraphPauseMilliseconds);
             AddLabeledControl(settingsPanel, "Paragraph pause ms", _paragraphPauseBox);
 
-            _thinkingChanceBox = CreateNumberBox(0, 25, settings.ThinkingPauseChancePercent);
+            _thinkingChanceBox = CreateNumberBox(
+                SettingRanges.Minimum("ThinkingPauseChancePercent"),
+                SettingRanges.Maximum("ThinkingPauseChancePercent"), settings.ThinkingPauseChancePercent);
             AddLabeledControl(settingsPanel, "Thinking pause %", _thinkingChanceBox);
 
-            _thinkingPauseBox = CreateNumberBox(0, 5000, settings.ThinkingPauseMilliseconds);
+            _thinkingPauseBox = CreateNumberBox(
+                SettingRanges.Minimum("ThinkingPauseMilliseconds"),
+                SettingRanges.Maximum("ThinkingPauseMilliseconds"), settings.ThinkingPauseMilliseconds);
             AddLabeledControl(settingsPanel, "Thinking max ms", _thinkingPauseBox);
 
             AddSectionLabel(settingsPanel, "Difficult keys");
@@ -224,25 +248,39 @@ namespace AutoWrite
             settingsPanel.Controls.Add(_keepTargetWpmCheckBox, 0, keepWpmRow);
             settingsPanel.SetColumnSpan(_keepTargetWpmCheckBox, 2);
 
-            _uppercasePenaltyBox = CreateNumberBox(0, 200, settings.UppercaseDelayPenaltyPercent);
+            _uppercasePenaltyBox = CreateNumberBox(
+                SettingRanges.Minimum("UppercaseDelayPenaltyPercent"),
+                SettingRanges.Maximum("UppercaseDelayPenaltyPercent"), settings.UppercaseDelayPenaltyPercent);
             AddLabeledControl(settingsPanel, "Uppercase delay %", _uppercasePenaltyBox);
 
-            _numberPenaltyBox = CreateNumberBox(0, 200, settings.NumberDelayPenaltyPercent);
+            _numberPenaltyBox = CreateNumberBox(
+                SettingRanges.Minimum("NumberDelayPenaltyPercent"),
+                SettingRanges.Maximum("NumberDelayPenaltyPercent"), settings.NumberDelayPenaltyPercent);
             AddLabeledControl(settingsPanel, "Number delay %", _numberPenaltyBox);
 
-            _punctuationPenaltyBox = CreateNumberBox(0, 200, settings.PunctuationDelayPenaltyPercent);
+            _punctuationPenaltyBox = CreateNumberBox(
+                SettingRanges.Minimum("PunctuationDelayPenaltyPercent"),
+                SettingRanges.Maximum("PunctuationDelayPenaltyPercent"), settings.PunctuationDelayPenaltyPercent);
             AddLabeledControl(settingsPanel, "Punctuation delay %", _punctuationPenaltyBox);
 
-            _shiftSymbolPenaltyBox = CreateNumberBox(0, 300, settings.ShiftSymbolDelayPenaltyPercent);
+            _shiftSymbolPenaltyBox = CreateNumberBox(
+                SettingRanges.Minimum("ShiftSymbolDelayPenaltyPercent"),
+                SettingRanges.Maximum("ShiftSymbolDelayPenaltyPercent"), settings.ShiftSymbolDelayPenaltyPercent);
             AddLabeledControl(settingsPanel, "Shift-symbol delay %", _shiftSymbolPenaltyBox);
 
-            _numberTypoMultiplierBox = CreateMultiplierBox(0, 500, settings.NumberTypoMultiplierPercent);
+            _numberTypoMultiplierBox = CreateMultiplierBox(
+                SettingRanges.Minimum("NumberTypoMultiplierPercent"),
+                SettingRanges.Maximum("NumberTypoMultiplierPercent"), settings.NumberTypoMultiplierPercent);
             AddLabeledControl(settingsPanel, "Number mistakes x", _numberTypoMultiplierBox);
 
-            _punctuationTypoMultiplierBox = CreateMultiplierBox(0, 500, settings.PunctuationTypoMultiplierPercent);
+            _punctuationTypoMultiplierBox = CreateMultiplierBox(
+                SettingRanges.Minimum("PunctuationTypoMultiplierPercent"),
+                SettingRanges.Maximum("PunctuationTypoMultiplierPercent"), settings.PunctuationTypoMultiplierPercent);
             AddLabeledControl(settingsPanel, "Punct. mistakes x", _punctuationTypoMultiplierBox);
 
-            _shiftSymbolTypoMultiplierBox = CreateMultiplierBox(0, 500, settings.ShiftSymbolTypoMultiplierPercent);
+            _shiftSymbolTypoMultiplierBox = CreateMultiplierBox(
+                SettingRanges.Minimum("ShiftSymbolTypoMultiplierPercent"),
+                SettingRanges.Maximum("ShiftSymbolTypoMultiplierPercent"), settings.ShiftSymbolTypoMultiplierPercent);
             AddLabeledControl(settingsPanel, "Shift mistakes x", _shiftSymbolTypoMultiplierBox);
 
             AddSectionLabel(settingsPanel, "Correction");
@@ -257,25 +295,39 @@ namespace AutoWrite
             settingsPanel.Controls.Add(_typoCheckBox, 0, typoRow);
             settingsPanel.SetColumnSpan(_typoCheckBox, 2);
 
-            _typoChanceBox = CreateNumberBox(0, 10, settings.TypoChancePercent);
+            _typoChanceBox = CreateNumberBox(
+                SettingRanges.Minimum("TypoChancePercent"),
+                SettingRanges.Maximum("TypoChancePercent"), settings.TypoChancePercent);
             AddLabeledControl(settingsPanel, "Mistake rate %", _typoChanceBox);
 
-            _duplicateChanceBox = CreateNumberBox(0, 100, settings.DuplicateChancePercent);
+            _duplicateChanceBox = CreateNumberBox(
+                SettingRanges.Minimum("DuplicateChancePercent"),
+                SettingRanges.Maximum("DuplicateChancePercent"), settings.DuplicateChancePercent);
             AddLabeledControl(settingsPanel, "Duplicate share %", _duplicateChanceBox);
 
-            _transposeChanceBox = CreateNumberBox(0, 100, settings.TransposeChancePercent);
+            _transposeChanceBox = CreateNumberBox(
+                SettingRanges.Minimum("TransposeChancePercent"),
+                SettingRanges.Maximum("TransposeChancePercent"), settings.TransposeChancePercent);
             AddLabeledControl(settingsPanel, "Transpose share %", _transposeChanceBox);
 
-            _noticeDelayBox = CreateNumberBox(0, 3000, settings.CorrectionNoticeMilliseconds);
+            _noticeDelayBox = CreateNumberBox(
+                SettingRanges.Minimum("CorrectionNoticeMilliseconds"),
+                SettingRanges.Maximum("CorrectionNoticeMilliseconds"), settings.CorrectionNoticeMilliseconds);
             AddLabeledControl(settingsPanel, "Notice delay ms", _noticeDelayBox);
 
-            _detectCharsBox = CreateNumberBox(0, 8, settings.CorrectionDetectChars);
+            _detectCharsBox = CreateNumberBox(
+                SettingRanges.Minimum("CorrectionDetectChars"),
+                SettingRanges.Maximum("CorrectionDetectChars"), settings.CorrectionDetectChars);
             AddLabeledControl(settingsPanel, "Detect after chars", _detectCharsBox);
 
-            _correctionPauseBox = CreateNumberBox(0, 1000, settings.CorrectionPauseMilliseconds);
+            _correctionPauseBox = CreateNumberBox(
+                SettingRanges.Minimum("CorrectionPauseMilliseconds"),
+                SettingRanges.Maximum("CorrectionPauseMilliseconds"), settings.CorrectionPauseMilliseconds);
             AddLabeledControl(settingsPanel, "Repair key pause ms", _correctionPauseBox);
 
-            _resumePauseBox = CreateNumberBox(0, 2000, settings.CorrectionResumeMilliseconds);
+            _resumePauseBox = CreateNumberBox(
+                SettingRanges.Minimum("CorrectionResumeMilliseconds"),
+                SettingRanges.Maximum("CorrectionResumeMilliseconds"), settings.CorrectionResumeMilliseconds);
             AddLabeledControl(settingsPanel, "Resume pause ms", _resumePauseBox);
 
             var buttonPanel = new FlowLayoutPanel();
@@ -2040,7 +2092,7 @@ namespace AutoWrite
                     {
                         settings.WordsPerMinute = charactersPerSecond == 15
                             ? settings.WordsPerMinute
-                            : Clamp((int)Math.Round(charactersPerSecond * 60D / 5D), 5, 180);
+                            : SettingRanges.Clamp("WordsPerMinute", (int)Math.Round(charactersPerSecond * 60D / 5D));
                     }
                 }
                 else if (String.Equals(key, "wordsPerMinute", StringComparison.OrdinalIgnoreCase))
@@ -2153,30 +2205,54 @@ namespace AutoWrite
                 }
             }
 
-            settings.WordsPerMinute = Clamp(settings.WordsPerMinute, 5, 180);
-            settings.JitterPercent = Clamp(settings.JitterPercent, 0, 100);
-            settings.KeyPairRhythmPercent = Clamp(settings.KeyPairRhythmPercent, 0, 100);
-            settings.BurstPercent = Clamp(settings.BurstPercent, 0, 100);
-            settings.WordPauseMilliseconds = Clamp(settings.WordPauseMilliseconds, 0, 1000);
-            settings.SentencePauseMilliseconds = Clamp(settings.SentencePauseMilliseconds, 0, 3000);
-            settings.ParagraphPauseMilliseconds = Clamp(settings.ParagraphPauseMilliseconds, 0, 3000);
-            settings.ThinkingPauseChancePercent = Clamp(settings.ThinkingPauseChancePercent, 0, 25);
-            settings.ThinkingPauseMilliseconds = Clamp(settings.ThinkingPauseMilliseconds, 0, 5000);
-            settings.UppercaseDelayPenaltyPercent = Clamp(settings.UppercaseDelayPenaltyPercent, 0, 200);
-            settings.NumberDelayPenaltyPercent = Clamp(settings.NumberDelayPenaltyPercent, 0, 200);
-            settings.PunctuationDelayPenaltyPercent = Clamp(settings.PunctuationDelayPenaltyPercent, 0, 200);
-            settings.ShiftSymbolDelayPenaltyPercent = Clamp(settings.ShiftSymbolDelayPenaltyPercent, 0, 300);
-            settings.NumberTypoMultiplierPercent = Clamp(settings.NumberTypoMultiplierPercent, 0, 500);
-            settings.PunctuationTypoMultiplierPercent = Clamp(settings.PunctuationTypoMultiplierPercent, 0, 500);
-            settings.ShiftSymbolTypoMultiplierPercent = Clamp(settings.ShiftSymbolTypoMultiplierPercent, 0, 500);
-            settings.TypoChancePercent = Clamp(settings.TypoChancePercent, 0, 10);
-            settings.DuplicateChancePercent = Clamp(settings.DuplicateChancePercent, 0, 100);
-            settings.TransposeChancePercent = Clamp(settings.TransposeChancePercent, 0, 100);
-            settings.CorrectionNoticeMilliseconds = Clamp(settings.CorrectionNoticeMilliseconds, 0, 3000);
-            settings.CorrectionDetectChars = Clamp(settings.CorrectionDetectChars, 0, 8);
-            settings.CorrectionPauseMilliseconds = Clamp(settings.CorrectionPauseMilliseconds, 0, 1000);
-            settings.CorrectionResumeMilliseconds = Clamp(settings.CorrectionResumeMilliseconds, 0, 2000);
-            settings.ButtonDelaySeconds = Clamp(settings.ButtonDelaySeconds, 0, 10);
+            settings.WordsPerMinute = SettingRanges.Clamp("WordsPerMinute",
+                settings.WordsPerMinute);
+            settings.JitterPercent = SettingRanges.Clamp("JitterPercent",
+                settings.JitterPercent);
+            settings.KeyPairRhythmPercent = SettingRanges.Clamp("KeyPairRhythmPercent",
+                settings.KeyPairRhythmPercent);
+            settings.BurstPercent = SettingRanges.Clamp("BurstPercent",
+                settings.BurstPercent);
+            settings.WordPauseMilliseconds = SettingRanges.Clamp("WordPauseMilliseconds",
+                settings.WordPauseMilliseconds);
+            settings.SentencePauseMilliseconds = SettingRanges.Clamp("SentencePauseMilliseconds",
+                settings.SentencePauseMilliseconds);
+            settings.ParagraphPauseMilliseconds = SettingRanges.Clamp("ParagraphPauseMilliseconds",
+                settings.ParagraphPauseMilliseconds);
+            settings.ThinkingPauseChancePercent = SettingRanges.Clamp("ThinkingPauseChancePercent",
+                settings.ThinkingPauseChancePercent);
+            settings.ThinkingPauseMilliseconds = SettingRanges.Clamp("ThinkingPauseMilliseconds",
+                settings.ThinkingPauseMilliseconds);
+            settings.UppercaseDelayPenaltyPercent = SettingRanges.Clamp("UppercaseDelayPenaltyPercent",
+                settings.UppercaseDelayPenaltyPercent);
+            settings.NumberDelayPenaltyPercent = SettingRanges.Clamp("NumberDelayPenaltyPercent",
+                settings.NumberDelayPenaltyPercent);
+            settings.PunctuationDelayPenaltyPercent = SettingRanges.Clamp("PunctuationDelayPenaltyPercent",
+                settings.PunctuationDelayPenaltyPercent);
+            settings.ShiftSymbolDelayPenaltyPercent = SettingRanges.Clamp("ShiftSymbolDelayPenaltyPercent",
+                settings.ShiftSymbolDelayPenaltyPercent);
+            settings.NumberTypoMultiplierPercent = SettingRanges.Clamp("NumberTypoMultiplierPercent",
+                settings.NumberTypoMultiplierPercent);
+            settings.PunctuationTypoMultiplierPercent = SettingRanges.Clamp("PunctuationTypoMultiplierPercent",
+                settings.PunctuationTypoMultiplierPercent);
+            settings.ShiftSymbolTypoMultiplierPercent = SettingRanges.Clamp("ShiftSymbolTypoMultiplierPercent",
+                settings.ShiftSymbolTypoMultiplierPercent);
+            settings.TypoChancePercent = SettingRanges.Clamp("TypoChancePercent",
+                settings.TypoChancePercent);
+            settings.DuplicateChancePercent = SettingRanges.Clamp("DuplicateChancePercent",
+                settings.DuplicateChancePercent);
+            settings.TransposeChancePercent = SettingRanges.Clamp("TransposeChancePercent",
+                settings.TransposeChancePercent);
+            settings.CorrectionNoticeMilliseconds = SettingRanges.Clamp("CorrectionNoticeMilliseconds",
+                settings.CorrectionNoticeMilliseconds);
+            settings.CorrectionDetectChars = SettingRanges.Clamp("CorrectionDetectChars",
+                settings.CorrectionDetectChars);
+            settings.CorrectionPauseMilliseconds = SettingRanges.Clamp("CorrectionPauseMilliseconds",
+                settings.CorrectionPauseMilliseconds);
+            settings.CorrectionResumeMilliseconds = SettingRanges.Clamp("CorrectionResumeMilliseconds",
+                settings.CorrectionResumeMilliseconds);
+            settings.ButtonDelaySeconds = SettingRanges.Clamp("ButtonDelaySeconds",
+                settings.ButtonDelaySeconds);
             return settings;
         }
 
