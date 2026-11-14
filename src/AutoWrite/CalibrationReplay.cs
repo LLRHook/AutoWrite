@@ -1,5 +1,6 @@
 using System;
 using System.Text;
+using System.Collections.Generic;
 using System.Threading;
 namespace AutoWrite
 {
@@ -12,6 +13,7 @@ namespace AutoWrite
             private readonly long _limit;
             private long _time;
             internal int Length;
+            internal readonly List<CaptureKey> Keys = new List<CaptureKey>();
             internal ForecastRuntime(int seed, int seconds)
             {
                 _seed = seed;
@@ -34,6 +36,7 @@ namespace AutoWrite
             }
             public void SendCharacter(char value)
             {
+                Keys.Add(new CaptureKey(_time, value));
                 if (value == '\b')
                 {
                     Length = Math.Max(0, Length - 1);
@@ -67,7 +70,12 @@ namespace AutoWrite
 
         internal static double Predict(AppSettings settings, int seconds)
         {
-            double characters = 0;
+            return Forecast(settings, seconds).Wpm;
+        }
+
+        internal static CalibrationMetrics Forecast(AppSettings settings, int seconds)
+        {
+            var prediction = new CalibrationMetrics();
             for (int i = 0; i < 9; i++)
             {
                 var runtime = new ForecastRuntime(70001 + i * 101, seconds);
@@ -78,73 +86,75 @@ namespace AutoWrite
                 catch (OperationCanceledException)
                 {
                 }
-                characters += runtime.Length;
+                var metrics = CalibrationMetrics.Measure(runtime.Keys);
+                prediction.Wpm += metrics.Wpm / 9;
+                prediction.OrdinaryGapMilliseconds += metrics.OrdinaryGapMilliseconds / 9;
             }
-            return characters / 9 * 12 / seconds;
+            return prediction;
         }
 
         internal static void MatchSpeed(CalibrationResult result, int seconds)
         {
             var settings = result.Proposed;
-            int original = settings.WordsPerMinute;
+            double measured = result.OrdinaryGapMilliseconds;
             settings.WordsPerMinute = 5;
-            double slow = Predict(settings, seconds);
+            var slow = Forecast(settings, seconds);
             settings.WordsPerMinute = 180;
-            double fast = Predict(settings, seconds);
-            result.MinimumWpm = slow;
-            result.MaximumWpm = fast;
-            double measured = result.MeasuredWpm;
-            int low = 5, high = 180, best = original;
-            double bestError = Double.MaxValue, bestPrediction = 0;
+            var fast = Forecast(settings, seconds);
+            result.MinimumWpm = slow.Wpm;
+            result.MaximumWpm = fast.Wpm;
+            int low = 5, high = 180, best = 5;
+            double bestError = Math.Abs(slow.OrdinaryGapMilliseconds - measured);
+            var bestPrediction = slow;
             while (low <= high)
             {
                 int mid = (low + high) / 2;
                 settings.WordsPerMinute = mid;
-                double predicted = Predict(settings, seconds), error = Math.Abs(predicted - measured);
+                var predicted = Forecast(settings, seconds);
+                double error = Math.Abs(predicted.OrdinaryGapMilliseconds - measured);
                 if (error < bestError)
                 {
                     bestError = error;
                     best = mid;
                     bestPrediction = predicted;
                 }
-                if (predicted < measured)
+                if (predicted.OrdinaryGapMilliseconds > measured)
                 {
                     low = mid + 1;
                 }
-                else high = mid - 1;
+                else
+                {
+                    high = mid - 1;
+                }
             }
-            if (Math.Abs(slow - measured) < bestError)
-            {
-                best = 5;
-                bestPrediction = slow;
-                bestError = Math.Abs(slow - measured);
-            }
-            if (Math.Abs(fast - measured) < bestError)
+            if (Math.Abs(fast.OrdinaryGapMilliseconds - measured) < bestError)
             {
                 best = 180;
                 bestPrediction = fast;
-                bestError = Math.Abs(fast - measured);
             }
-            CalibrationAnalysis.Set(result, "WordsPerMinute", best, "Achieved " + measured.ToString("F1") +
-            " achieved WPM. Target chosen by forward replay of the recovered settings; predicted " + bestPrediction.ToString("F1") +
-            " WPM (absolute forecast error " + bestError.ToString("F1") + ").");
-            result.PredictedWpm = bestPrediction;
-            if (measured < slow * .95 || measured > fast * 1.05)
+            CalibrationAnalysis.Set(result, "WordsPerMinute", best,
+                "Ordinary letter gaps: " + measured.ToString("F1") + " ms; replay: " +
+                bestPrediction.OrdinaryGapMilliseconds.ToString("F1") + " ms. Target chosen by forward replay.");
+            result.PredictedWpm = bestPrediction.Wpm;
+            result.PredictedOrdinaryGapMilliseconds = bestPrediction.OrdinaryGapMilliseconds;
+            if (measured > slow.OrdinaryGapMilliseconds * 1.05 || measured < fast.OrdinaryGapMilliseconds * .95)
             {
-                result.Warning = "Achieved " + measured.ToString("F1") + (
-                (" WPM cannot be reproduced with these settings and the engine's 45–22" + "0 ms motor limit. AutoWrit") +
-                "e will type at approximately " ) + bestPrediction.ToString("F1") +
-                " WPM with the proposed closest achievable Target WPM (" + best + ").";
+                result.Warning = "The 45 to 220 ms motor limit prevents matching your ordinary letter rhythm. Measured " +
+                    result.MeasuredWpm.ToString("F1") + " WPM; AutoWrite will type approximately " +
+                    result.PredictedWpm.ToString("F1") + " WPM with the closest achievable Target WPM (" + best + ").";
                 foreach (var row in result.Estimates)
                 {
                     if (row.Setting == "WordsPerMinute")
                     {
                         row.ClosestAchievable = true;
-                        row.Reason = "Closest achievable: measured " + measured.ToString("F1") + " WPM; predicted " + bestPrediction.
-                        ToString(
-                        "F1") + " WPM. Target chosen by forward replay; see warning.";
+                        row.Reason = "Closest achievable: " + row.Reason;
                     }
                 }
+            }
+            else if (Math.Abs(result.PredictedWpm - result.MeasuredWpm) > result.MeasuredWpm * .05)
+            {
+                result.Warning = "AutoWrite matches your ordinary key rhythm; its expected speed differs because it adds " +
+                    "pauses and corrections using the proposed settings, including values kept from before the test.";
             }
         }
     }

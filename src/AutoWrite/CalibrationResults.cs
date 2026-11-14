@@ -115,7 +115,7 @@ namespace AutoWrite
             {
                 Dock = DockStyle.Fill, ColumnCount = 1, RowCount = 4, Padding = new Padding(14)
             };
-            root.RowStyles.Add(new RowStyle(SizeType.Absolute, 44));
+            root.RowStyles.Add(new RowStyle(SizeType.Absolute, 82));
             root.RowStyles.Add(new RowStyle(SizeType.Absolute, String.IsNullOrEmpty(result.Warning) ? 0 : 58));
             root.RowStyles.Add(new RowStyle(SizeType.Percent, 100));
             root.RowStyles.Add(new RowStyle(SizeType.Absolute, 52));
@@ -123,8 +123,8 @@ namespace AutoWrite
             var summary = new Label
             {
                 Dock = DockStyle.Fill, Name = "CalibrationSummary", AccessibleName = "Calibration summary", Text = "Measured speed: " +
-                result.MeasuredWpm.ToString("F1") + " WPM     Accuracy: " + result.Accuracy.ToString("F1") + "%     Corrected episodes: "
-                + result.CorrectedMistakes
+                result.MeasuredWpm.ToString("F1") + " WPM active; AutoWrite expected: " + result.PredictedWpm.ToString("F1") + " WPM     Accuracy: " + result.Accuracy.ToString("F1") + "%     Corrected episodes: "
+                + result.CorrectedMistakes + Environment.NewLine + result.ActivityDescription
             };
             root.Controls.Add(summary);
             var warning = new Label

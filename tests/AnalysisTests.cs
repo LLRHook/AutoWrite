@@ -29,6 +29,7 @@ namespace AutoWrite.Tests
 
         static partial void AnalysisTests()
         {
+            ActivityTests();
             HumanLogTests();
             Test("live probe idle boundary and mismatch summaries never expose received text", delegate
             {
@@ -236,11 +237,12 @@ namespace AutoWrite.Tests
                     double endpoint = motor == 300 ? result.MinimumWpm : result.MaximumWpm;
                     Assert(Math.Abs(endpoint - result.PredictedWpm) < .0001, "proposal is not nearest endpoint");
                     int proposedTarget = result.Proposed.WordsPerMinute;
-                    double bestError = Math.Abs(result.PredictedWpm - result.MeasuredWpm);
+                    double bestError = Math.Abs(result.PredictedOrdinaryGapMilliseconds - result.OrdinaryGapMilliseconds);
                     for (int target = 5; target <= 180; target++)
                     {
                         result.Proposed.WordsPerMinute = target;
-                        Assert(Math.Abs(CalibrationReplay.Predict(result.Proposed, 60) - result.MeasuredWpm) + .0001 >= bestError,
+                        Assert(Math.Abs(CalibrationReplay.Forecast(result.Proposed, 60).OrdinaryGapMilliseconds -
+                            result.OrdinaryGapMilliseconds) + .0001 >= bestError,
                         "closer accepted target exists: " + target);
                     }
                     result.Proposed.WordsPerMinute = proposedTarget;
@@ -490,22 +492,35 @@ namespace AutoWrite.Tests
             return v;
         }
 
+        private static double RelativeError(double actual, double expected)
+        {
+            return Math.Abs(actual - expected) / Math.Max(1, expected) * 100;
+        }
+
+        private static void Metric(StringBuilder report, int duration, int profile, string name, List<double> values)
+        {
+            report.Append(duration).Append('\t').Append(profile).Append('\t').Append(name).Append("\t0\t0\t");
+            report.Append(CalibrationAnalysis.Median(values)).Append('\t').Append(Percentile(values, .9));
+            report.Append("\tNaN\treported\n");
+            report.Append("# worst ").Append(duration).Append("s p").Append(profile).Append(' ').Append(name);
+            report.Append(' ').Append(Max(values)).AppendLine();
+        }
+
         private static void D6()
         {
-            var report = new StringBuilder(
-            ("duration_s\tprofile\tsetting\ttruth\tmedian_recovered\tmedian_error\tp" + "90_error\tbound\tstatus\n"));
-            var failures = new List<string>();
+            var report = new StringBuilder("duration_s\tprofile\tsetting\ttruth\tmedian_recovered\tmedian_error\tp90_error\tbound\tstatus\n");
             var runs = new StringBuilder("duration_s\tprofile\tseed\tsetting\ttruth\trecovered\tmeasured\treason\n");
+            var failures = new List<string>();
             var reportSettings = new List<string>(GateSettings);
             foreach (var property in typeof(AppSettings).GetProperties())
             {
-                if (property.Name != "WordsPerMinute" && !reportSettings. Contains(property.Name))
+                if (property.Name != "WordsPerMinute" && !reportSettings.Contains(property.Name))
                 {
                     reportSettings.Add(property.Name);
                 }
             }
-            report.Append(( ("# ground-truth seeds=1000..1019; single-replay/control=5000..5019; exp" + "ected replay ensemble=3000") +
-            "0..30019; forward selection=70001+101*i (i=0..8)\n" ));
+            report.AppendLine("# recording seeds 1000..1019; pooled replay ensemble 30000..30019; forecast 70001+101*i, i=0..8");
+            report.AppendLine("# Current bounded settings are defaults; current thinking settings equal the profile for speed gates.");
             for (int duration = 30; duration <= 60; duration += 30)
             {
                 for (int profile = 0; profile < 5; profile++)
@@ -513,199 +528,153 @@ namespace AutoWrite.Tests
                     var settings = Profile(profile);
                     var recovered = new Dictionary<string, List<double>>();
                     var errors = new Dictionary<string, List<double>>();
-                    foreach (var name in reportSettings)
+                    var kept = new Dictionary<string, int>();
+                    foreach (string name in reportSettings)
                     {
                         recovered[name] = new List<double>();
                         errors[name] = new List<double>();
+                        kept[name] = 0;
                     }
-                    var speedErrors = new List<double>();
                     var replayErrors = new List<double>();
-                    var bases = new List<double>();
+                    var controlAErrors = new List<double>();
+                    var controlBErrors = new List<double>();
                     var expectedErrors = new List<double>();
-                    var floorErrors = new List<double>();
-                    var keptFloorErrors = new List<double>();
-                    var longRunErrors = new List<double>();
-                    double longRunWpm = 0;
-                    for (int longSeed = 0; longSeed < 20; longSeed++)
+                    var rhythmErrors = new List<double>();
+                    var defaultThinkingErrors = new List<double>();
+                    var actualBases = new List<double>();
+                    var recordingSpeeds = new List<double>();
+                    var controls = new List<CalibrationMetrics>();
+                    for (int replaySeed = 0; replaySeed < 20; replaySeed++)
                     {
-                        var full = RunEngine(CalibrationPassage.Text, settings, 1000 + longSeed, Int64.MaxValue, false);
-                        longRunWpm += full.FinalText().Length * 12000D / full.Now / 20;
+                        controls.Add(CalibrationMetrics.Measure(Capture(RunEngine(CalibrationPassage.Text,
+                            settings, 30000 + replaySeed, duration * 1000, false))));
                     }
                     int seeds = profile < 3 ? 20 : 5;
-                    var actualBases = new List<double>();
-                    var keptCounts = new Dictionary<string, int>();
-                    foreach (var name in reportSettings)
-                    {
-                        keptCounts[name] = 0;
-                    }
                     for (int seed = 0; seed < seeds; seed++)
                     {
                         var runtime = RunEngine(CalibrationPassage.Text, settings, 1000 + seed, duration * 1000);
-                        var telemetry = File.ReadAllText(Path.Combine(DataDirectory.PathRoot, "engine.tsv"));
+                        string telemetry = File.ReadAllText(Path.Combine(DataDirectory.PathRoot, "engine.tsv"));
                         var match = System.Text.RegularExpressions.Regex.Match(telemetry, "base_delay_ms=([0-9]+)");
                         actualBases.Add(Double.Parse(match.Groups[1].Value, CultureInfo.InvariantCulture));
                         var capture = Capture(runtime);
-                        var result = CalibrationAnalysis.Analyze(capture, duration, AppSettings.Defaults());
-                        double achieved = runtime.FinalText().Length * 12D / duration;
+                        var measured = CalibrationMetrics.Measure(capture);
+                        recordingSpeeds.Add(measured.Wpm);
+                        var current = AppSettings.Defaults();
+                        current.ThinkingPauseChancePercent = settings.ThinkingPauseChancePercent;
+                        current.ThinkingPauseMilliseconds = settings.ThinkingPauseMilliseconds;
+                        var result = CalibrationAnalysis.Analyze(capture, duration, current);
+                        var defaultsResult = CalibrationAnalysis.Analyze(capture, duration, AppSettings.Defaults());
+                        var controlBSettings = new AppSettings();
                         foreach (var row in result.Estimates)
                         {
-                            if (keptCounts.ContainsKey(row.Setting) && !row.Measured)
+                            var property = typeof(AppSettings).GetProperty(row.Setting);
+                            property.SetValue(controlBSettings, row.Measured ? property.GetValue(settings, null) : row.Proposed, null);
+                            runs.Append(duration).Append('\t').Append(profile).Append('\t').Append(1000 + seed);
+                            runs.Append('\t').Append(row.Setting).Append('\t').Append(property.GetValue(settings, null));
+                            runs.Append('\t').Append(row.Proposed).Append('\t').Append(row.Measured).Append('\t');
+                            runs.AppendLine(row.Reason.Replace("\t", " ").Replace("\r", " ").Replace("\n", " "));
+                            if (!row.Measured && !Object.Equals(row.Proposed, row.Current))
                             {
-                                keptCounts[row.Setting]++;
+                                failures.Add("kept setting changed: " + row.Setting);
                             }
-                            runs.Append(duration).Append('\t').Append(profile).Append('\t').Append(1000 + seed).Append('\t').Append(row
-                            .Setting).Append('\t').Append(typeof(AppSettings).GetProperty(row.Setting).GetValue(settings, null)).Append(
-                            '\t'). Append(row.Proposed).Append('\t').Append(row.Measured).Append('\t').Append(row.Reason.Replace("\t", " "
-                            ).Replace(
-                            "\r", " ").Replace("\n", " ")).AppendLine();
+                            if (!reportSettings.Contains(row.Setting))
+                            {
+                                continue;
+                            }
+                            bool bounded = Array.IndexOf(GateSettings, row.Setting) >= 0;
+                            double truth = Convert.ToDouble(property.GetValue(settings, null));
+                            double value = Convert.ToDouble(row.Proposed);
+                            if (bounded && profile < 3 && Object.Equals(property.GetValue(settings, null), row.Current))
+                            {
+                                failures.Add("current equals ground truth: " + row.Setting);
+                            }
+                            if (row.Measured || !bounded)
+                            {
+                                recovered[row.Setting].Add(value);
+                            }
+                            if (!row.Measured)
+                            {
+                                kept[row.Setting]++;
+                            }
+                            errors[row.Setting].Add(Math.Abs(value - truth));
                         }
-                        File.WriteAllText(Path.Combine(Output, "D6-" + duration + "s-p" + profile + "-s" + seed + ".txt"), runtime.Log());
-                        speedErrors.Add(Math.Abs(result.MeasuredWpm - achieved) / Math.Max(1, achieved) * 100);
-                        bases.Add(result.BaseDelay);
-                        foreach (var name in reportSettings)
-                        {
-                            var p = typeof(AppSettings).GetProperty(name);
-                            double truth = Convert.ToDouble(p.GetValue(settings, null)), value = Convert.ToDouble(p.GetValue(result
-                            .Proposed, null));
-                            var estimate = result.Estimates.Find(delegate(CalibrationEstimate e)
-                            {
-                                return e.Setting == name;
-                            });
-                            bool bounded = Array.IndexOf(GateSettings, name) >= 0;
-                            if (estimate.Measured || !bounded)
-                            {
-                                recovered[name].Add(value);
-                            }
-                            if (!estimate.Measured && !Object.Equals(estimate.Proposed, estimate.Current))
-                            {
-                                failures.Add("kept setting changed: " + name);
-                            }
-                            if (profile < 3 && bounded && Object.Equals(p.GetValue(settings, null), p.GetValue(AppSettings.Defaults(),
-                            null)))
-                            {
-                                failures.Add("current equals ground truth: " + name);
-                            }
-                            errors[name].Add(Math.Abs(value - truth));
-                        }
-                        var replay = RunEngine(CalibrationPassage.Text, result.Proposed, 5000 + seed, duration * 1000, false);
-                        List<CorrectionEpisode> unused;
-                        Alignment replayAlignment;
-                        CalibrationAnalysis.Gaps(Capture(replay), CalibrationPassage.Text, out unused, out replayAlignment);
-                        double replayWpm = replay.FinalText().Length * 12D / duration;
-                        var control = RunEngine(CalibrationPassage.Text, settings, 5000 + seed, duration * 1000, false);
-                        floorErrors.Add(Math.Abs(control.FinalText().Length * 12D / duration - achieved) / Math.Max(1, achieved) * 100);
-                        var controlBSettings = new AppSettings();
-                        foreach (var estimate in result.Estimates)
-                        {
-                            var property = typeof(AppSettings).GetProperty(estimate.Setting);
-                            property.SetValue(controlBSettings, estimate.Measured ? property.GetValue(settings, null) : estimate.Proposed,
-                            null);
-                        }
-                        var controlB = RunEngine(CalibrationPassage.Text, controlBSettings, 5000 + seed, duration * 1000, false);
-                        keptFloorErrors.Add(Math.Abs(controlB.FinalText().Length * 12D / duration - achieved) / Math.Max(1, achieved) *
-                        100);
-                        longRunErrors.Add(Math.Abs(achieved - longRunWpm) / longRunWpm * 100);
-                        double expected = 0;
+                        double expected = 0, ordinary = 0, defaultExpected = 0;
                         for (int replaySeed = 0; replaySeed < 20; replaySeed++)
                         {
-                            var forecast = RunEngine(CalibrationPassage.Text, result.Proposed, 30000 + replaySeed, duration * 1000, false)
-                            ;
-                            expected += forecast.FinalText().Length * 12D / duration / 20;
+                            var forecast = CalibrationMetrics.Measure(Capture(RunEngine(CalibrationPassage.Text,
+                                result.Proposed, 30000 + replaySeed, duration * 1000, false)));
+                            var controlB = CalibrationMetrics.Measure(Capture(RunEngine(CalibrationPassage.Text,
+                                controlBSettings, 30000 + replaySeed, duration * 1000, false)));
+                            var defaultForecast = CalibrationMetrics.Measure(Capture(RunEngine(CalibrationPassage.Text,
+                                defaultsResult.Proposed, 30000 + replaySeed, duration * 1000, false)));
+                            expected += forecast.Wpm / 20;
+                            ordinary += forecast.OrdinaryGapMilliseconds / 20;
+                            defaultExpected += defaultForecast.Wpm / 20;
+                            replayErrors.Add(RelativeError(forecast.Wpm, measured.Wpm));
+                            controlAErrors.Add(RelativeError(controls[replaySeed].Wpm, measured.Wpm));
+                            controlBErrors.Add(RelativeError(controlB.Wpm, measured.Wpm));
                         }
-                        expectedErrors.Add(Math.Abs(expected - achieved) / Math.Max(1, achieved) * 100);
-                        replayErrors.Add(Math.Abs(replayWpm - achieved) / Math.Max(1, achieved) * 100);
-                        if (seed == 0)
-                        {
-                            File.WriteAllText(Path.Combine(Output, "D6-" + duration + "s-profile" + profile + "-telemetry.tsv"), telemetry
-                            );
-                        }
-                        if (seed == 0)
-                        {
-                            File.WriteAllText(Path.Combine(Output, "D6-" + duration + "s-profile" + profile + "-raw.txt"), runtime. Log())
-                            ;
-                        }
+                        expectedErrors.Add(RelativeError(expected, measured.Wpm));
+                        rhythmErrors.Add(RelativeError(ordinary, measured.OrdinaryGapMilliseconds));
+                        defaultThinkingErrors.Add(RelativeError(defaultExpected, measured.Wpm));
+                        File.WriteAllText(Path.Combine(Output, "D6-" + duration + "s-p" + profile + "-s" + seed + ".txt"), runtime.Log());
                     }
-                    foreach (var name in reportSettings)
+                    foreach (string name in reportSettings)
                     {
                         double truth = Convert.ToDouble(typeof(AppSettings).GetProperty(name).GetValue(settings, null));
-                        bool isGate = Array.IndexOf(GateSettings, name) >= 0;
-                        double median = CalibrationAnalysis.Median(recovered[name]), error = Math.Abs(median - truth), bound = isGate ?
-                        Bound(
-                        name, truth) : Double.NaN;
-                        bool pass = error <= bound;
-                        report.Append("# kept " + duration + "s p" + profile + " " + name + " " + keptCounts[name] + "/" + seeds + "\n");
-                        report.Append(duration).Append('\t').Append(profile).Append('\t').Append(name).Append('\t').Append(truth).Append(
-                        '\t')
-                        .Append(median).Append('\t').Append(error).Append('\t').Append(Percentile(errors[name], .9).ToString("F2",
-                        CultureInfo
-                        .InvariantCulture)).Append('\t').Append(bound).Append('\t').Append(profile >= 3 ? "outside gate" : duration != 60
-                        ? "reported (30s)" : !isGate ? "reported, not bounded" : pass ? "PASS" : "FAIL").AppendLine();
-                        if (duration == 60 && profile < 3 && isGate && keptCounts[name] > 2)
+                        bool bounded = Array.IndexOf(GateSettings, name) >= 0;
+                        double median = CalibrationAnalysis.Median(recovered[name]);
+                        double error = Math.Abs(median - truth);
+                        double bound = bounded ? Bound(name, truth) : Double.NaN;
+                        bool gated = duration == 60 && profile < 3 && bounded;
+                        report.AppendLine("# kept " + duration + "s p" + profile + " " + name + " " + kept[name] + "/" + seeds);
+                        report.Append(duration).Append('\t').Append(profile).Append('\t').Append(name).Append('\t').Append(truth);
+                        report.Append('\t').Append(median).Append('\t').Append(error).Append('\t');
+                        report.Append(Percentile(errors[name], .9)).Append('\t').Append(bound).Append('\t');
+                        report.AppendLine(gated ? (error <= bound && kept[name] <= 2 ? "PASS" : "FAIL") : "reported");
+                        if (gated && (error > bound || kept[name] > 2))
                         {
-                            failures.Add("p" + profile + " " + name + " kept in " + keptCounts[name] + " runs");
-                        }
-                        if (duration == 60 && profile < 3 && isGate && !pass)
-                        {
-                            failures.Add("p" + profile + " " + name + " median=" + median + " truth=" + truth + " error=" + error +
-                            " bound=" + bound);
+                            failures.Add("p" + profile + " " + name + " error=" + error + " bound=" + bound + " kept=" + kept[name]);
                         }
                     }
-                    if (duration == 60 && profile < 3 && CalibrationAnalysis.Median(speedErrors) > 5)
+                    Metric(report, duration, profile, "ExpectedReplayWpmErrorPercent", expectedErrors);
+                    Metric(report, duration, profile, "ExpectedReplayOrdinaryGapErrorPercent", rhythmErrors);
+                    Metric(report, duration, profile, "DefaultThinkingExpectedWpmErrorPercent", defaultThinkingErrors);
+                    Metric(report, duration, profile, "PooledReplayWpmErrorPercent", replayErrors);
+                    Metric(report, duration, profile, "PooledControlAErrorPercent", controlAErrors);
+                    Metric(report, duration, profile, "PooledControlBErrorPercent", controlBErrors);
+                    double meanSpeed = CalibrationAnalysis.Mean(recordingSpeeds);
+                    var variation = new List<double>();
+                    foreach (double speed in recordingSpeeds)
                     {
-                        failures.Add(
-                        "achieved WPM differs from independent log count");
+                        variation.Add(RelativeError(speed, meanSpeed));
                     }
-                    report.Append(duration).Append('\t').Append(profile).Append("\tLogCountConsistencyErrorPercent\t0\t0\t").Append(
-                    CalibrationAnalysis.Median(speedErrors)).Append('\t').Append(Percentile(speedErrors, .9)).Append("\t5\tPASS\n");
-                    report.Append(duration).Append('\t').Append(profile).Append("\tReplayWpmErrorPercent\t0\t0\t").Append(
-                    CalibrationAnalysis. Median(replayErrors)).Append('\t').Append(Percentile(replayErrors, .9)).Append("\t5\t").Append(
-                    "published, not a gate"). AppendLine();
-                    report.Append("# actual base range " + duration + "s p" + profile + " " + actualBases[0] + " min=" + Min(actualBases)
-                    + " max=" + Max(actualBases) + "\n");
-                    if (duration == 60 && profile < 3 && (Min(actualBases) <= 45 || Max(actualBases) >= 220))
-                    {
-                        failures.Add("p" + profile + " clamp bound");
-                    }
-                    report.Append(duration).Append('\t').Append(profile).Append("\tFittedBaseDelay\t0\t").Append(CalibrationAnalysis.
-                    Median(
-                    bases)).Append("\t0\t0\t0\tdiagnostic\n");
-                    foreach (var metric in new[]
-                    {
-                        "ExpectedReplayWpmErrorPercent", "GroundTruthSingleReplayNoiseFloorPercent",
-                        "KeptSettingsSingleReplayNoiseFloorPercent", "MinuteVsLongRunWpmErrorPercent"
-                    })
-                    {
-                        var values = metric.StartsWith("Expected", StringComparison.Ordinal) ? expectedErrors : metric.StartsWith("Ground"
-                        , StringComparison.Ordinal) ? floorErrors : metric.StartsWith("Kept", StringComparison.Ordinal) ? keptFloorErrors
-                        : longRunErrors;
-                        report.Append(duration).Append('\t').Append(profile).Append('\t').Append(metric).Append("\t0\t0\t").Append(
-                        CalibrationAnalysis.Median(values)).Append('\t').Append(Percentile(values, .9)).Append("\t5\t").Append(metric
-                        .StartsWith("Expected", StringComparison.Ordinal) && duration == 60 && profile < 3 ? (CalibrationAnalysis
-                        .Median(
-                        values
-                        ) <= 5 ? "PASS" : "FAIL") : "published, not a gate").AppendLine();
-                        report.Append("# worst " + duration + "s p" + profile + " " + metric + " " + Max(values) + "\n");
-                    }
-                    report.Append("# long-run achieved WPM p" + profile + " " + longRunWpm + "\n");
-                    double ratioA = CalibrationAnalysis.Median(replayErrors) / Math.Max(.01, CalibrationAnalysis.Median(floorErrors));
-                    report.Append("# recovered single-run / absolute-floor median ratio " + duration + "s p" + profile + " " + ratioA +
-                    "\n");
-                    double ratio = CalibrationAnalysis.Median(replayErrors) / Math.Max(.01, CalibrationAnalysis.Median(keptFloorErrors));
-                    report.Append("# recovered single-run / noise-floor median ratio " + duration + "s p" + profile + " " + ratio + "\n");
-                    if (duration == 60 && profile < 3 && CalibrationAnalysis.Median(expectedErrors) > 5)
-                    {
-                        failures.Add("p" + profile + " expected replay median error=" + CalibrationAnalysis.Median(expectedErrors));
-                    }
+                    Metric(report, duration, profile, "TestVsSameWindowMeanWpmErrorPercent", variation);
+                    double ratio = CalibrationAnalysis.Median(replayErrors) / Math.Max(.01, CalibrationAnalysis.Median(controlBErrors));
+                    report.AppendLine("# pooled recovered / Control B ratio " + duration + "s p" + profile + " " + ratio);
+                    report.AppendLine("# actual base range " + duration + "s p" + profile + " " + Min(actualBases) + ".." + Max(actualBases));
                     if (profile < 3 && ratio > 1.25)
                     {
-                        failures.Add(duration + "s p" + profile + " single replay / floor ratio=" + ratio);
+                        failures.Add(duration + "s p" + profile + " pooled replay / Control B ratio=" + ratio);
+                    }
+                    if (duration == 60 && profile < 3)
+                    {
+                        if (CalibrationAnalysis.Median(expectedErrors) > 5 || CalibrationAnalysis.Median(rhythmErrors) > 5)
+                        {
+                            failures.Add("p" + profile + " expected active speed error=" + CalibrationAnalysis.Median(expectedErrors) +
+                                "; ordinary gap error=" + CalibrationAnalysis.Median(rhythmErrors));
+                        }
+                        if (Min(actualBases) <= 45 || Max(actualBases) >= 220)
+                        {
+                            failures.Add("p" + profile + " clamp bound");
+                        }
                     }
                 }
             }
             File.WriteAllText(Path.Combine(Output, "D6-distribution.tsv"), report.ToString());
             File.WriteAllText(Path.Combine(Output, "D6-estimates.tsv"), runs.ToString());
             Console.WriteLine(report.ToString());
-            Test("D6 60s recovery and replay bounds across 3 profiles x 20 seeds", delegate
+            Test("D6 60s recovery rhythm active-speed and pooled replay bounds", delegate
             {
                 Assert(failures.Count == 0, String.Join("; ", failures.ToArray()));
             });

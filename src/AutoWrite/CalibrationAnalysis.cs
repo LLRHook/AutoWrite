@@ -21,6 +21,8 @@ namespace AutoWrite
         public string Warning = "";
         public int CorrectedMistakes, AlignedCharacters;
         public double BaseDelay;
+        public double OrdinaryGapMilliseconds, PredictedOrdinaryGapMilliseconds;
+        public string ActivityDescription = "";
     }
     internal sealed class AlignedGap
     {
@@ -509,8 +511,10 @@ namespace AutoWrite
             var gaps = Gaps(keys, CalibrationPassage.Text, out corrections, out alignment);
             result.AlignedCharacters = alignment.End;
             result.CorrectedMistakes = corrections.Count;
-            double elapsed = Math.Max(1, seconds * 1000D - (keys.Count == 0 ? 0 : keys[0].Milliseconds));
-            result.MeasuredWpm = alignment.End * 12000D / elapsed;
+            var metrics = CalibrationMetrics.Measure(keys);
+            result.MeasuredWpm = metrics.Wpm;
+            result.OrdinaryGapMilliseconds = metrics.OrdinaryGapMilliseconds;
+            result.ActivityDescription = metrics.ActivityDescription();
             result.Accuracy = alignment.End == 0 ? 0 : Math.Max(0, 100D * (1 - (corrections.Count + alignment.Distance) / (double)
             alignment.End));
             if (gaps.Count < 30)
@@ -837,41 +841,6 @@ namespace AutoWrite
                 letterErrors + ".");
             }
             Keep(result, "KeepTargetWpm", "Kept: timing-budget preference is not identifiable from a single typing recording.");
-            // Invert the engine budget using the fitted motor center; this is a target setting, not the measured speed.
-            double units = 0, natural = 0, weightTotal = 0;
-            int eligible = 0, boundaryCount = 0;
-            var proposed = result.Proposed;
-            string text = CalibrationPassage.Text;
-            for (int i = 0; i < text.Length; i++)
-            {
-                int cl = Class(text[i]);
-                units += !proposed.KeepTargetWpm ? 1 : 1 + (cl == 1 ? proposed.UppercaseDelayPenaltyPercent : cl == 2 ? proposed.
-                NumberDelayPenaltyPercent : cl == 3 ? proposed.PunctuationDelayPenaltyPercent : cl == 4 ? proposed.
-                ShiftSymbolDelayPenaltyPercent : 0) / 100D;
-                natural += Sentence(text[i]) ? proposed.SentencePauseMilliseconds : Char.IsWhiteSpace(text[i]) ? proposed.
-                WordPauseMilliseconds : 0;
-                if (text[i] == '\n')
-                {
-                    natural += proposed.ParagraphPauseMilliseconds;
-                }
-                if (Boundary(text[i]))
-                {
-                    boundaryCount++;
-                }
-                if (!Char.IsWhiteSpace(text[i]))
-                {
-                    eligible++;
-                    weightTotal += cl == 2 ? proposed.NumberTypoMultiplierPercent / 100D : cl == 3 ? proposed.
-                    PunctuationTypoMultiplierPercent / 100D : cl == 4 ? proposed.ShiftSymbolTypoMultiplierPercent / 100D : 1;
-                }
-            }
-            natural += boundaryCount * proposed.ThinkingPauseChancePercent / 100D * proposed.ThinkingPauseMilliseconds * 2 / 3;
-            double mistakes = proposed.EnableTypos ? Math.Round(weightTotal * proposed.TypoChancePercent / 100D) : 0;
-            double correctionBudget = mistakes * (proposed.CorrectionNoticeMilliseconds + proposed.CorrectionResumeMilliseconds + (2 * (
-            Math.Min(proposed.CorrectionDetectChars, 2.2) + 1) + .25) * Math.Max(1, proposed.CorrectionPauseMilliseconds));
-            int target = (int)Math.Round(text.Length * 12000D / ((fit[FitParameter.Base] + 5) * units + natural + correctionBudget));
-            Set(result, "WordsPerMinute", target, "Achieved " + result.MeasuredWpm.ToString("F1", CultureInfo.InvariantCulture) +
-            " achieved WPM; target obtained by inverting the engine's full-passage budget.");
             CalibrationReplay.MatchSpeed(result, seconds);
             return result;
         }
