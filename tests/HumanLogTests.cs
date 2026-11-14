@@ -100,6 +100,24 @@ namespace AutoWrite.Tests
 
         private static void HumanLogTests()
         {
+            Test("live probe configuration corrects mistakes through the virtual Backspace sink", delegate
+            {
+                var settings = LiveTypingProbe.Settings();
+                Assert(settings.EnableTypos && settings.TypoChancePercent > 0, "probe mistakes disabled");
+                var recording = RunEngine(LiveTypingProbe.ExpectedText, settings, LiveTypingProbe.Seed, Int64.MaxValue, false);
+                int backspaces = 0;
+                foreach (var key in recording.Keys)
+                {
+                    if (key.Value == '\b')
+                    {
+                        backspaces++;
+                    }
+                }
+                Assert(backspaces > 0, "probe did not send Backspace");
+                Assert(recording.FinalText() == LiveTypingProbe.ExpectedText, "probe final text differs");
+                Console.WriteLine("PROBE VIRTUAL backspaces=" + backspaces + "; " + LiveTypingProbe.DifferenceSummary(LiveTypingProbe.
+                ExpectedText, recording.FinalText()));
+            });
             Test("human hesitations errors and skipped words do not move bounded estimates", delegate
             {
                 var clean = CalibrationAnalysis.Analyze(HumanLog(0, false, false), 60, HumanCurrent());

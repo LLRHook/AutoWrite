@@ -11,6 +11,31 @@ namespace AutoWrite
 {
     internal static class LiveTypingProbe
     {
+        internal const int Seed = 751;
+        internal const string ExpectedText = "AutoWrite: aB [12] (3.5%)?\nOK";
+        internal static AppSettings Settings()
+        {
+            var settings = AppSettings.Defaults();
+            settings.WordsPerMinute = 180;
+            settings.JitterPercent = 0;
+            settings.BurstPercent = 0;
+            settings.KeyPairRhythmPercent = 0;
+            settings.WordPauseMilliseconds = 0;
+            settings.SentencePauseMilliseconds = 0;
+            settings.ParagraphPauseMilliseconds = 0;
+            settings.ThinkingPauseChancePercent = 0;
+            settings.EnableTypos = true;
+            settings.TypoChancePercent = 10;
+            settings.CorrectionDetectChars = 0;
+            settings.CorrectionNoticeMilliseconds = 50;
+            settings.CorrectionPauseMilliseconds = 20;
+            settings.CorrectionResumeMilliseconds = 20;
+            settings.UppercaseDelayPenaltyPercent = 0;
+            settings.NumberDelayPenaltyPercent = 0;
+            settings.PunctuationDelayPenaltyPercent = 0;
+            settings.ShiftSymbolDelayPenaltyPercent = 0;
+            return settings;
+        }
         [StructLayout(LayoutKind.Sequential)]
         private struct LastInput
         {
@@ -47,6 +72,7 @@ namespace AutoWrite
             private readonly WindowsEngineRuntime _windows = new WindowsEngineRuntime();
             private readonly IntPtr _window;
             private readonly Stopwatch _watch;
+            internal int Backspaces;
             internal GuardedRuntime(IntPtr window, Stopwatch watch)
             {
                 _window = window;
@@ -61,7 +87,7 @@ namespace AutoWrite
             }
             public Random CreateRandom()
             {
-                return new Random(751);
+                return new Random(Seed);
             }
             public IntPtr ForegroundWindow()
             {
@@ -82,6 +108,10 @@ namespace AutoWrite
             {
                 Guard();
                 _windows.SendCharacter(value);
+                if (value == '\b')
+                {
+                    Backspaces++;
+                }
             }
             public void Sleep(int milliseconds, CancellationToken token)
             {
@@ -93,7 +123,7 @@ namespace AutoWrite
 
         internal static int Run(int requiredIdleSeconds)
         {
-            const string expected = "AutoWrite: aB [12] (3.5%)?\nOK";
+            const string expected = ExpectedText;
             string idle = "idle_seconds=not_requested";
             if (requiredIdleSeconds > 0)
             {
@@ -118,6 +148,8 @@ namespace AutoWrite
             int result = 1;
             string reason = "Text did not match";
             long elapsed = 0;
+            string difference = DifferenceSummary(expected, "");
+            GuardedRuntime runtime = null;
             using (var form = new Form
             {
                 Text = "AutoWrite owned SendInput smoke check", Size = new Size(540, 200), StartPosition = FormStartPosition.CenterScreen
@@ -161,22 +193,9 @@ namespace AutoWrite
                                         return;
                                     }
                                     input.Focus();
-                                    var settings = AppSettings.Defaults();
-                                    settings.WordsPerMinute = 180;
-                                    settings.JitterPercent = 0;
-                                    settings.BurstPercent = 0;
-                                    settings.KeyPairRhythmPercent = 0;
-                                    settings.WordPauseMilliseconds = 0;
-                                    settings.SentencePauseMilliseconds = 0;
-                                    settings.ParagraphPauseMilliseconds = 0;
-                                    settings.ThinkingPauseChancePercent = 0;
-                                    settings.EnableTypos = false;
-                                    settings.UppercaseDelayPenaltyPercent = 0;
-                                    settings.NumberDelayPenaltyPercent = 0;
-                                    settings.PunctuationDelayPenaltyPercent = 0;
-                                    settings.ShiftSymbolDelayPenaltyPercent = 0;
+                                    var settings = Settings();
                                     var options = CalibrationReplay.Options(settings);
-                                    var runtime = new GuardedRuntime(form.Handle, watch);
+                                    runtime = new GuardedRuntime(form.Handle, watch);
                                     worker = Task.Factory.StartNew(delegate
                                     {
                                         new TypingEngine(runtime).TypeText(expected, options, null, cancel.Token);
@@ -209,6 +228,7 @@ namespace AutoWrite
                                 cancel.Cancel();
                             };
                             Application.Run(form);
+                            difference = DifferenceSummary(expected, input.Text.Replace("\r\n", "\n"));
                             timer.Stop();
                             elapsed = watch.ElapsedMilliseconds;
                             if (worker != null)
@@ -229,7 +249,8 @@ namespace AutoWrite
                     }
                 }
             }
-            Outcome("exit=" + result + "; elapsed_ms=" + elapsed + "; " + idle + "; " + reason);
+            Outcome("exit=" + result + "; elapsed_ms=" + elapsed + "; " + idle + "; " + reason + "; backspaces_sent=" + (runtime == null ?
+            0 : runtime.Backspaces) + "; " + difference);
             return result;
         }
     }

@@ -167,6 +167,9 @@ change is acceptable:
 .\smoke.ps1 -OutputDirectory "$env:TEMP\autowrite-idle" -LiveTyping -RequireIdleSeconds 240
 ```
 
+The fixed-seed check deliberately makes and repairs mistakes and reports the number of Backspaces
+sent. Received text is never printed.
+
 That invokes `--typing-smoke-probe`, an otherwise inert diagnostic switch. The optional idle
 precondition uses `GetLastInputInfo` in the current Windows session before creating a window. If
 idle time is below the requested seconds, it sends nothing and returns `3`, `skipped: user active`,
