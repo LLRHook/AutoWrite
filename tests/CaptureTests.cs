@@ -11,6 +11,7 @@ namespace AutoWrite.Tests
         static partial void MoreTests()
         {
             CaptureFailureTests();
+            AltGrTests();
             Test("D2 dense first 100 characters and 900-character runway", delegate
             {
                 var passage = CalibrationPassage.Text;

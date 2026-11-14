@@ -151,7 +151,7 @@ namespace AutoWrite
     }
     internal sealed class CaptureTextBox : TextBox
     {
-        private char _suppressedCharacter;
+        private bool _suppressCharacter;
         internal Action<char> Character;
         internal Action<string> Ignored;
         internal Action<int> Press;
@@ -174,11 +174,22 @@ namespace AutoWrite
             return true;
         }
 
+        private static bool ShortcutModifier
+        {
+            get
+            {
+                Keys modifiers = ModifierKeys & (Keys.Control | Keys.Alt);
+                // AltGr is Ctrl+Alt on Windows; its printable WM_CHAR is ordinary text.
+                return modifiers == Keys.Control || modifiers == Keys.Alt;
+            }
+        }
+
         protected override void WndProc(ref Message m)
         {
             if (m.Msg == 0x100 || m.Msg == 0x104)
             {
                 var key = (Keys)m.WParam.ToInt32();
+                _suppressCharacter = false;
                 int repeats = Math.Max(1, (int)(m.LParam.ToInt64() & 0xFFFF));
                 if (Press != null)
                 {
@@ -189,7 +200,7 @@ namespace AutoWrite
                 }
                 if (key == Keys.Back && (ModifierKeys & Keys.Control) != 0)
                 {
-                    _suppressedCharacter = (char)127;
+                    _suppressCharacter = true;
                     if (Ignored != null)
                     {
                         Ignored("Ctrl+Backspace");
@@ -197,11 +208,10 @@ namespace AutoWrite
                     return;
                 }
                 if (key == Keys.Tab || key == Keys.Left || key == Keys.Right || key == Keys.Up || key == Keys.Down || key == Keys.Home ||
-                key == Keys.End || key == Keys.Delete || key == Keys.PageUp || key == Keys.PageDown || ((ModifierKeys & (Keys.Control |
-                Keys.Alt)) != 0 && key != Keys.ControlKey && key != Keys.Menu))
+                key == Keys.End || key == Keys.Delete || key == Keys.PageUp || key == Keys.PageDown ||
+                (ShortcutModifier && key != Keys.ControlKey && key != Keys.Menu))
                 {
-                    _suppressedCharacter = key == Keys.Tab ? '\t' : ((ModifierKeys & Keys.Control) != 0 && key >= Keys.A && key <= Keys.Z)
-                    ? (char)((int)key & 31) : '\0';
+                    _suppressCharacter = true;
                     if (Ignored != null)
                     {
                         Ignored("key " + key);
@@ -212,13 +222,12 @@ namespace AutoWrite
             if (m.Msg == 0x102)
             {
                 var value = (char)m.WParam.ToInt32();
-                if (_suppressedCharacter != '\0' && _suppressedCharacter == value)
+                if (_suppressCharacter)
                 {
-                    _suppressedCharacter = '\0';
+                    _suppressCharacter = false;
                     return;
                 }
-                _suppressedCharacter = '\0';
-                if ((ModifierKeys & (Keys.Control | Keys.Alt)) != 0 || value == '\t' || value == 127)
+                if (ShortcutModifier || value == '\t' || value == 127)
                 {
                     if (Ignored != null)
                     {
