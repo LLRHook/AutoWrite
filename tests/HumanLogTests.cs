@@ -4,24 +4,29 @@ namespace AutoWrite.Tests
 {
     internal static partial class Runner
     {
-        // Independent deterministic human-log generator: no TypingEngine or analysis prediction calls.
+        // A separate additive/gamma model, cut at actual elapsed time after
+        // inserting pauses. It never calls engine or analyser prediction helpers.
         private static List<CaptureKey> HumanLog(int placement, bool hesitation, bool errors)
         {
             string text = CalibrationPassage.Text;
+            var random = new Random(915);
             var gaps = new double[text.Length];
-            const string left = "qwertasdfgzxcvb12345`~!@#$%";
-            const string right = "yuiophjklnm67890^&*()_-+={[}]|\\:;\"'<,>.?/";
-            const string shifted = "~!@#$%^&*()_+{}|:\"<>?";
+            double regime = 1;
             for (int i = 1; i < text.Length; i++)
             {
-                char c = text[i], previous = text[i - 1];
-                double factor = shifted.IndexOf(c) >= 0 ? 2.1 : Char.IsUpper(c) ? 1.4 : Char.IsDigit(c) ? 1.6 : Char.IsPunctuation(c) ||
-                Char.IsSymbol(c) ? 1.8 : 1;
-                char a = Char.ToLowerInvariant(previous), b = Char.ToLowerInvariant(c);
-                int handA = left.IndexOf(a) >= 0 ? 0 : right.IndexOf(a) >= 0 ? 1 : -1;
-                int handB = left.IndexOf(b) >= 0 ? 0 : right.IndexOf(b) >= 0 ? 1 : -1;
-                double pair = a == b ? .45 : handA < 0 || handB < 0 ? 0 : handA == handB ? .22 : -.15;
-                gaps[i] = 100 * factor * (1 + pair * .7);
+                char c = text[i];
+                if (text[i - 1] == ' ' && random.NextDouble() < .18)
+                {
+                    regime = random.NextDouble() < .5 ? .94 : 1.06;
+                }
+                double gamma = 0;
+                for (int stage = 0; stage < 64; stage++)
+                {
+                    gamma -= Math.Log(Math.Max(1e-12, random.NextDouble())) / 64;
+                }
+                double cost = Char.IsUpper(c) ? 40 : Char.IsDigit(c) ? 60 :
+                    "~!@#$%^&*()_+{}|:\"<>?".IndexOf(c) >= 0 ? 110 : Char.IsPunctuation(c) ? 80 : 0;
+                gaps[i] = 100 * regime * gamma + cost;
             }
             for (int i = 0; i + 1 < text.Length; i++)
             {
@@ -43,7 +48,6 @@ namespace AutoWrite.Tests
                     }
                 }
             }
-            var extra = new double[text.Length];
             if (hesitation)
             {
                 int changed = 0;
@@ -51,23 +55,23 @@ namespace AutoWrite.Tests
                 {
                     if (Char.IsLower(text[i - 1]) && Char.IsLower(text[i]))
                     {
-                        extra[i] += 2000 + changed * 500;
+                        gaps[i] += 2000 + changed * 500;
                         changed++;
                         i += 20;
                     }
                 }
                 for (int i = 100; i < text.Length; i++)
                 {
-                    if (shifted.IndexOf(text[i]) >= 0)
+                    if ("~!@#$%^&*()_+{}|:\"<>?".IndexOf(text[i]) >= 0)
                     {
-                        extra[i] += 4000;
+                        gaps[i] += 4000;
                         break;
                     }
                 }
             }
             var keys = new List<CaptureKey>();
             double time = 0;
-            int skip = text.IndexOf("costs", StringComparison.Ordinal);
+            int skip = text.IndexOf("found", StringComparison.Ordinal);
             for (int i = 0; i < text.Length; i++)
             {
                 time += gaps[i];
@@ -79,13 +83,10 @@ namespace AutoWrite.Tests
                 {
                     continue;
                 }
+                // Uncorrected substitutions plus an omitted word are a separate error
+                // process from the engine's planned and always-repaired mistakes.
                 char c = errors && (i == 15 || i == 95) ? 'z' : text[i];
-                double delay = 0;
-                for (int j = 0; j <= i; j++)
-                {
-                    delay += extra[j];
-                }
-                keys.Add(new CaptureKey(time + delay, c));
+                keys.Add(new CaptureKey(time, c));
             }
             return keys;
         }
@@ -127,6 +128,8 @@ namespace AutoWrite.Tests
                 })
                 {
                     var log = HumanLog(0, true, errors);
+                    Assert(log[log.Count - 1].Milliseconds < 45000, "generator exceeded the real window");
+                    Assert(log.Count < HumanLog(0, false, errors).Count, "hesitations did not reduce characters typed");
                     var result = CalibrationAnalysis.Analyze(log, 60, HumanCurrent());
                     foreach (string setting in GateSettings)
                     {
@@ -134,12 +137,13 @@ namespace AutoWrite.Tests
                         double actual = Convert.ToDouble(typeof(AppSettings).GetProperty(setting).GetValue(result.Proposed, null));
                         Assert(Math.Abs(actual - baseline) <= Bound(setting, baseline), "hesitation " + setting + " errors=" + errors);
                     }
-                    Assert(Math.Abs(result.Proposed.WordsPerMinute - clean.Proposed.WordsPerMinute) <= clean.Proposed.WordsPerMinute * .05
-                    , "hesitation changed replay speed");
+                    var replay = CalibrationReplay.Forecast(result.Proposed, 60);
+                    Assert(RelativeError(replay.OrdinaryGapMilliseconds,
+                        CalibrationMetrics.Measure(log).OrdinaryGapMilliseconds) <= 10, "hesitation changed key rhythm");
                     if (errors)
                     {
                         Assert(result.AlignedCharacters > log.Count && result.Accuracy < 100, "skipped word was not aligned");
-                        Assert(Math.Abs(result.AlignedCharacters - clean.AlignedCharacters) <= 1, "lost alignment after skipped word");
+                        Assert(result.Accuracy > 90, "lost alignment after skipped word");
                     }
                 }
             });
