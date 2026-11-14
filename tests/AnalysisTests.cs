@@ -31,6 +31,7 @@ namespace AutoWrite.Tests
         {
             ActivityTests();
             AlignmentQualityTests();
+            EvidenceGateTests();
             HumanLogTests();
             Test("live probe idle boundary and mismatch summaries never expose received text", delegate
             {
