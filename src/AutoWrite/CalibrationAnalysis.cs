@@ -57,6 +57,9 @@ namespace AutoWrite
     }
     internal static class CalibrationAnalysis
     {
+        // Genuine 10% uncorrected errors remain above 89%; wrong-start,
+        // unrelated and random text are below 40% in both speed fixtures.
+        internal const double MinimumAlignmentQuality = 70;
         internal static readonly string[] FitNames =
         {
             "UppercaseDelayPenaltyPercent", "NumberDelayPenaltyPercent", "PunctuationDelayPenaltyPercent",
@@ -517,6 +520,16 @@ namespace AutoWrite
             result.ActivityDescription = metrics.ActivityDescription();
             result.Accuracy = alignment.End == 0 ? 0 : Math.Max(0, 100D * (1 - (corrections.Count + alignment.Distance) / (double)
             alignment.End));
+            double alignmentQuality = alignment.End == 0 ? 0 : 100D * (1 - alignment.Distance / (double)alignment.End);
+            if (keys.Count >= 30 && alignmentQuality < MinimumAlignmentQuality)
+            {
+                result.Warning = "The typed text did not match the passage closely enough. All settings were kept; try again from the start.";
+                foreach (var row in result.Estimates)
+                {
+                    row.Reason = "Kept: text matched less than 70% of the passage.";
+                }
+                return result;
+            }
             if (gaps.Count < 30)
             {
                 Keep(result, "WordsPerMinute", "Kept: " + gaps.Count + " consecutive aligned gaps; need 30 for a replay target.");
