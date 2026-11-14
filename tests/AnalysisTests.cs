@@ -332,6 +332,10 @@ namespace AutoWrite.Tests
                 Console.WriteLine("SKIP D6 (scoped estimator check)");
             }
             else D6();
+            if (Environment.GetEnvironmentVariable("AUTOWRITE_TEST_SCOPE") != "estimators")
+            {
+                CrossTextBenchmark();
+            }
         }
 
         static partial void ResultsTests();
@@ -470,6 +474,7 @@ namespace AutoWrite.Tests
                     var actualBases = new List<double>();
                     var recordingSpeeds = new List<double>();
                     var controls = new List<CalibrationMetrics>();
+                    var controlBCache = new Dictionary<string, List<CalibrationMetrics>>();
                     for (int replaySeed = 0; replaySeed < 20; replaySeed++)
                     {
                         controls.Add(CalibrationMetrics.Measure(Capture(RunEngine(CalibrationPassage.Text,
@@ -489,7 +494,33 @@ namespace AutoWrite.Tests
                         current.ThinkingPauseChancePercent = settings.ThinkingPauseChancePercent;
                         current.ThinkingPauseMilliseconds = settings.ThinkingPauseMilliseconds;
                         var result = CalibrationAnalysis.Analyze(capture, duration, current);
-                        var defaultsResult = CalibrationAnalysis.Analyze(capture, duration, AppSettings.Defaults());
+                        // Only kept thinking values differ in this published scenario.
+                        // Reuse the fit, then repeat target selection; verify equivalence
+                        // against a fresh analysis once per model/window below.
+                        var defaultsResult = new CalibrationResult
+                        {
+                            Proposed = CopySettings(result.Proposed), MeasuredWpm = result.MeasuredWpm,
+                            OrdinaryGapMilliseconds = result.OrdinaryGapMilliseconds
+                        };
+                        bool changedThinking = false;
+                        foreach (string name in new[] { "ThinkingPauseChancePercent", "ThinkingPauseMilliseconds" })
+                        {
+                            if (!Estimate(result, name).Measured)
+                            {
+                                var property = typeof(AppSettings).GetProperty(name);
+                                property.SetValue(defaultsResult.Proposed, property.GetValue(AppSettings.Defaults(), null), null);
+                                changedThinking = true;
+                            }
+                        }
+                        if (changedThinking)
+                        {
+                            CalibrationReplay.MatchSpeed(defaultsResult, duration);
+                        }
+                        if (seed == 0)
+                        {
+                            var independentlyAnalysed = CalibrationAnalysis.Analyze(capture, duration, AppSettings.Defaults());
+                            SameSettings(independentlyAnalysed.Proposed, defaultsResult.Proposed);
+                        }
                         var controlBSettings = new AppSettings();
                         foreach (var row in result.Estimates)
                         {
@@ -524,13 +555,28 @@ namespace AutoWrite.Tests
                             }
                             errors[row.Setting].Add(Math.Abs(value - truth));
                         }
+                        var controlKey = new StringBuilder();
+                        foreach (var property in typeof(AppSettings).GetProperties())
+                        {
+                            controlKey.Append(property.Name).Append('=').Append(property.GetValue(controlBSettings, null)).Append(';');
+                        }
+                        List<CalibrationMetrics> controlBForecasts;
+                        if (!controlBCache.TryGetValue(controlKey.ToString(), out controlBForecasts))
+                        {
+                            controlBForecasts = new List<CalibrationMetrics>();
+                            for (int replaySeed = 0; replaySeed < 20; replaySeed++)
+                            {
+                                controlBForecasts.Add(CalibrationMetrics.Measure(Capture(RunEngine(CalibrationPassage.Text,
+                                    controlBSettings, 30000 + replaySeed, duration * 1000, false))));
+                            }
+                            controlBCache.Add(controlKey.ToString(), controlBForecasts);
+                        }
                         double expected = 0, ordinary = 0, defaultExpected = 0;
                         for (int replaySeed = 0; replaySeed < 20; replaySeed++)
                         {
                             var forecast = CalibrationMetrics.Measure(Capture(RunEngine(CalibrationPassage.Text,
                                 result.Proposed, 30000 + replaySeed, duration * 1000, false)));
-                            var controlB = CalibrationMetrics.Measure(Capture(RunEngine(CalibrationPassage.Text,
-                                controlBSettings, 30000 + replaySeed, duration * 1000, false)));
+                            var controlB = controlBForecasts[replaySeed];
                             var defaultForecast = CalibrationMetrics.Measure(Capture(RunEngine(CalibrationPassage.Text,
                                 defaultsResult.Proposed, 30000 + replaySeed, duration * 1000, false)));
                             expected += forecast.Wpm / 20;
@@ -578,6 +624,9 @@ namespace AutoWrite.Tests
                     Metric(report, duration, profile, "TestVsSameWindowMeanWpmErrorPercent", variation);
                     double ratio = CalibrationAnalysis.Median(replayErrors) / Math.Max(.01, CalibrationAnalysis.Median(controlBErrors));
                     report.AppendLine("# pooled recovered / Control B ratio " + duration + "s p" + profile + " " + ratio);
+                    double ratioA = CalibrationAnalysis.Median(replayErrors) /
+                        Math.Max(.01, CalibrationAnalysis.Median(controlAErrors));
+                    report.AppendLine("# pooled recovered / Control A ratio " + duration + "s p" + profile + " " + ratioA);
                     report.AppendLine("# actual base range " + duration + "s p" + profile + " " + Min(actualBases) + ".." +
                         Max(actualBases));
                     if (profile < 3 && ratio > 1.25)

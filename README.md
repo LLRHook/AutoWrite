@@ -51,43 +51,53 @@ The `Type in 3s` button can also start typing after the configured delay.
 
 ## Calibrate typing
 
-Click **Calibrate typing**, choose 30 or 60 seconds, and copy the report passage.
-The default is 60 seconds. The clock starts with your first character.
-Use Backspace for corrections and Enter for paragraph breaks. Paste, Tab and
-caret navigation are ignored. The passage follows your progress and marks
-where you have reached.
+Click **Calibrate typing**, choose 30 or 60 seconds, and copy the report
+passage from the beginning. The default is 60 seconds; the clock starts with
+your first character. Use Backspace for corrections and Enter for paragraph
+breaks. Paste, Tab and caret navigation are ignored. The passage follows and
+marks your position. Printable AltGr characters are accepted.
 
-After the test, review your measured speed and accuracy, then compare the
-current and proposed settings. **Apply** updates the main window and saves
-the settings immediately. **Discard** or **Cancel** leaves them unchanged.
-A setting with too little evidence keeps its current value and explains why.
-Button delay and Keep target WPM remain your current preferences.
+Review your active typing speed, AutoWrite's expected speed, accuracy, and
+each proposed setting. **Apply** updates the controls and saves immediately.
+**Discard** or **Cancel** leaves settings unchanged. Sparse evidence keeps
+the previous value or is labelled “few samples.” A poor passage match keeps
+every setting and asks you to retry. Button delay and Keep target WPM remain
+your preferences.
 
-Copying is not composing: the test usually underestimates time spent thinking.
-Thinking pauses need at least four long pauses before they can be measured;
-otherwise they stay at their previous values.
-A single minute can be a fast or a slow minute, so rerun the test if the
-measured speed looks wrong.
+Calibration matches your ordinary letter-to-letter rhythm, rather than
+slowing every key to fill the clock. Active speed runs from first to last
+key; gaps of ten seconds or longer are omitted and listed in the results.
+Shorter hesitations remain counted. AutoWrite may have a different overall
+speed because it adds pauses and corrections at the proposed or kept values.
 
-The engine cannot make its ordinary letter gap longer than about 220 ms.
-In the slow-letter example on this passage, that means a lower limit of
-roughly **46 WPM**; below it AutoWrite types faster than you. The exact limit
-depends on the other settings. If your speed cannot be matched, the results
-propose the closest achievable target and show both your measured speed and
-AutoWrite's expected speed.
+Copying is not composing. Thinking pauses are not measured unless the test
+contains at least four long pauses; otherwise they stay at their previous
+values. A single minute can be a fast or a slow minute, so rerun the test if
+the measured speed looks wrong.
 
-Longer tests give more reliable timing estimates, but a few mistakes may be
-too little evidence to learn correction habits. In synthetic tests, a single
-sample's speed differed from the same typist model's long-run speed by the
-amounts below; these figures are not a promise about an individual person.
+AutoWrite cannot make its ordinary motor gap longer than about 220 ms.
+In the slow-letter example on this passage that means roughly **46 WPM**;
+below that it types faster than the person. Other settings affect the limit.
+When this limit prevents matching your rhythm, results propose the closest
+achievable target and show both speeds. The fast motor limit is 45 ms.
 
-| Test length | Typical speed error across models | 90th-percentile speed error |
+Synthetic tests suggest a minute gives a closer rhythm match than half a
+minute. The table shows typical (median) and 90th-percentile errors across
+three timing models; these are simulation results, not a promise about a
+person. Expected speed assumes thinking pauses already match the person;
+keeping different thinking settings can increase its difference.
+
+| Test | Rhythm error, median / 90th percentile | Expected speed error, median / 90th percentile |
 | --- | --- | --- |
-| 30 seconds | 19.3%�25.6% | 27.8%�36.8% |
-| 60 seconds | 11.4%�15.5% | 18.6%�27.1% |
+| 30 seconds | 3.7–6.2% / 5.5–9.7% | 5.5–12.6% / 15.8–22.2% |
+| 60 seconds | 1.0–2.8% / 2.4–9.5% | 2.6–4.3% / 7.3–12.6% |
+
+The match is closest on report-like text such as the passage. On plain prose
+AutoWrite runs somewhat slower than you at the same finger speed; turning
+**Keep target WPM** off narrows that difference.
 
 [Accuracy measurements and estimation methods](docs/calibration-accuracy.md)
-explain the evidence behind these figures.
+include test-to-test variation, individual setting errors and cross-text limits.
 
 ## Settings
 
