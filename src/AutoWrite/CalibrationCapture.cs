@@ -11,34 +11,35 @@ namespace AutoWrite
     internal static class CalibrationPassage
     {
         // Short report paragraphs provide natural variety without invented typing tokens.
-        public const string Text = "Smith et al. (2021) found a 42.5% rise [12].\n" + "Is it \"robust\"? Yes: p < 0.05.\n" +
-        "NASA and the US call the study's n = 128 cases \"reliable\".\n" + "R&D needs long-term evidence (Smith et al., 2021).\n" +
-        "Table 2.1 lists costs and/or gains. Figure 3 shows them.\n" + (
-        ("Figure 3 compares the UK and US samples (Lee et al., 2022). The report" + " calls the trend \"stable") +
-        "\"; e.g., both groups improved by 12.8%.\n" ) + (
-        ("The methods cover three stages: recruitment, review, and analysis. Par" + "ticipants read the same in") +
-        "structions, and the team recorded each response [24].\n" ) + (
-        ("The R&D review found a 36.2% reduction in waste (Jones et al., 2023). " + "Could this reflect a chang") +
-        "e in demand? The authors tested that explanation before accepting the result.\n" ) + (
-        ("Table 4.2 reports the mean, range, and sample size: n = 256, p < 0.01." + " Its notes distinguish sho") +
-        "rt-term variation from a sustained change; the difference matters for planning.\n" ) + (
-        ("A second NASA study assessed water quality [36]. It found that 18.4% o" + "f samples exceeded the thr") +
-        "eshold, while the control group remained within the expected range.\n" ) + (
-        ("The analysis follows the same sequence in each region: collect evidenc" + "e, compare estimates, and ") + (
-        "report uncertainty. A missing value is marked as unavailable rather th" + "an treated as zero (Brown ") + "et al., 2020).\n" ) +
-        (
-        ("Figure 5 shows the distribution before and after the policy change. Th" + "e central estimate rose fr") + (
-        "om 21.6% to 34.9%, but the intervals overlap. The report therefore des" + "cribes the evidence as \"p") +
-        "romising, with limits\".\n"
-        ) + ( ("The review considers cost and/or reliability when comparing options. L" + "ong-term maintenance may o") + (
-        "utweigh an initial saving; the discussion separates those effects and " + "states the assumptions [48") + "].\n" ) + (
-        ("The final model includes age, location, and prior experience. Table 6." + "1 gives the adjusted estim") +
-        "ates (Smith et al., 2024), with n = 512 and p < 0.05 for the main comparison.\n" ) + (
-        ("These findings support further evaluation rather than an immediate cha" + "nge in policy. What additi") + (
-        "onal evidence would resolve the uncertainty? A larger sample and an in" + "dependent replication woul") +
-        "d strengthen the case.\n" )
-        + ( ("The conclusion returns to the research question and weighs the evidenc" + "e fairly. Future R&D shoul") + (
-        "d test the mechanism in other settings, publish the full methods, and " + "explain any departures fro") + "m the plan [60].\n" );
+        public const string Text =
+            "Smith et al. (2021) found a 42.5% rise [12].\n" +
+            "Is it \"robust\"? Yes: p < 0.05.\n" +
+            "NASA and the US call the study's n = 128 cases \"reliable\".\n" +
+            "R&D needs long-term evidence (Smith et al., 2021).\n" +
+            "Table 2.1 lists costs and/or gains. Figure 3 shows them.\n" +
+            "Figure 3 compares the UK and US samples (Lee et al., 2022). The report calls the trend \"stable\"; e.g., both " +
+            "groups improved by 12.8%.\n" +
+            "The methods cover three stages: recruitment, review, and analysis. Participants read the same instructions, " +
+            "and the team recorded each response [24].\n" +
+            "The R&D review found a 36.2% reduction in waste (Jones et al., 2023). Could this reflect a change in " +
+            "demand? The authors tested that explanation before accepting the result.\n" +
+            "Table 4.2 reports the mean, range, and sample size: n = 256, p < 0.01. Its notes distinguish short-term " +
+            "variation from a sustained change; the difference matters for planning.\n" +
+            "A second NASA study assessed water quality [36]. It found that 18.4% of samples exceeded the threshold, " +
+            "while the control group remained within the expected range.\n" +
+            "The analysis follows the same sequence in each region: collect evidence, compare estimates, and report " +
+            "uncertainty. A missing value is marked as unavailable rather than treated as zero (Brown et al., 2020).\n" +
+            "Figure 5 shows the distribution before and after the policy change. The central estimate rose from 21.6% to " +
+            "34.9%, but the intervals overlap. The report therefore describes the evidence as \"promising, with limits\".\n" +
+            "The review considers cost and/or reliability when comparing options. Long-term maintenance may outweigh an " +
+            "initial saving; the discussion separates those effects and states the assumptions [48].\n" +
+            "The final model includes age, location, and prior experience. Table 6.1 gives the adjusted estimates (Smith " +
+            "et al., 2024), with n = 512 and p < 0.05 for the main comparison.\n" +
+            "These findings support further evaluation rather than an immediate change in policy. What additional " +
+            "evidence would resolve the uncertainty? A larger sample and an independent replication would strengthen the " +
+            "case.\n" +
+            "The conclusion returns to the research question and weighs the evidence fairly. Future R&D should test the " +
+            "mechanism in other settings, publish the full methods, and explain any departures from the plan [60].\n";
     }
     internal sealed class CaptureKey
     {
@@ -310,7 +311,7 @@ namespace AutoWrite
             layout.Controls.Add(top);
             layout.Controls.Add(new Label
             {
-                Text = ("Copy the passage below. Corrections are Backspace only; paste, navigat" + "ion and Tab are ignored."), Dock =
+                Text = ("Copy the passage below. Corrections are Backspace only; paste, navigation and Tab are ignored."), Dock =
                 DockStyle.Fill
             });
             _passage.Text = CalibrationPassage.Text;

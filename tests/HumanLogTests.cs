@@ -116,8 +116,8 @@ namespace AutoWrite.Tests
                 }
                 Assert(backspaces > 0, "probe did not send Backspace");
                 Assert(recording.FinalText() == LiveTypingProbe.ExpectedText, "probe final text differs");
-                Console.WriteLine("PROBE VIRTUAL backspaces=" + backspaces + "; " + LiveTypingProbe.DifferenceSummary(LiveTypingProbe.
-                ExpectedText, recording.FinalText()));
+                Console.WriteLine("PROBE VIRTUAL backspaces=" + backspaces + "; " + LiveTypingProbe.DifferenceSummary(
+                LiveTypingProbe.ExpectedText, recording.FinalText()));
             });
             Test("human hesitations errors and skipped words do not move bounded estimates", delegate
             {

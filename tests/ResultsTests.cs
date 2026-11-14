@@ -15,8 +15,7 @@ namespace AutoWrite.Tests
 
         private static int ProposalCount(Control control)
         {
-            int count = control.AccessibleName != null && control.AccessibleName.StartsWith("Proposed ", StringComparison.Ordinal) ? 1 : 0
-            ;
+            int count = control.AccessibleName != null && control.AccessibleName.StartsWith("Proposed ", StringComparison.Ordinal) ? 1 : 0;
             foreach (Control child in control.Controls)
             {
                 count += ProposalCount(child);

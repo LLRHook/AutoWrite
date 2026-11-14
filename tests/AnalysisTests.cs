@@ -153,8 +153,7 @@ namespace AutoWrite.Tests
                 s.EnableTypos = false;
                 s.ThinkingPauseChancePercent = 0;
                 s.JitterPercent = 0;
-                s
-                .BurstPercent = 0;
+                s.BurstPercent = 0;
                 s.KeyPairRhythmPercent = 0;
                 s.WordPauseMilliseconds = 0;
                 s.SentencePauseMilliseconds = 0;
@@ -162,8 +161,7 @@ namespace AutoWrite.Tests
                 s.KeepTargetWpm = false;
                 s.WordsPerMinute = 30;
                 var r = RunEngine("aAa\na", s, 7, Int64.MaxValue);
-                Assert(r.Keys[1].Time - r.Keys[0].Time == 2 * (r.Keys[2].Time - r.Keys[1].Time), "factor did not move into uppercase key")
-                ;
+                Assert(r.Keys[1].Time - r.Keys[0].Time == 2 * (r.Keys[2].Time - r.Keys[1].Time), "factor did not move into uppercase key");
                 Assert(s.ParagraphPauseMilliseconds == 0, "paragraph default changed");
                 s.ParagraphPauseMilliseconds = 500;
                 var p = RunEngine("aAa\na", s, 7, Int64.MaxValue);
@@ -171,8 +169,8 @@ namespace AutoWrite.Tests
                 Assert(RunEngine("aAa\r\na", s, 7, Int64.MaxValue).Log() == p.Log(), "CRLF added paragraph pause twice");
                 Assert(File.ReadAllText(Path.Combine(DataDirectory.PathRoot, "engine.tsv")).Contains("paragraph_pause_ms=500"),
                 "paragraph setting missing from telemetry");
-                var budget = typeof(TypingEngine).GetMethod("EstimateNaturalPauseBudget", System.Reflection.BindingFlags.Static | System
-                .Reflection.BindingFlags.NonPublic);
+                var budget = typeof(TypingEngine).GetMethod("EstimateNaturalPauseBudget", System.Reflection.BindingFlags.Static |
+                System.Reflection.BindingFlags.NonPublic);
                 Assert((double)budget.Invoke(null, new object[]
                 {
                     "a\nb", Options(s), null
@@ -189,8 +187,8 @@ namespace AutoWrite.Tests
                 s.BurstPercent = 0;
                 s.EnableTypos = false;
                 s.ThinkingPauseChancePercent = 0;
-                var result = CalibrationAnalysis.Analyze(Capture(RunEngine(CalibrationPassage.Text, s, 931, 60000)), 60, AppSettings
-                .Defaults());
+                var result = CalibrationAnalysis.Analyze(Capture(RunEngine(CalibrationPassage.Text, s, 931, 60000)), 60,
+                AppSettings.Defaults());
                 Assert(Math.Abs(result.Proposed.JitterPercent - 75) <= 12, "jitter estimator: " + result.Proposed.JitterPercent);
             });
             Test("correction estimators recover notice and repair centers", delegate
@@ -198,10 +196,10 @@ namespace AutoWrite.Tests
                 var s = Profile(1);
                 s.CorrectionNoticeMilliseconds = 460;
                 s.CorrectionPauseMilliseconds = 80;
-                var result = CalibrationAnalysis.Analyze(Capture(RunEngine(CalibrationPassage.Text, s, 42, 60000)), 60, AppSettings
-                .Defaults());
-                Assert(Math.Abs(result.Proposed.CorrectionNoticeMilliseconds - 460) <= 120, "notice estimator: " + result.Proposed
-                .CorrectionNoticeMilliseconds);
+                var result = CalibrationAnalysis.Analyze(Capture(RunEngine(CalibrationPassage.Text, s, 42, 60000)), 60,
+                AppSettings.Defaults());
+                Assert(Math.Abs(result.Proposed.CorrectionNoticeMilliseconds - 460) <= 120, "notice estimator: " +
+                result.Proposed.CorrectionNoticeMilliseconds);
                 Assert(Math.Abs(result.Proposed.CorrectionPauseMilliseconds - 80) <= 15, "repair estimator");
             });
             Test("synthetic slow and fast motor logs propose closest achievable speeds", delegate
@@ -232,8 +230,8 @@ namespace AutoWrite.Tests
                     });
                     Assert(row.Measured && row.ClosestAchievable && row.Reason.Contains("Closest achievable"), "closest row missing for "
                     + motor);
-                    Assert(result.Warning.Contains(result.MeasuredWpm.ToString("F1")) && result.Warning.Contains(result.PredictedWpm
-                    .ToString("F1")), "warning must show both speeds");
+                    Assert(result.Warning.Contains(result.MeasuredWpm.ToString("F1")) && result.Warning.Contains(
+                    result.PredictedWpm.ToString("F1")), "warning must show both speeds");
                     Assert(Math.Abs(CalibrationReplay.Predict(result.Proposed, 60) - result.PredictedWpm) < .0001,
                     "proposed speed differs from warning");
                     double endpoint = motor == 300 ? result.MinimumWpm : result.MaximumWpm;
@@ -248,8 +246,8 @@ namespace AutoWrite.Tests
                         "closer accepted target exists: " + target);
                     }
                     result.Proposed.WordsPerMinute = proposedTarget;
-                    var baseMethod = typeof(TypingEngine).GetMethod("CalculateBaseDelay", System.Reflection.BindingFlags.Static | System
-                    .Reflection.BindingFlags.NonPublic);
+                    var baseMethod = typeof(TypingEngine).GetMethod("CalculateBaseDelay", System.Reflection.BindingFlags.Static |
+                    System.Reflection.BindingFlags.NonPublic);
                     int center = (int)baseMethod.Invoke(null, new object[]
                     {
                         CalibrationPassage.Text, Options(result.Proposed), 0, null
@@ -266,15 +264,14 @@ namespace AutoWrite.Tests
                 s.JitterPercent = 25;
                 s.BurstPercent = 50;
                 s.ThinkingPauseChancePercent = 25;
-                s
-                .ThinkingPauseMilliseconds = 3000;
+                s.ThinkingPauseMilliseconds = 3000;
                 var full = RunEngine(CalibrationPassage.Text, s, 919, Int64.MaxValue);
                 var result = CalibrationAnalysis.Analyze(Capture(full), (int)Math.Ceiling(full.Now / 1000D), AppSettings.Defaults());
                 Assert(Math.Abs(result.Proposed.BurstPercent - 50) <= 20, "burst estimate: " + result.Proposed.BurstPercent);
-                Assert(Math.Abs(result.Proposed.ThinkingPauseChancePercent - 25) <= 6, "thinking chance: " + result.Proposed
-                .ThinkingPauseChancePercent);
-                Assert(Math.Abs(result.Proposed.ThinkingPauseMilliseconds - 3000) <= 700, "thinking maximum: " + result.Proposed
-                .ThinkingPauseMilliseconds);
+                Assert(Math.Abs(result.Proposed.ThinkingPauseChancePercent - 25) <= 6, "thinking chance: " +
+                result.Proposed.ThinkingPauseChancePercent);
+                Assert(Math.Abs(result.Proposed.ThinkingPauseMilliseconds - 3000) <= 700, "thinking maximum: " +
+                result.Proposed.ThinkingPauseMilliseconds);
             });
             Test("class mistake risk and kind shares require sufficient independent errors", delegate
             {
@@ -285,8 +282,8 @@ namespace AutoWrite.Tests
                 const string shifted = "~!@#$%^&*()_+{}|:\"<>?";
                 foreach (char c in CalibrationPassage.Text)
                 {
-                    int cl = Char.IsLetter(c) ? 0 : Char.IsDigit(c) ? 1 : shifted.IndexOf(c) >= 0 ? 3 : Char.IsPunctuation(c) || Char
-                    .IsSymbol(c) ? 2 : -1;
+                    int cl = Char.IsLetter(c) ? 0 : Char.IsDigit(c) ? 1 : shifted.IndexOf(c) >= 0 ? 3 : Char.IsPunctuation(c) ||
+                    Char.IsSymbol(c) ? 2 : -1;
                     if (cl >= 0)
                     {
                         opportunities[cl]++;
@@ -323,8 +320,7 @@ namespace AutoWrite.Tests
                 s.TypoChancePercent = 10;
                 s.CorrectionDetectChars = 2;
                 s.DuplicateChancePercent = 0;
-                s
-                .TransposeChancePercent = 0;
+                s.TransposeChancePercent = 0;
                 var full = RunEngine(CalibrationPassage.Text, s, 777, Int64.MaxValue);
                 var result = CalibrationAnalysis.Analyze(Capture(full), (int)Math.Ceiling(full.Now / 1000D), AppSettings.Defaults());
                 Assert(result.Proposed.CorrectionDetectChars == 2, "detection maximum: " + result.Proposed.CorrectionDetectChars);
@@ -342,97 +338,25 @@ namespace AutoWrite.Tests
         internal static AppSettings Profile(int profile)
         {
             var s = AppSettings.Defaults();
-            s.WordsPerMinute = new[]
-            {
-                40, 42, 52, 5, 180
-            }
-            [profile];
+            s.WordsPerMinute = new[] { 40, 42, 52, 5, 180 }[profile];
             int i = profile < 3 ? profile : 1;
-            s.JitterPercent = new[]
-            {
-                25, 45, 70
-            }
-            [i];
-            s.KeyPairRhythmPercent = new[]
-            {
-                30, 60, 95
-            }
-            [i];
-            s.BurstPercent = new[]
-            {
-                15, 25, 40
-            }
-            [i];
-            s.WordPauseMilliseconds = new[]
-            {
-                60, 100, 40
-            }
-            [i];
-            s.SentencePauseMilliseconds = new[]
-            {
-                300, 450, 180
-            }
-            [i];
-            s.ParagraphPauseMilliseconds = new[]
-            {
-                130, 210, 80
-            }
-            [i];
-            s.UppercaseDelayPenaltyPercent = new[]
-            {
-                35, 65, 95
-            }
-            [i];
-            s.NumberDelayPenaltyPercent = new[]
-            {
-                55, 85, 115
-            }
-            [i];
-            s.PunctuationDelayPenaltyPercent = new[]
-            {
-                65, 95, 125
-            }
-            [i];
-            s.ShiftSymbolDelayPenaltyPercent = new[]
-            {
-                95, 125, 155
-            }
-            [i];
-            s.TypoChancePercent = new[]
-            {
-                3, 4, 5
-            }
-            [i];
-            s.CorrectionNoticeMilliseconds = new[]
-            {
-                1050, 650, 350
-            }
-            [i];
-            s.CorrectionPauseMilliseconds = new[]
-            {
-                150, 95, 55
-            }
-            [i];
-            s.CorrectionResumeMilliseconds = new[]
-            {
-                300, 240, 100
-            }
-            [i];
-            s.CorrectionDetectChars = new[]
-            {
-                2, 4, 6
-            }
-            [i];
-            s.ThinkingPauseChancePercent = new[]
-            {
-                2, 6, 8
-            }
-            [i];
-            s.ThinkingPauseMilliseconds = new[]
-            {
-                1200, 1700, 2400
-            }
-            [i];
+            s.JitterPercent = new[] { 25, 45, 70 }[i];
+            s.KeyPairRhythmPercent = new[] { 30, 60, 95 }[i];
+            s.BurstPercent = new[] { 15, 25, 40 }[i];
+            s.WordPauseMilliseconds = new[] { 60, 100, 40 }[i];
+            s.SentencePauseMilliseconds = new[] { 300, 450, 180 }[i];
+            s.ParagraphPauseMilliseconds = new[] { 130, 210, 80 }[i];
+            s.UppercaseDelayPenaltyPercent = new[] { 35, 65, 95 }[i];
+            s.NumberDelayPenaltyPercent = new[] { 55, 85, 115 }[i];
+            s.PunctuationDelayPenaltyPercent = new[] { 65, 95, 125 }[i];
+            s.ShiftSymbolDelayPenaltyPercent = new[] { 95, 125, 155 }[i];
+            s.TypoChancePercent = new[] { 3, 4, 5 }[i];
+            s.CorrectionNoticeMilliseconds = new[] { 1050, 650, 350 }[i];
+            s.CorrectionPauseMilliseconds = new[] { 150, 95, 55 }[i];
+            s.CorrectionResumeMilliseconds = new[] { 300, 240, 100 }[i];
+            s.CorrectionDetectChars = new[] { 2, 4, 6 }[i];
+            s.ThinkingPauseChancePercent = new[] { 2, 6, 8 }[i];
+            s.ThinkingPauseMilliseconds = new[] { 1200, 1700, 2400 }[i];
             return s;
         }
 
@@ -654,7 +578,8 @@ namespace AutoWrite.Tests
                     Metric(report, duration, profile, "TestVsSameWindowMeanWpmErrorPercent", variation);
                     double ratio = CalibrationAnalysis.Median(replayErrors) / Math.Max(.01, CalibrationAnalysis.Median(controlBErrors));
                     report.AppendLine("# pooled recovered / Control B ratio " + duration + "s p" + profile + " " + ratio);
-                    report.AppendLine("# actual base range " + duration + "s p" + profile + " " + Min(actualBases) + ".." + Max(actualBases));
+                    report.AppendLine("# actual base range " + duration + "s p" + profile + " " + Min(actualBases) + ".." +
+                        Max(actualBases));
                     if (profile < 3 && ratio > 1.25)
                     {
                         failures.Add(duration + "s p" + profile + " pooled replay / Control B ratio=" + ratio);

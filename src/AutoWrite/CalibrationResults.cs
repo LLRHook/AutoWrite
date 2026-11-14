@@ -123,7 +123,8 @@ namespace AutoWrite
             var summary = new Label
             {
                 Dock = DockStyle.Fill, Name = "CalibrationSummary", AccessibleName = "Calibration summary", Text = "Measured speed: " +
-                result.MeasuredWpm.ToString("F1") + " WPM active; AutoWrite expected: " + result.PredictedWpm.ToString("F1") + " WPM     Accuracy: " + result.Accuracy.ToString("F1") + "%     Corrected episodes: "
+                result.MeasuredWpm.ToString("F1") + " WPM active; AutoWrite expected: " + result.PredictedWpm.ToString("F1") +
+                    " WPM     Accuracy: " + result.Accuracy.ToString("F1") + "%     Corrected episodes: "
                 + result.CorrectedMistakes + Environment.NewLine + result.ActivityDescription
             };
             root.Controls.Add(summary);

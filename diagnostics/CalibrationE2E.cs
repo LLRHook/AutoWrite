@@ -17,8 +17,7 @@ internal static class CalibrationE2E
     [DllImport("user32.dll")] private static extern bool IsWindowEnabled(IntPtr h);
     [DllImport("user32.dll", CharSet = CharSet.Unicode)] private static extern short VkKeyScan(char c);
     [DllImport("user32.dll", CharSet = CharSet.Auto)] private static extern IntPtr SendMessage(IntPtr h, int m, IntPtr w, IntPtr l);
-    [DllImport("user32.dll", CharSet = CharSet.Auto)] private static extern IntPtr SendMessage(IntPtr h, int m, IntPtr w, StringBuilder l)
-    ;
+    [DllImport("user32.dll", CharSet = CharSet.Auto)] private static extern IntPtr SendMessage(IntPtr h, int m, IntPtr w, StringBuilder l);
     [DllImport("user32.dll")] private static extern bool PrintWindow(IntPtr h, IntPtr dc, uint flags);
     [DllImport("user32.dll")] private static extern bool GetWindowRect(IntPtr h, out Rect rect);
     [DllImport("user32.dll", CharSet = CharSet.Unicode)] private static extern int GetWindowLong(IntPtr window, int index);
@@ -27,8 +26,7 @@ internal static class CalibrationE2E
     [DllImport("user32.dll", CharSet = CharSet.Unicode)] private static extern int GetClassName(IntPtr h, StringBuilder text, int length);
     [DllImport("user32.dll")] private static extern bool EnumWindows(EnumWindow callback, IntPtr parameter);
     [DllImport("user32.dll")] private static extern uint GetWindowThreadProcessId(IntPtr h, out uint pid);
-    [DllImport("user32.dll", CharSet = CharSet.Unicode)] private static extern int GetWindowText(IntPtr h, StringBuilder text, int length)
-    ;
+    [DllImport("user32.dll", CharSet = CharSet.Unicode)] private static extern int GetWindowText(IntPtr h, StringBuilder text, int length);
     [DllImport("oleacc.dll")] private static extern int AccessibleObjectFromWindow(IntPtr window, uint objectId, ref Guid iid, [MarshalAs(
     UnmanagedType.Interface)] out object accessible);
     private delegate bool EnumWindow(IntPtr h, IntPtr parameter);
@@ -174,8 +172,8 @@ internal static class CalibrationE2E
             return AutomationElement.FromHandle(named);
         }
         var elements = root.FindAll(TreeScope.Descendants, new PropertyCondition(AutomationElement.NameProperty, name));
-        if (elements.Count == 0 && (name.StartsWith("Proposed ", StringComparison.Ordinal) || name.StartsWith("Current ", StringComparison
-        .Ordinal)))
+        if (elements.Count == 0 && (name.StartsWith("Proposed ", StringComparison.Ordinal) || name.StartsWith("Current ",
+        StringComparison.Ordinal)))
         {
             EnumChildWindows(parent, delegate(IntPtr h, IntPtr unused)
             {
@@ -338,8 +336,8 @@ internal static class CalibrationE2E
                 GetClassName(h, type, type.Capacity);
                 Rect r;
                 GetWindowRect(h, out r);
-                if (type.ToString().IndexOf("EDIT", StringComparison.OrdinalIgnoreCase) >= 0 && Math.Abs((r.Top + r.Bottom) / 2D - (bounds
-                .Top + bounds.Bottom) / 2) < 6 && r.Left >= bounds.Left - 220 && r.Right <= bounds.Right + 3)
+                if (type.ToString().IndexOf("EDIT", StringComparison.OrdinalIgnoreCase) >= 0 && Math.Abs((r.Top + r.Bottom) / 2D - (
+                bounds.Top + bounds.Bottom) / 2) < 6 && r.Left >= bounds.Left - 220 && r.Right <= bounds.Right + 3)
                 {
                     editHandle = h;
                 }
@@ -483,8 +481,8 @@ internal static class CalibrationE2E
         Assert(!Find(main, "Calibrate typing").Current.IsEnabled, "second calibration disabled during test");
         Assert(!Find(main, "Type in 4s").Current.IsEnabled, "automatic typing disabled during test");
         Image(captureHandle, "calibration-dialog-" + cycle + ".png");
-        var combos = capture.FindAll(TreeScope.Descendants, new PropertyCondition(AutomationElement.ControlTypeProperty, ControlType
-        .ComboBox));
+        var combos = capture.FindAll(TreeScope.Descendants, new PropertyCondition(AutomationElement.ControlTypeProperty,
+        ControlType.ComboBox));
         Assert(combos.Count == 1, "duration selector present");
         Assert(Read(combos[0]).Contains("60"), "default duration is 60 seconds");
         SendMessage((IntPtr)combos[0].Current.NativeWindowHandle, 0x14E, IntPtr.Zero, IntPtr.Zero);
@@ -623,8 +621,8 @@ internal static class CalibrationE2E
             {
                 var element = Find(main, pair.Value);
                 var value = Read(element);
-                Console.WriteLine("MAIN " + pair.Key + " type=" + element.Current.ControlType.ProgrammaticName + " class=" + element
-                .Current.ClassName + " value=" + value + " expected=" + beforeValues[pair.Key]);
+                Console.WriteLine("MAIN " + pair.Key + " type=" + element.Current.ControlType.ProgrammaticName + " class=" +
+                element.Current.ClassName + " value=" + value + " expected=" + beforeValues[pair.Key]);
                 Assert(Normalize(pair.Key, value) == beforeValues[pair.Key], "Discard leaves main control " + pair.Key);
             }
             results = PerformCapture(main, 1);

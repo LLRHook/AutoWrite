@@ -34,8 +34,8 @@ namespace AutoWrite.Tests
                             dialog.FormClosed += delegate { closed = true; };
                             if (completed)
                             {
-                                typeof(CalibrationDialog).GetMethod("Finish", BindingFlags.Instance | BindingFlags.NonPublic)
-                                    .Invoke(dialog, null);
+                                var finish = typeof(CalibrationDialog).GetMethod("Finish", BindingFlags.Instance | BindingFlags.NonPublic);
+                                finish.Invoke(dialog, null);
                             }
                             else
                             {

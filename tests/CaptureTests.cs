@@ -71,8 +71,7 @@ namespace AutoWrite.Tests
                 s.Accept('\b', 20);
                 s.Accept('\b', 30);
                 s.Accept('\b', 40);
-                s
-                .Accept('c', 50);
+                s.Accept('c', 50);
                 s.Accept('\r', 60);
                 Assert(s.TypedText == "c\n" && s.Keys.Count == 7, "repeat backspace/Enter");
                 Assert(!s.Accept('d', 30000) && s.Finished, "deadline boundary");

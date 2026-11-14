@@ -153,8 +153,7 @@ namespace AutoWrite
             int x = n, y = end;
             while (x > 0 || y > 0)
             {
-                if (x > 1 && y > 1 && actual[x - 1] == passage[y - 2] && actual[x - 2] == passage[y - 1] && d[x, y] == d[x - 2, y - 2] + 1
-                )
+                if (x > 1 && y > 1 && actual[x - 1] == passage[y - 2] && actual[x - 2] == passage[y - 1] && d[x, y] == d[x - 2, y - 2] + 1)
                 {
                     map[x - 1] = y - 2;
                     map[x - 2] = y - 1;
@@ -229,9 +228,11 @@ namespace AutoWrite
                     LastRetype = -1
                 };
                 episode.Expected = passage.Substring(episode.Start, Math.Max(0, episode.End - episode.Start));
-                episode.Kind = episode.Removed.Length > episode.Expected.Length ? "duplicate" : episode.Removed.Length == episode.Expected
-                .Length && episode.Expected.Length >= 2 && episode.Removed[0] == episode.Expected[1] && episode.Removed[1] == episode.
-                Expected[0] && episode.Removed.Substring(2) == episode.Expected.Substring(2) ? "transpose" : episode.Expected.Length > 0
+                episode.Kind = episode.Removed.Length > episode.Expected.Length ? "duplicate" : episode.Removed.Length ==
+                episode.Expected.Length && episode.Expected.Length >= 2 && episode.Removed[0] == episode.Expected[1] &&
+                    episode.Removed[1] ==
+                episode.Expected[0] && episode.Removed.Substring(2) == episode.Expected.Substring(2) ? "transpose" :
+                    episode.Expected.Length > 0
                 && episode.Removed.Length > 0 && IsMissedShift(episode.Expected[0], episode.Removed[0]) ? "missed-shift" : "nearby";
                 for (int j = first + 1; j < i; j++)
                 {
@@ -668,8 +669,9 @@ namespace AutoWrite
                     {
                         continue;
                     }
-                    weighted += cl == 2 ? result.Proposed.NumberTypoMultiplierPercent / 100D : cl == 3 ? result.Proposed.
-                    PunctuationTypoMultiplierPercent / 100D : cl == 4 ? result.Proposed.ShiftSymbolTypoMultiplierPercent / 100D : 1;
+                    weighted += cl == 2 ? result.Proposed.NumberTypoMultiplierPercent / 100D : cl == 3 ?
+                    result.Proposed.PunctuationTypoMultiplierPercent / 100D : cl == 4 ?
+                        result.Proposed.ShiftSymbolTypoMultiplierPercent / 100D : 1;
                 }
                 Set(result, "TypoChancePercent", (int)Math.Round(corrections.Count * 100D / Math.Max(1, weighted)),
                 "Corrected episodes / weighted eligible keys; episodes=" + corrections.Count + ".");
@@ -710,8 +712,8 @@ namespace AutoWrite
                 + notice.Count + ".");
                 if (repair.Count >= 8)
                 {
-                    Set(result, "CorrectionPauseMilliseconds", (int)Math.Round(repairMean), "Within-correction key gaps; n=" + repair.
-                    Count + ".");
+                    Set(result, "CorrectionPauseMilliseconds", (int)Math.Round(repairMean), "Within-correction key gaps; n=" +
+                    repair.Count + ".");
                 }
                 if (resume.Count >= 3)
                 {
@@ -741,8 +743,7 @@ namespace AutoWrite
                                 1D
                             }
                             : new[]
-                            {
-                                .45, .30, .17, .08
+                            {.45, .30, .17, .08
                             };
                             for (int j = 0; j < distances.Length; j++)
                             {
@@ -774,9 +775,8 @@ namespace AutoWrite
                         "Likelihood of fixed detection-distance distribution, censored at boundaries; n=" + corrections.Count + ".");
                     }
                     else Keep(result, "CorrectionDetectChars", (
-                    ("Kept: boundary-censored detection distances do not distinguish maximum" + " distances (likelihood rat") +
-                    "io below 3)." ))
-                    ;
+                    ("Kept: boundary-censored detection distances do not distinguish maximum distances (likelihood rat") +
+                    "io below 3)." ));
                 }
                 if (corrections.Count >= 20)
                 {
