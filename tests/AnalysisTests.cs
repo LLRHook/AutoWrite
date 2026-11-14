@@ -14,6 +14,7 @@ namespace AutoWrite.Tests
         { var s = new CaptureSession(60); for (int i = 0; i < chars.Length; i++) s.Accept(chars[i], i * 100); return s; }
         static partial void AnalysisTests()
         {
+            HumanLogTests();
             Test("live probe idle boundary and mismatch summaries never expose received text", delegate {
                 Assert(LiveTypingProbe.IdleSeconds(300000, 60001) < 240 && LiveTypingProbe.IdleSeconds(300000, 60000) == 240, "idle threshold boundary");
                 Assert(LiveTypingProbe.IdleSeconds(100, UInt32.MaxValue - 899) == 1, "idle tick wrap");
@@ -53,7 +54,7 @@ namespace AutoWrite.Tests
                 var rows = new List<AlignedGap>();
                 for (int i = 1; i < CalibrationPassage.Text.Length; i++)
                 {
-                    var r = new AlignedGap { Previous = CalibrationPassage.Text[i - 1], Current = CalibrationPassage.Text[i], Event = i };
+                    var r = new AlignedGap { Previous = CalibrationPassage.Text[i - 1], Current = CalibrationPassage.Text[i], Event = i, Source = i };
                     r.Gap = CalibrationAnalysis.Prediction(r, truth); rows.Add(r);
                 }
                 var fit = CalibrationAnalysis.Fit(rows, AppSettings.Defaults());

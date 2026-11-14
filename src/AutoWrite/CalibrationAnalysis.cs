@@ -173,25 +173,60 @@ namespace AutoWrite
             }
             return b;
         }
+        internal static List<List<AlignedGap>> BoundaryUnits(List<AlignedGap> rows)
+        {
+            var units = new List<List<AlignedGap>>();
+            for (int i = 0; i < rows.Count; i++)
+            {
+                var unit = new List<AlignedGap>();
+                unit.Add(rows[i]);
+                while (Char.IsWhiteSpace(rows[i].Current) && i + 1 < rows.Count &&
+                    rows[i + 1].Event == rows[i].Event + 1 && rows[i + 1].Source == rows[i].Source + 1)
+                {
+                    i++;
+                    unit.Add(rows[i]);
+                }
+                units.Add(unit);
+            }
+            return units;
+        }
         internal static double[] Fit(List<AlignedGap> rows, AppSettings current)
         {
-            var p = new double[] { 120, .2, .3, .3, .5, .5, current.WordPauseMilliseconds, current.SentencePauseMilliseconds, current.ParagraphPauseMilliseconds };
+            var p = new double[] { 120, .2, .3, .3, .5, .5, current.WordPauseMilliseconds,
+                current.SentencePauseMilliseconds, current.ParagraphPauseMilliseconds };
+            var units = BoundaryUnits(rows);
             for (int iteration = 0; iteration < 30; iteration++)
             {
                 var a = new double[9, 9]; var b = new double[9];
-                foreach (var r in rows)
+                foreach (var unit in units)
                 {
-                    double motor = Motor(r, p), expected = Prediction(r, p), residual = r.Gap - expected;
-                    double variance = motor * motor * .12 + Math.Pow(expected - motor, 2) * .041 + 25;
-                    // Thinking pauses have a different model; remove only gross positive outliers.
-                    double z = residual / Math.Sqrt(variance); if (Boundary(r.Previous) && z > 6) continue;
+                    double expected = 0, observed = 0, variance = 0;
+                    bool boundary = false;
+                    var d = new double[9];
+                    foreach (var r in unit)
+                    {
+                        double motor = Motor(r, p), prediction = Prediction(r, p);
+                        expected += prediction;
+                        observed += r.Gap;
+                        variance += motor * motor * .12 + Math.Pow(prediction - motor, 2) * .041 + 25;
+                        boundary |= Boundary(r.Previous);
+                        int c = Class(r.Current); double pair = Pair(r.Previous, r.Current);
+                        d[0] += motor / p[0];
+                        if (c > 0) d[c] += p[0] * (1 + pair * p[5]);
+                        d[5] += p[0] * (c == 0 ? 1 : 1 + p[c]) * pair;
+                        if (Sentence(r.Previous)) d[7]++;
+                        else if (Char.IsWhiteSpace(r.Previous)) d[6]++;
+                        if (r.Previous == '\n') d[8]++;
+                    }
+                    double residual = observed - expected;
+                    double z = residual / Math.Sqrt(variance);
+                    if (boundary && z > 6) continue;
                     double weight = 1 / variance;
-                    var d = new double[9]; int c = Class(r.Current); double pair = Pair(r.Previous, r.Current);
-                    d[0] = motor / p[0]; if (c > 0) d[c] = p[0] * (1 + pair * p[5]);
-                    d[5] = p[0] * (c == 0 ? 1 : 1 + p[c]) * pair;
-                    if (Sentence(r.Previous)) d[7] = 1; else if (Char.IsWhiteSpace(r.Previous)) d[6] = 1;
-                    if (r.Previous == '\n') d[8] = 1;
-                    for (int j = 0; j < 9; j++) { b[j] += weight * d[j] * residual; for (int k = 0; k < 9; k++) a[j, k] += weight * d[j] * d[k]; }
+                    for (int j = 0; j < 9; j++)
+                    {
+                        b[j] += weight * d[j] * residual;
+                        for (int k = 0; k < 9; k++) a[j, k] += weight * d[j] * d[k];
+                    }
                 }
                 for (int j = 0; j < 9; j++) a[j, j] += 1e-7;
                 var delta = Solve(a, b);
@@ -235,7 +270,7 @@ namespace AutoWrite
             foreach (var r in gaps)
             {
                 double motor = Motor(r, fit), residualMotor = r.Gap - (Prediction(r, fit) - motor);
-                if (residualMotor > motor * .15 && residualMotor < motor * 3 && !Boundary(r.Previous))
+                if (residualMotor > motor * .15 && residualMotor < motor * 3 && !Boundary(r.Previous) && !Char.IsWhiteSpace(r.Current))
                 { double l = Math.Log(residualMotor / motor); logs.Add(l); byEvent[r.Event] = l; }
             }
             if (logs.Count >= 60)
@@ -263,10 +298,19 @@ namespace AutoWrite
                 Keep(result, "BurstPercent", "Kept: " + logs.Count + " ordinary motor residuals; need 60.");
             }
             var thinking = new List<double>(); int boundaries = 0;
-            foreach (var r in gaps) if (Boundary(r.Previous))
+            foreach (var unit in BoundaryUnits(gaps))
             {
-                boundaries++; double extra = r.Gap - Prediction(r, fit);
-                if (extra > Math.Max(350, Motor(r, fit) * 2)) thinking.Add(extra);
+                bool boundary = false;
+                double extra = 0, maximumMotor = 0;
+                foreach (var r in unit)
+                {
+                    boundary |= Boundary(r.Previous);
+                    extra += r.Gap - Prediction(r, fit);
+                    maximumMotor = Math.Max(maximumMotor, Motor(r, fit));
+                }
+                if (!boundary) continue;
+                boundaries++;
+                if (extra > Math.Max(350, maximumMotor * 2)) thinking.Add(extra);
             }
             if (thinking.Count >= 4 && boundaries >= 30)
             {
