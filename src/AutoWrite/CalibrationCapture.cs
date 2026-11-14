@@ -96,7 +96,8 @@ namespace AutoWrite
         internal Action<int> Press;
         public CaptureTextBox()
         {
-            Name = "CalibrationInput"; AccessibleName = "Typing input"; Multiline = true; ReadOnly = true; ShortcutsEnabled = false;
+            Name = "CalibrationInput"; AccessibleName = "Typing input"; Multiline = true; ReadOnly = false; ShortcutsEnabled = false;
+            BackColor = SystemColors.Window; ForeColor = SystemColors.WindowText;
             AcceptsReturn = true; AcceptsTab = true; ScrollBars = ScrollBars.Vertical;
         }
         protected override bool IsInputKey(Keys keyData) { return true; }
@@ -131,6 +132,7 @@ namespace AutoWrite
     {
         private readonly ComboBox _length = new ComboBox();
         private readonly Label _clock = new Label();
+        private readonly RichTextBox _passage = new RichTextBox();
         private readonly CaptureTextBox _input = new CaptureTextBox();
         private readonly Stopwatch _watch = new Stopwatch();
         private readonly Timer _timer = new Timer();
@@ -147,7 +149,15 @@ namespace AutoWrite
             _length.Items.AddRange(new object[] { "30 seconds", "60 seconds" }); _length.SelectedIndex = 1; top.Controls.Add(_length);
             _clock.Text = "Clock starts with your first character"; _clock.AutoSize = true; top.Controls.Add(_clock); layout.Controls.Add(top);
             layout.Controls.Add(new Label { Text = "Copy the passage below. Corrections are Backspace only; paste, navigation and Tab are ignored.", Dock = DockStyle.Fill });
-            layout.Controls.Add(new TextBox { Text = CalibrationPassage.Text.Replace("\n", "\r\n"), Multiline = true, ReadOnly = true, ScrollBars = ScrollBars.Vertical, Dock = DockStyle.Fill, Font = new Font("Consolas", 12), Name = "CalibrationPassage", AccessibleName = "Calibration passage" });
+            _passage.Text = CalibrationPassage.Text;
+            _passage.ReadOnly = true;
+            _passage.BackColor = SystemColors.Window;
+            _passage.ScrollBars = RichTextBoxScrollBars.Vertical;
+            _passage.Dock = DockStyle.Fill;
+            _passage.Font = new Font("Consolas", 12);
+            _passage.Name = "CalibrationPassage";
+            _passage.AccessibleName = "Calibration passage";
+            layout.Controls.Add(_passage);
             _input.Dock = DockStyle.Fill; _input.Font = new Font("Consolas", 12); layout.Controls.Add(_input);
             var cancel = new Button { Text = "Cancel", Name = "CalibrationCancel", Dock = DockStyle.Right }; cancel.Click += delegate { Close(); }; layout.Controls.Add(cancel); CancelButton = cancel;
             _input.Character = Accept;
@@ -163,8 +173,20 @@ namespace AutoWrite
         private void Accept(char key)
         {
             EnsureSession(); if (!_watch.IsRunning) { _watch.Start(); _length.Enabled = false; }
-            if (_session.Accept(key, _watch.Elapsed.TotalMilliseconds)) { _input.Text = _session.TypedText.Replace("\n", "\r\n"); _input.SelectionStart = _input.TextLength; _input.ScrollToCaret(); }
+            if (_session.Accept(key, _watch.Elapsed.TotalMilliseconds)) { _input.Text = _session.TypedText.Replace("\n", "\r\n"); _input.SelectionStart = _input.TextLength; _input.ScrollToCaret(); UpdateProgress(_session.TypedText); }
             if (_session.Finished) Finish();
+        }
+        internal void UpdateProgress(string typed)
+        {
+            int reached = Math.Min(_passage.TextLength, CalibrationAnalysis.AlignPrefix(typed, CalibrationPassage.Text).End);
+            _passage.Select(0, _passage.TextLength);
+            _passage.SelectionColor = SystemColors.WindowText;
+            _passage.SelectionBackColor = SystemColors.Window;
+            _passage.Select(0, reached);
+            _passage.SelectionColor = Color.DimGray;
+            _passage.Select(reached, reached < _passage.TextLength ? 1 : 0);
+            _passage.SelectionBackColor = Color.LightGoldenrodYellow;
+            _passage.ScrollToCaret();
         }
         private void Finish() { _session.Finished = true; CompletedSession = _session; DialogResult = DialogResult.OK; Close(); }
         protected override void OnFormClosed(FormClosedEventArgs e)

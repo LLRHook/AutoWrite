@@ -60,11 +60,11 @@ namespace AutoWrite
             }
             if (Math.Abs(slow - measured) < bestError) { best = 5; bestPrediction = slow; bestError = Math.Abs(slow - measured); }
             if (Math.Abs(fast - measured) < bestError) { best = 180; bestPrediction = fast; bestError = Math.Abs(fast - measured); }
-            CalibrationAnalysis.Set(result, "WordsPerMinute", best, "Measured " + measured.ToString("F1") + " achieved WPM. Target chosen by forward replay of the recovered settings; predicted " + bestPrediction.ToString("F1") + " WPM (absolute forecast error " + bestError.ToString("F1") + ").");
+            CalibrationAnalysis.Set(result, "WordsPerMinute", best, "Achieved " + measured.ToString("F1") + " achieved WPM. Target chosen by forward replay of the recovered settings; predicted " + bestPrediction.ToString("F1") + " WPM (absolute forecast error " + bestError.ToString("F1") + ").");
             result.PredictedWpm = bestPrediction;
             if (measured < slow * .95 || measured > fast * 1.05)
             {
-                result.Warning = "Measured " + measured.ToString("F1") + " WPM cannot be reproduced with these settings and the engine's 45–220 ms motor limit. AutoWrite will type at approximately " + bestPrediction.ToString("F1") + " WPM with the proposed closest achievable Target WPM (" + best + ").";
+                result.Warning = "Achieved " + measured.ToString("F1") + " WPM cannot be reproduced with these settings and the engine's 45–220 ms motor limit. AutoWrite will type at approximately " + bestPrediction.ToString("F1") + " WPM with the proposed closest achievable Target WPM (" + best + ").";
                 foreach (var row in result.Estimates) if (row.Setting == "WordsPerMinute")
                 { row.ClosestAchievable = true; row.Reason = "Closest achievable: measured " + measured.ToString("F1") + " WPM; predicted " + bestPrediction.ToString("F1") + " WPM. Target chosen by forward replay; see warning."; }
             }

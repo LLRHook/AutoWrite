@@ -21,6 +21,28 @@ namespace AutoWrite.Tests
                     Assert(passage.Contains(example), "missing natural report example: " + example);
                 Assert(!System.Text.RegularExpressions.Regex.IsMatch(passage, "[a-z][A-Z]\\["), "invented pair token");
             });
+            Test("passage follows and marks progress while input has editable appearance", delegate {
+                string previous = Environment.GetEnvironmentVariable("AUTOWRITE_DIAGNOSTIC_NOACTIVATE");
+                var foreground = NativeMethods.GetForegroundWindow();
+                try
+                {
+                    Environment.SetEnvironmentVariable("AUTOWRITE_DIAGNOSTIC_NOACTIVATE", "1");
+                    using (var dialog = new CalibrationDialog())
+                    {
+                        dialog.Show();
+                        Application.DoEvents();
+                        dialog.UpdateProgress(CalibrationPassage.Text.Substring(0, 900));
+                        var passage = (RichTextBox)dialog.Controls.Find("CalibrationPassage", true)[0];
+                        var input = (TextBox)dialog.Controls.Find("CalibrationInput", true)[0];
+                        Assert(passage.SelectionStart == 900 && passage.SelectionLength == 1, "position marker");
+                        Assert(SendMessage(passage.Handle, 0xCE, IntPtr.Zero, IntPtr.Zero).ToInt32() > 0, "passage did not follow");
+                        Assert(!input.ReadOnly && input.BackColor == System.Drawing.SystemColors.Window, "disabled input appearance");
+                        Assert(NativeMethods.GetForegroundWindow() == foreground, "progress took foreground");
+                        dialog.Close();
+                    }
+                }
+                finally { Environment.SetEnvironmentVariable("AUTOWRITE_DIAGNOSTIC_NOACTIVATE", previous); }
+            });
             Test("capture repeats backspace, normalizes Enter, enforces deadline", delegate {
                 var s = new CaptureSession(30);
                 Assert(s.Accept('a', 0), "first key"); s.Accept('b', 10); s.Accept('\b', 20); s.Accept('\b', 30); s.Accept('\b', 40); s.Accept('c', 50); s.Accept('\r', 60);

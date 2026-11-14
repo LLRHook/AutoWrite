@@ -421,7 +421,7 @@ namespace AutoWrite
             double mistakes = proposed.EnableTypos ? Math.Round(weightTotal * proposed.TypoChancePercent / 100D) : 0;
             double correctionBudget = mistakes * (proposed.CorrectionNoticeMilliseconds + proposed.CorrectionResumeMilliseconds + (2 * (Math.Min(proposed.CorrectionDetectChars, 2.2) + 1) + .25) * Math.Max(1, proposed.CorrectionPauseMilliseconds));
             int target = (int)Math.Round(text.Length * 12000D / ((fit[0] + 5) * units + natural + correctionBudget));
-            Set(result, "WordsPerMinute", target, "Measured " + result.MeasuredWpm.ToString("F1", CultureInfo.InvariantCulture) + " achieved WPM; target obtained by inverting the engine's full-passage budget.");
+            Set(result, "WordsPerMinute", target, "Achieved " + result.MeasuredWpm.ToString("F1", CultureInfo.InvariantCulture) + " achieved WPM; target obtained by inverting the engine's full-passage budget.");
             CalibrationReplay.MatchSpeed(result, seconds);
             return result;
         }
