@@ -13,6 +13,9 @@ using Accessibility;
 internal static class CalibrationE2E
 {
     [DllImport("user32.dll")] private static extern IntPtr GetForegroundWindow();
+    [DllImport("user32.dll")] private static extern bool PostMessage(IntPtr h, int m, IntPtr w, IntPtr l);
+    [DllImport("user32.dll")] private static extern bool IsWindowEnabled(IntPtr h);
+    [DllImport("user32.dll", CharSet = CharSet.Unicode)] private static extern short VkKeyScan(char c);
     [DllImport("user32.dll", CharSet = CharSet.Auto)] private static extern IntPtr SendMessage(IntPtr h, int m, IntPtr w, IntPtr l);
     [DllImport("user32.dll", CharSet = CharSet.Auto)] private static extern IntPtr SendMessage(IntPtr h, int m, IntPtr w, StringBuilder l)
     ;
@@ -273,7 +276,16 @@ internal static class CalibrationE2E
                 }
                 if (!ready.WaitOne(10000))
                 {
-                    throw new Exception("Timed out waiting for owned window event: " + title);
+                    // Non-activating modal forms do not consistently raise UIA's
+                    // WindowOpened event. Re-enumerate our process at the deadline.
+                    try
+                    {
+                        return Window(title);
+                    }
+                    catch (Exception)
+                    {
+                        throw new Exception("Timed out waiting for owned window: " + title);
+                    }
                 }
                 return Window(title);
             }
@@ -389,7 +401,14 @@ internal static class CalibrationE2E
         {
             throw new Exception("No button window for " + name);
         }
-        SendMessage(handle, 0xF5, IntPtr.Zero, IntPtr.Zero);
+        if (name == "Calibrate typing")
+        {
+            Assert(PostMessage(handle, 0xF5, IntPtr.Zero, IntPtr.Zero), "posted modal calibration click");
+        }
+        else
+        {
+            SendMessage(handle, 0xF5, IntPtr.Zero, IntPtr.Zero);
+        }
         ForegroundGuard();
         Console.WriteLine("BUTTON " + name + " via BM_CLICK");
     }
@@ -457,9 +476,10 @@ internal static class CalibrationE2E
     private static AutomationElement PerformCapture(AutomationElement main, int cycle)
     {
         Click(main, "Calibrate typing");
-        var captureHandle = Window("Typing calibration");
+        var captureHandle = WaitForOwnedWindow("Typing calibration");
         var capture = AutomationElement.FromHandle(captureHandle);
         ForegroundGuard();
+        Assert(!IsWindowEnabled((IntPtr)main.Current.NativeWindowHandle), "capture uses the owner's modal path");
         Assert(!Find(main, "Calibrate typing").Current.IsEnabled, "second calibration disabled during test");
         Assert(!Find(main, "Type in 4s").Current.IsEnabled, "automatic typing disabled during test");
         Image(captureHandle, "calibration-dialog-" + cycle + ".png");
@@ -493,9 +513,11 @@ internal static class CalibrationE2E
                     return;
                 }
                 char c = passage[index];
-                SendMessage(inputHandle, 0x100, (IntPtr)(int)Char.ToUpperInvariant(c), (IntPtr)1);
+                int key = c == '\n' ? 0x0D : VkKeyScan(c) & 0xFF;
+                Assert(key != 0xFF, "character has a virtual-key mapping");
+                SendMessage(inputHandle, 0x100, (IntPtr)key, (IntPtr)1);
                 SendMessage(inputHandle, 0x102, (IntPtr)(c == '\n' ? '\r' : c), (IntPtr)1);
-                SendMessage(inputHandle, 0x101, (IntPtr)(int)Char.ToUpperInvariant(c), (IntPtr)1);
+                SendMessage(inputHandle, 0x101, (IntPtr)key, (IntPtr)1);
                 index++;
                 if (index == 12)
                 {
@@ -524,6 +546,7 @@ internal static class CalibrationE2E
         Console.WriteLine("DELIVERED " + index + " characters; elapsed_ms=" + elapsed.ElapsedMilliseconds);
         var resultsHandle = WaitForOwnedWindow("Calibration results");
         var results = AutomationElement.FromHandle(resultsHandle);
+        Assert(!IsWindowEnabled((IntPtr)main.Current.NativeWindowHandle), "results use the owner's modal path");
         Image(resultsHandle, "calibration-results-" + cycle + ".png");
         var summaryText = new StringBuilder(1024);
         SendMessage((IntPtr)Find(results, "Calibration summary").Current.NativeWindowHandle, 0xD, (IntPtr)summaryText.Capacity,
@@ -626,11 +649,12 @@ internal static class CalibrationE2E
             var captures = Directory.GetFiles(Path.Combine(data, "calibration"), "capture-*.tsv");
             Assert(captures.Length == 2, "two raw completed captures saved");
             string raw = File.ReadAllText(captures[0]);
-            Assert(raw.Contains("seconds=30;completed=True;ignored_keys=1"), "raw capture records duration, completion and ignored paste")
-            ;
+            string[] header = raw.Split('\n')[0].Trim().Split(';');
+            Assert(header[1] == "seconds=30" && header[2] == "completed=True" && header[3] == "ignored_keys=1",
+                "raw capture: exactly one ignored press, the deliberate WM_PASTE; no character-key collisions");
             var afterApplyText = File.ReadAllText(settingsPath);
             Click(main, "Calibrate typing");
-            var captureHandle = Window("Typing calibration");
+            var captureHandle = WaitForOwnedWindow("Typing calibration");
             var capture = AutomationElement.FromHandle(captureHandle);
             var cancel = capture.FindFirst(TreeScope.Descendants, new PropertyCondition(AutomationElement.NameProperty, "Cancel"));
             SendMessage((IntPtr)cancel.Current.NativeWindowHandle, 0xF5, IntPtr.Zero, IntPtr.Zero);

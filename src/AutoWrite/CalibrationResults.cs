@@ -337,20 +337,12 @@ namespace AutoWrite
                             ReleaseCalibration();
                             results.Dispose();
                         };
-                        if (QuietForm.Diagnostic)
-                        {
-                            results.Show(this);
-                        }
-                        else results.ShowDialog(this);
+                        results.ShowDialog(this);
                     }
                 }
                 dialog.Dispose();
             };
-            if (QuietForm.Diagnostic)
-            {
-                dialog.Show(this);
-            }
-            else dialog.ShowDialog(this);
+            dialog.ShowDialog(this);
         }
     }
 }
