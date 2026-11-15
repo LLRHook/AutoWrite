@@ -560,7 +560,8 @@ namespace AutoWrite
             });
             if (keys.Count >= 30 && alignmentQuality < MinimumAlignmentQuality)
             {
-                result.Warning = "The typed text did not match the passage closely enough. All settings were kept; try again from the start.";
+                result.Warning = "The typed text did not match the passage closely enough. A wrong starting point, a skipped line, " +
+                    "or different text can cause this. All settings were kept; try again from the start.";
                 foreach (var row in result.Estimates)
                 {
                     row.Reason = "Kept: text matched less than 70% of the passage.";

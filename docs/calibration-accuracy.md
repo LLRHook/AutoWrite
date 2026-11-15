@@ -37,8 +37,8 @@ recordings test those estimates.
 
 Speed uses five-character words from first to last key, excluding the first
 character from the numerator. Entire gaps of at least 10 seconds are removed
-and listed; shorter hesitations and corrections stay counted. Trailing time
-after the last key never counts. The target matches ordinary-letter rhythm,
+from every estimate and listed; shorter hesitations and corrections stay
+counted. Trailing time after the last key never counts. The target matches ordinary-letter rhythm,
 not nominal window speed. Both logs use exactly the same measurement code.
 
 Expected replay averages 20 disjoint replay seeds per recording. Values
@@ -60,6 +60,27 @@ window and passage, avoiding a change in text density.
 A single minute can be fast or slow; rerun if its speed looks wrong.
 The former comparison with a full-passage mean has been removed: it mostly
 measured the symbol-dense opening against easier later paragraphs.
+
+### A clean copying test with kept pauses and mistakes
+
+The ungated `clean-typist.tsv` output uses the independent additive/gamma
+typist, with no mistakes or composing pauses. Each pace has ten recordings
+(seeds 990 through 999, 60 seconds, ordinary motor centres 142 and 70 ms).
+Values below are medians. Expected speed uses the same nine forward-replay
+seeds as the results screen. These examples measure the cost of the previous
+settings, not a promised difference for a person or an accuracy requirement.
+
+| Typist speed | Kept thinking / mistakes | AutoWrite expected speed | Overall difference | Rhythm error |
+| --- | --- | --- | --- | --- |
+| 60.4 WPM | Defaults | 52.1 WPM | 14.1% slower | 0.6% |
+| 60.4 WPM | Both probabilities zero | 60.8 WPM | 0.9% faster | 0.3% |
+| 102.8 WPM | Defaults | 77.3 WPM | 24.7% slower | 0.3% |
+| 102.8 WPM | Both probabilities zero | 103.6 WPM | 0.7% faster | 0.4% |
+
+To aim at the clean test's overall speed, lower `Thinking pause %` and
+`Mistake rate %`. Leaving them on preserves composing pauses and correction
+habits that may not appear in a copying test. Other independent timing
+models can give different overall differences even with the same rhythm.
 
 ## Single-window replay scatter
 
@@ -174,7 +195,10 @@ but the label makes no claim that repeating the same duration will do so.
 At least 70% passage alignment is required before any setting is proposed.
 Fixtures with about 10% uncorrected errors retain 90% alignment; wrong-start
 and unrelated text have 19–22%, and random keys 4–7%, at 60 and 125 WPM.
-Wrong text keeps every value and asks the person to retry.
+Wrong text keeps every value and asks the person to retry. A wrong starting
+point, a skipped line, or different text can trigger this refusal. The aligner
+uses a bounded prefix window; skipping a whole line can make an otherwise
+accurate recording unusable, so restart rather than carrying on from the next line.
 
 Boundary gaps are fitted together: time before a space, after it, or on
 either side of Enter contributes to one boundary total. Huber weighting and
@@ -182,6 +206,10 @@ rejection beyond six standardized residuals bound every gap's influence.
 Ordinary residuals exclude boundary keys. US QWERTY is assumed for pair and
 nearby-key effects. Copying understates composing pauses, so thin thinking
 evidence stays at its previous value rather than being set to zero.
+An interrupted boundary unit is omitted as a whole from the fit and thinking
+evidence. A correction episode containing an interruption, including its
+following resume gap, supplies no estimate evidence. Accuracy still records
+the observed corrections. Interrupted letter gaps also stay out of rhythm.
 
 <!-- methods -->
 | Setting | Method and minimum evidence |
@@ -217,12 +245,15 @@ The example reaches about 46 WPM at the slowest available motor setting;
 below roughly that speed on this passage AutoWrite types faster than the
 person. Other settings affect this threshold. Only a rhythm outside the
 available motor range produces the motor-limit warning. Other differences
-explain the pauses and corrections in the proposed or kept settings.
+explain the pauses and corrections in the proposed or kept settings. Where
+several target values produce equally close forecasts at a motor limit,
+calibration chooses the edge nearest the reachable range: the highest on
+the slow side and the lowest on the fast side.
 
 | Length / limit | Rhythm median / p90 % | Expected speed median / p90 % | Pooled replay median / p90 % |
 | --- | --- | --- | --- |
 | 30 s / Slow limit | 5.5 / 8.6 | 2.2 / 3.5 | 6.0 / 12.7 |
-| 30 s / Fast limit | 7.4 / 14.4 | 2.1 / 6.5 | 9.2 / 24.8 |
+| 30 s / Fast limit | 7.6 / 14.4 | 2.1 / 6.5 | 9.2 / 24.8 |
 | 60 s / Slow limit | 3.3 / 14.7 | 7.1 / 10.9 | 8.9 / 17.2 |
 | 60 s / Fast limit | 2.5 / 8.1 | 3.3 / 9.1 | 8.3 / 17.7 |
 

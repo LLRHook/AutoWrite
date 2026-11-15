@@ -61,14 +61,20 @@ Review your active typing speed, AutoWrite's expected speed, accuracy, and
 each proposed setting. **Apply** updates the controls and saves immediately.
 **Discard** or **Cancel** leaves settings unchanged. Sparse evidence keeps
 the previous value or is labelled “few samples.” A poor passage match keeps
-every setting and asks you to retry. Button delay and Keep target WPM remain
-your preferences.
+every setting and asks you to retry. A wrong starting point, a skipped line,
+or different text can cause this refusal. Button delay and Keep target WPM
+remain your preferences.
 
 Calibration matches your ordinary letter-to-letter rhythm, rather than
 slowing every key to fill the clock. Active speed runs from first to last
-key; gaps of ten seconds or longer are omitted and listed in the results.
+key; gaps of ten seconds or longer are omitted from every estimate and
+listed in the results.
 Shorter hesitations remain counted. AutoWrite may have a different overall
 speed because it adds pauses and corrections at the proposed or kept values.
+In clean simulated tests at about 60 and 103 WPM, keeping the default thinking
+pauses and mistakes made AutoWrite about 14% and 25% slower overall despite
+matching key rhythm. Setting **Thinking pause %** and **Mistake rate %** to
+zero brought those examples within 1% of the test speed; real results vary.
 
 Copying is not composing. Thinking pauses are not measured unless the test
 contains at least four long pauses; otherwise they stay at their previous
@@ -143,6 +149,8 @@ elevated.
 Tests and probes can override the data directory with the absolute-path environment variable
 `AUTOWRITE_DATA_DIR`. The override covers settings, telemetry and calibration captures. Normal use
 retains the location above. Do not point diagnostics at the real settings directory.
+Saved calibration captures include the current setting names and values,
+so re-analysis can reproduce proposals that depend on previous settings.
 
 ```powershell
 .\test.ps1 -OutputDirectory "$env:TEMP\autowrite-tests"

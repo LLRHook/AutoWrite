@@ -342,6 +342,7 @@ namespace AutoWrite.Tests
             if (Environment.GetEnvironmentVariable("AUTOWRITE_TEST_SCOPE") != "estimators")
             {
                 CrossTextBenchmark();
+                CleanTypistBenchmark();
             }
         }
 

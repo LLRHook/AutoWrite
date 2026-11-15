@@ -49,6 +49,8 @@ namespace AutoWrite.Tests
                         {
                             SameSettings(current, result.Proposed);
                             Assert(result.Warning.Contains("did not match the passage"), "missing mismatch explanation");
+                            Assert(result.Warning.Contains("wrong starting point") && result.Warning.Contains("skipped line") &&
+                                result.Warning.Contains("different text"), "refusal omits likely causes");
                         }
                         Assert(accepted ? result.Accuracy >= 70 : result.Accuracy < 70, "threshold fixture on wrong side");
                     }
