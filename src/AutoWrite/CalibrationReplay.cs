@@ -132,6 +132,36 @@ namespace AutoWrite
                 best = 180;
                 bestPrediction = fast;
             }
+            // At either motor clamp many nominal targets generate the identical log.
+            // Choose the plateau edge nearest the reachable targets, rather than an
+            // arbitrary endpoint. Only exact forecast ties participate in this rule.
+            bool slowTie = bestPrediction.OrdinaryGapMilliseconds == slow.OrdinaryGapMilliseconds;
+            bool fastTie = bestPrediction.OrdinaryGapMilliseconds == fast.OrdinaryGapMilliseconds;
+            if (slowTie || fastTie)
+            {
+                low = 5;
+                high = 180;
+                while (low <= high)
+                {
+                    int mid = (low + high) / 2;
+                    settings.WordsPerMinute = mid;
+                    var predicted = Forecast(settings, seconds);
+                    bool tied = predicted.OrdinaryGapMilliseconds == bestPrediction.OrdinaryGapMilliseconds;
+                    if (tied)
+                    {
+                        best = mid;
+                        bestPrediction = predicted;
+                    }
+                    if (slowTie ? tied : !tied)
+                    {
+                        low = mid + 1;
+                    }
+                    else
+                    {
+                        high = mid - 1;
+                    }
+                }
+            }
             CalibrationAnalysis.Set(result, "WordsPerMinute", best,
                 "Measured from " + result.OrdinaryGapCount + " ordinary letter gaps: " + measured.ToString("F1") + " ms; replay: " +
                 bestPrediction.OrdinaryGapMilliseconds.ToString("F1") + " ms. Target chosen by forward replay.");

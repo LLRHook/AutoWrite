@@ -38,6 +38,42 @@ namespace AutoWrite.Tests
 
         private static void InterruptionTests()
         {
+            Test("slow 211 and 313 ms typists get the reachable edge of a tied replay", delegate
+            {
+                foreach (int motor in new[] { 211, 313 })
+                {
+                    var keys = new List<CaptureKey>();
+                    double time = 0;
+                    for (int i = 0; i < CalibrationPassage.Text.Length && time < 60000; i++)
+                    {
+                        char c = CalibrationPassage.Text[i];
+                        keys.Add(new CaptureKey(time, c));
+                        time += motor + (c == ' ' ? 100 : 0) + (".!?".IndexOf(c) >= 0 ? 450 : 0) + (c == '\n' ? 210 : 0);
+                    }
+                    var current = HumanCurrent();
+                    current.KeyPairRhythmPercent = 0;
+                    var result = CalibrationAnalysis.Analyze(keys, 60, current);
+                    int selected = result.Proposed.WordsPerMinute;
+                    double gap = result.PredictedOrdinaryGapMilliseconds;
+                    result.Proposed.WordsPerMinute = 5;
+                    if (motor == 313)
+                    {
+                        Assert(CalibrationReplay.Forecast(result.Proposed, 60).OrdinaryGapMilliseconds == gap, "slow fixture missed plateau");
+                    }
+                    int edge = selected;
+                    for (int target = 6; target <= 180; target++)
+                    {
+                        result.Proposed.WordsPerMinute = target;
+                        if (CalibrationReplay.Forecast(result.Proposed, 60).OrdinaryGapMilliseconds == gap)
+                        {
+                            edge = Math.Max(edge, target);
+                        }
+                    }
+                    Assert(selected == edge && edge > 5, "slow tie motor=" + motor + " selected=" + selected + " edge=" + edge);
+                    Assert(Estimate(result, "WordsPerMinute").ClosestAchievable == (motor == 313), "incorrect slow-limit label");
+                    Console.WriteLine("CLAMP TIE motor=" + motor + " selected=" + selected + " edge=" + edge);
+                }
+            });
             Test("interrupted notice repair and resume do not become correction evidence", delegate
             {
                 foreach (int phase in new[] { -1, 0, 1, 2 })

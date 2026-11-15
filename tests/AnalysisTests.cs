@@ -238,13 +238,20 @@ namespace AutoWrite.Tests
                     Assert(Math.Abs(endpoint - result.PredictedWpm) < .0001, "proposal is not nearest endpoint");
                     int proposedTarget = result.Proposed.WordsPerMinute;
                     double bestError = Math.Abs(result.PredictedOrdinaryGapMilliseconds - result.OrdinaryGapMilliseconds);
+                    int nearestEdge = motor == 300 ? 5 : 180;
                     for (int target = 5; target <= 180; target++)
                     {
                         result.Proposed.WordsPerMinute = target;
-                        Assert(Math.Abs(CalibrationReplay.Forecast(result.Proposed, 60).OrdinaryGapMilliseconds -
-                            result.OrdinaryGapMilliseconds) + .0001 >= bestError,
+                        double error = Math.Abs(CalibrationReplay.Forecast(result.Proposed, 60).OrdinaryGapMilliseconds -
+                            result.OrdinaryGapMilliseconds);
+                        Assert(error + .0001 >= bestError,
                         "closer accepted target exists: " + target);
+                        if (error == bestError)
+                        {
+                            nearestEdge = motor == 300 ? Math.Max(nearestEdge, target) : Math.Min(nearestEdge, target);
+                        }
                     }
+                    Assert(proposedTarget == nearestEdge, "clamp tie chose " + proposedTarget + " instead of edge " + nearestEdge);
                     result.Proposed.WordsPerMinute = proposedTarget;
                     var baseMethod = typeof(TypingEngine).GetMethod("CalculateBaseDelay", System.Reflection.BindingFlags.Static |
                     System.Reflection.BindingFlags.NonPublic);
