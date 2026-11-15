@@ -315,7 +315,7 @@ namespace AutoWrite
             _calibrationOpen = true;
             _startButton.Enabled = false;
             var current = CurrentSettings();
-            var dialog = new CalibrationDialog();
+            var dialog = new CalibrationDialog(current);
             _calibrateButton.Enabled = false;
             dialog.FormClosed += delegate
             {

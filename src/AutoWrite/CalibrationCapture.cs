@@ -60,9 +60,19 @@ namespace AutoWrite
         public bool Started;
         public bool Finished;
         public string TypedText = "";
-        public CaptureSession(int seconds)
+        private readonly AppSettings _currentSettings;
+        public CaptureSession(int seconds) : this(seconds, AppSettings.Defaults())
+        {
+        }
+
+        public CaptureSession(int seconds, AppSettings current)
         {
             Seconds = seconds;
+            _currentSettings = new AppSettings();
+            foreach (var property in typeof(AppSettings).GetProperties())
+            {
+                property.SetValue(_currentSettings, property.GetValue(current, null), null);
+            }
         }
 
         public bool Accept(char key, double milliseconds)
@@ -113,6 +123,11 @@ namespace AutoWrite
             ToString("N").Substring(0, 8) + ".tsv");
             var lines = new List<string>();
             lines.Add("# version=1;seconds=" + Seconds + ";completed=" + completed + ";ignored_keys=" + IgnoredKeys);
+            foreach (var property in typeof(AppSettings).GetProperties())
+            {
+                lines.Add("# setting\t" + property.Name + "\t" +
+                    Convert.ToString(property.GetValue(_currentSettings, null), CultureInfo.InvariantCulture));
+            }
             lines.Add("elapsed_ms\tkind\tcharacter_code_or_reason");
             lines.AddRange(Raw);
             File.WriteAllLines(path, lines.ToArray(), new UTF8Encoding(false));
@@ -271,12 +286,18 @@ namespace AutoWrite
         private readonly Stopwatch _watch = new Stopwatch();
         private readonly Timer _timer = new Timer();
         private CaptureSession _session;
+        private readonly AppSettings _currentSettings;
         private bool _progressDirty;
         internal int ProgressUpdates;
         internal CaptureSession CompletedSession;
         internal string SaveWarning = "";
-        public CalibrationDialog()
+        public CalibrationDialog() : this(AppSettings.Defaults())
         {
+        }
+
+        public CalibrationDialog(AppSettings current)
+        {
+            _currentSettings = current;
             Text = "Typing calibration";
             Name = "CalibrationDialog";
             Size = new Size(840, 660);
@@ -376,7 +397,7 @@ namespace AutoWrite
         {
             if (_session == null)
             {
-                _session = new CaptureSession(_length.SelectedIndex == 0 ? 30 : 60);
+                _session = new CaptureSession(_length.SelectedIndex == 0 ? 30 : 60, _currentSettings);
             }
             if (!_watch.IsRunning)
             {
@@ -446,24 +467,27 @@ namespace AutoWrite
 
         protected override void OnFormClosed(FormClosedEventArgs e)
         {
-            _timer.Stop();
-            _timer.Dispose();
-            if (_session != null)
+            try
             {
-                try
+                _timer.Stop();
+                _timer.Dispose();
+                if (_session != null)
                 {
-                    _session.Save(CompletedSession != null);
-                }
-                catch (IOException)
-                {
-                    SaveWarning = "The recording could not be saved. You can still review and apply these settings.";
-                }
-                catch (UnauthorizedAccessException)
-                {
-                    SaveWarning = "The recording could not be saved. You can still review and apply these settings.";
+                    try
+                    {
+                        _session.Save(CompletedSession != null);
+                    }
+                    catch (Exception)
+                    {
+                        SaveWarning = "The recording could not be saved. You can still review and apply these settings.";
+                    }
                 }
             }
-            base.OnFormClosed(e);
+            finally
+            {
+                // Unlocking and the results sequence must run even if saving fails.
+                base.OnFormClosed(e);
+            }
         }
 
         protected override void Dispose(bool disposing)

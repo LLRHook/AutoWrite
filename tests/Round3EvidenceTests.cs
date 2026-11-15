@@ -114,6 +114,55 @@ namespace AutoWrite.Tests
                     }
                 }
             });
+            Test("invalid capture path cannot bypass modal unlock or completed results", delegate
+            {
+                ModalSaveFailure(2, false);
+                ModalSaveFailure(2, true);
+            });
+            Test("saved capture records current settings and reproduces all 26 proposals", delegate
+            {
+                var current = Profile(1);
+                current.WordsPerMinute = 79;
+                current.ThinkingPauseChancePercent = 7;
+                current.ThinkingPauseMilliseconds = 1900;
+                var constructor = typeof(CaptureSession).GetConstructor(new[] { typeof(int), typeof(AppSettings) });
+                Assert(constructor != null, "capture cannot snapshot current settings");
+                var session = (CaptureSession)constructor.Invoke(new object[] { 60, current });
+                foreach (var key in HumanLog(0, false, false))
+                {
+                    session.Accept(key.Character, Math.Round(key.Milliseconds, 3));
+                }
+                var expected = CalibrationAnalysis.Analyze(session.Keys, 60, current);
+                string path = session.Save(true);
+                var restored = new AppSettings();
+                var keys = new List<CaptureKey>();
+                int settingsCount = 0;
+                foreach (string line in File.ReadAllLines(path))
+                {
+                    string[] fields = line.Split('\t');
+                    if (fields.Length == 3 && fields[0] == "# setting")
+                    {
+                        var property = typeof(AppSettings).GetProperty(fields[1]);
+                        Assert(property != null, "unrecognised saved setting");
+                        property.SetValue(restored, Convert.ChangeType(fields[2], property.PropertyType,
+                            System.Globalization.CultureInfo.InvariantCulture), null);
+                        settingsCount++;
+                    }
+                    if (fields.Length == 3 && fields[1] == "character")
+                    {
+                        keys.Add(new CaptureKey(Double.Parse(fields[0], System.Globalization.CultureInfo.InvariantCulture),
+                            (char)Int32.Parse(fields[2], System.Globalization.CultureInfo.InvariantCulture)));
+                    }
+                }
+                Assert(settingsCount == 26, "missing current settings in capture header: " + settingsCount);
+                SameSettings(current, restored);
+                SameSettings(expected.Proposed, CalibrationAnalysis.Analyze(keys, 60, restored).Proposed);
+                // The snapshot must not change if a caller later edits its own settings.
+                current.ButtonDelaySeconds++;
+                string savedAgain = session.Save(false);
+                Assert(File.ReadAllText(savedAgain).Contains("# setting\tButtonDelaySeconds\t" + restored.ButtonDelaySeconds),
+                    "capture retained a mutable current-settings reference");
+            });
         }
 
         private static void ModalSaveFailure(int failure, bool completed)
