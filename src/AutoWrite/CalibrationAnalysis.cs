@@ -601,7 +601,8 @@ namespace AutoWrite
                 if (counts[i] >= minimum)
                 {
                     Set(result, FitNames[i - 1], (int)Math.Round(fit[i] * (i <= 5 ? 100 : 1)),
-                        CalibrationEvidence.Describe(FitNames[i - 1], counts[i], FitEvidenceNames[i - 1]));
+                        CalibrationEvidence.Describe(FitNames[i - 1], counts[i], FitEvidenceNames[i - 1]),
+                        fit[i] >= ParameterMaximum(i));
                 }
                 else Keep(result, FitNames[i - 1], "Kept: n=" + counts[i] + "; need " + minimum + " independent gaps.");
             }
@@ -905,12 +906,20 @@ namespace AutoWrite
             }
         }
 
-        internal static void Set(CalibrationResult result, string name, object value, string reason)
+        internal static void Set(CalibrationResult result, string name, object value, string reason, bool atRangeLimit = false)
         {
             var p = typeof(AppSettings).GetProperty(name);
             if (value is int)
             {
-                value = SettingRanges.Clamp(name, (int)value);
+                int requested = (int)value;
+                value = SettingRanges.Clamp(name, requested);
+                if ((int)value != requested || atRangeLimit)
+                {
+                    string unit = name.EndsWith("Milliseconds", StringComparison.Ordinal) ? " ms" :
+                        name.EndsWith("Percent", StringComparison.Ordinal) ? "%" : "";
+                    reason = reason.TrimEnd('.') + " (limited to the " + value + unit +
+                        (requested >= SettingRanges.Maximum(name) ? " maximum)." : " minimum).");
+                }
             }
             p.SetValue(result.Proposed, value, null);
             foreach (var row in result.Estimates)

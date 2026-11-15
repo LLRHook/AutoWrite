@@ -146,29 +146,28 @@ are excluded from recovery medians and included in single-recording errors.
 
 ## Sparse-sample labels
 
-The eligibility minima below are unchanged. “Few samples” is a display
-warning, not a new gate. For bounded settings its level covers the observed
-counts with errors beyond the recovery bound in these short recordings;
-where none exceeded a bound, it marks the smallest observed count. This is
-a retrospective warning, not proof that larger counts guarantee accuracy.
-Some upper bins contain only a few recordings. Thinking, detection and kind
-shares use advisory levels of 8, 12 and 30 observations respectively.
+A measured row says "(few samples)" only below twice that setting's minimum
+sample count. This changes its label, not its eligibility or its value.
+The table pools measured observations from both durations and all three
+models. The error is the 90th percentile in each count bin; neither bin
+guarantees an individual result. A longer test can provide more evidence,
+but the label makes no claim that repeating the same duration will do so.
 
 | Setting | Few below | Low-count error p90 | Other-count error p90 |
 | --- | ---: | ---: | ---: |
-| Word pause ms | 25 | 49 (n=56) | 30 (n=61) |
-| Sentence pause ms | 12 | 144 (n=111) | no observations |
+| Word pause ms | 24 | 48 (n=54) | 32 (n=63) |
+| Sentence pause ms | 6 | 399 (n=45) | 112 (n=66) |
 | Paragraph pause ms | 6 | 155 (n=60) | no observations |
-| Uppercase delay points | 18 | 64 (n=104) | 11 (n=1) |
-| Digit delay points | 22 | 56 (n=119) | no observations |
-| Punctuation delay points | 18 | 57 (n=94) | no observations |
-| Shifted symbol delay points | 14 | 58 (n=112) | no observations |
-| Jitter points | 61 | 14 (n=1) | 9 (n=61) |
-| Key-pair rhythm points | 134 | 34 (n=96) | 5 (n=4) |
-| Mistake rate points | 17 | 2 (n=106) | no observations |
-| Notice ms | 12 | 154 (n=99) | 79 (n=7) |
-| Repair ms | 10 | 5 (n=4) | 6 (n=99) |
-| Resume ms | 17 | 199 (n=105) | no observations |
+| Uppercase delay points | 12 | 63 (n=76) | 69 (n=29) |
+| Digit delay points | 12 | 56 (n=54) | 54 (n=65) |
+| Punctuation delay points | 12 | 60 (n=66) | 31 (n=28) |
+| Shifted symbol delay points | 12 | 58 (n=101) | 13 (n=11) |
+| Jitter points | 120 | 11 (n=56) | 5 (n=6) |
+| Key-pair rhythm points | 80 | 33 (n=41) | 34 (n=59) |
+| Mistake rate points | 6 | 2 (n=48) | 2 (n=58) |
+| Notice ms | 6 | 198 (n=48) | 113 (n=58) |
+| Repair ms | 16 | 8 (n=31) | 5 (n=72) |
+| Resume ms | 6 | 237 (n=48) | 199 (n=57) |
 
 ## Estimation methods
 

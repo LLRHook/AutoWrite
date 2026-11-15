@@ -27,9 +27,11 @@ namespace AutoWrite.Tests
                     }
                 }
                 Assert(CalibrationEvidence.Describe("ParagraphPauseMilliseconds", 4, "paragraph breaks") ==
-                    "Measured from 4 paragraph breaks (few samples; rerun for a steadier value).", "few samples not labelled");
+                    "Measured from 4 paragraph breaks (few samples).", "few samples not labelled");
                 Assert(!CalibrationEvidence.Describe("ParagraphPauseMilliseconds", 6, "paragraph breaks").Contains("few samples"),
                     "few-sample boundary");
+                Assert(!CalibrationEvidence.Describe("SentencePauseMilliseconds", 6, "sentence endings").Contains("few samples"),
+                    "sentence twice-minimum boundary");
             });
             Test("one to three long pauses keep both thinking settings", delegate
             {

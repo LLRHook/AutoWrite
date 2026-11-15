@@ -16,6 +16,45 @@ namespace AutoWrite.Tests
 
         private static void Round3EvidenceTests()
         {
+            Test("speed explanation distinguishes added engine pauses from unreproduced recording pauses", delegate
+            {
+                var clean = TypistLog.Generate(741, 60, 0, 142);
+                var slower = CalibrationAnalysis.Analyze(clean, 60, AppSettings.Defaults());
+                Assert(slower.PredictedWpm < slower.MeasuredWpm * .95, "clean fixture has no kept-pause cost");
+                Assert(slower.Warning.Contains("lowering Thinking pause % or Mistake rate %"), "slower replay advice missing");
+                var paused = HumanLog(0, false, false).GetRange(0, 150);
+                double added = 0;
+                int pauses = 0;
+                for (int i = 1; i < paused.Count; i++)
+                {
+                    if (pauses < 3 && i > 20 + pauses * 35 && Char.IsLower(paused[i - 1].Character) &&
+                        Char.IsLower(paused[i].Character))
+                    {
+                        added += 9500;
+                        pauses++;
+                    }
+                    paused[i].Milliseconds += added;
+                }
+                Assert(pauses == 3 && paused[paused.Count - 1].Milliseconds < 60000, "short-pause fixture coverage");
+                Assert(CalibrationMetrics.Measure(paused).ExcludedPauses.Count == 0, "short pause became an interruption");
+                var faster = CalibrationAnalysis.Analyze(paused, 60, AppSettings.Defaults());
+                Assert(faster.PredictedWpm > faster.MeasuredWpm * 1.05, "pause fixture has no unreproduced-pause cost");
+                Assert(faster.Warning.Contains("recording had pauses AutoWrite does not reproduce"), "faster replay points the wrong way");
+            });
+            Test("measured values report the range limit in their evidence line", delegate
+            {
+                var result = CalibrationAnalysis.Analyze(new List<CaptureKey>(), 60, AppSettings.Defaults());
+                CalibrationAnalysis.Set(result, "WordPauseMilliseconds", 3000, "Measured from 20 word gaps.");
+                var row = Estimate(result, "WordPauseMilliseconds");
+                Assert((int)row.Proposed == 1000 && row.Reason.Contains("limited to the 1000 ms maximum"), "upper limit not explained");
+                CalibrationAnalysis.Set(result, "WordPauseMilliseconds", -10, "Measured from 20 word gaps.");
+                Assert((int)row.Proposed == 0 && row.Reason.Contains("limited to the 0 ms minimum"), "lower limit not explained");
+                CalibrationAnalysis.Set(result, "WordPauseMilliseconds", 120, "Measured from 20 word gaps.");
+                Assert(!row.Reason.Contains("limited"), "in-range estimate labelled limited");
+                // The joint fit itself also constrains its parameters before Set.
+                CalibrationAnalysis.Set(result, "WordPauseMilliseconds", 1000, "Measured from 20 word gaps.", true);
+                Assert(row.Reason.Contains("limited to the 1000 ms maximum"), "joint-fit ceiling not explained");
+            });
             Test("active speed omits the full interruption with an independently computed denominator", delegate
             {
                 var keys = new List<CaptureKey>

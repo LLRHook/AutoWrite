@@ -183,8 +183,10 @@ namespace AutoWrite
             }
             else if (Math.Abs(result.PredictedWpm - result.MeasuredWpm) > result.MeasuredWpm * .05)
             {
-                result.Warning = "AutoWrite matches your ordinary key rhythm; its expected speed differs because it adds " +
-                    "pauses and corrections using the proposed settings, including values kept from before the test.";
+                result.Warning = result.PredictedWpm < result.MeasuredWpm
+                    ? "AutoWrite adds thinking pauses and mistakes at the proposed settings; lowering Thinking pause % or Mistake rate % " +
+                        "closes the speed gap."
+                    : "Your recording had pauses AutoWrite does not reproduce at the proposed settings, so AutoWrite types faster overall.";
             }
         }
     }
