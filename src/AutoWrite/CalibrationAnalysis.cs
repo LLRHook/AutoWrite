@@ -33,7 +33,7 @@ namespace AutoWrite
     }
     internal sealed class CorrectionEpisode
     {
-        public int Start, End, Backspaces, FirstBackspace, LastRetype;
+        public int Start, End, Backspaces, FirstBackspace, LastRetype, FirstTyped;
         public string Removed, Expected, Kind;
         public double Notice;
         public readonly List<double> Repair = new List<double>();
@@ -215,10 +215,12 @@ namespace AutoWrite
                 string before = buffer.ToString();
                 var beforeAlignment = AlignPrefix(before, passage);
                 int count = 0;
+                int firstTyped = first;
                 while (i < keys.Count && keys[i].Character == '\b')
                 {
                     if (buffer.Length > 0)
                     {
+                        firstTyped = live[live.Count - 1];
                         repaired.Add(live[live.Count - 1]);
                         live.RemoveAt(live.Count - 1);
                         buffer.Length--;
@@ -231,7 +233,7 @@ namespace AutoWrite
                 {
                     FirstBackspace = first, Start = afterAlignment.End, End = beforeAlignment.End, Backspaces = count, Notice = first > 0
                     ? keys[first].Milliseconds - keys[first - 1].Milliseconds : 0, Removed = before.Substring(before.Length - count),
-                    LastRetype = -1
+                    LastRetype = -1, FirstTyped = firstTyped
                 };
                 episode.Expected = passage.Substring(episode.Start, Math.Max(0, episode.End - episode.Start));
                 episode.Kind = episode.Removed.Length > episode.Expected.Length ? "duplicate" : episode.Removed.Length ==
@@ -285,7 +287,20 @@ namespace AutoWrite
                     });
                 }
             }
-            return gaps;
+            // A boundary is one observation, irrespective of which constituent gap
+            // carries its pause. Discard the whole unit if any gap is an interruption.
+            var uninterrupted = new List<AlignedGap>();
+            foreach (var unit in BoundaryUnits(gaps))
+            {
+                if (!unit.Exists(delegate(AlignedGap gap)
+                {
+                    return gap.Gap >= CalibrationMetrics.InterruptionMilliseconds;
+                }))
+                {
+                    uninterrupted.AddRange(unit);
+                }
+            }
+            return uninterrupted;
         }
 
         internal static double Median(List<double> values)
@@ -529,6 +544,20 @@ namespace AutoWrite
             result.Accuracy = alignment.End == 0 ? 0 : Math.Max(0, 100D * (1 - (corrections.Count + alignment.Distance) / (double)
             alignment.End));
             double alignmentQuality = alignment.End == 0 ? 0 : 100D * (1 - alignment.Distance / (double)alignment.End);
+            // Keep the observed accuracy/count above, but do not use an interrupted
+            // correction as timing, detection-distance, kind or mistake-rate evidence.
+            corrections.RemoveAll(delegate(CorrectionEpisode episode)
+            {
+                int end = Math.Min(keys.Count - 1, episode.LastRetype + 1);
+                for (int i = Math.Max(1, episode.FirstTyped); i <= end; i++)
+                {
+                    if (keys[i].Milliseconds - keys[i - 1].Milliseconds >= CalibrationMetrics.InterruptionMilliseconds)
+                    {
+                        return true;
+                    }
+                }
+                return false;
+            });
             if (keys.Count >= 30 && alignmentQuality < MinimumAlignmentQuality)
             {
                 result.Warning = "The typed text did not match the passage closely enough. All settings were kept; try again from the start.";

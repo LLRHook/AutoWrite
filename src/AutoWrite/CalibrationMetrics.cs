@@ -67,7 +67,8 @@ namespace AutoWrite
             {
                 char previous = keys[i - 1].Character, current = keys[i].Character;
                 if (!correction[i - 1] && !correction[i] && previous >= 'a' && previous <= 'z' &&
-                    current >= 'a' && current <= 'z')
+                    current >= 'a' && current <= 'z' &&
+                    keys[i].Milliseconds - keys[i - 1].Milliseconds < InterruptionMilliseconds)
                 {
                     ordinary.Add(keys[i].Milliseconds - keys[i - 1].Milliseconds);
                 }
