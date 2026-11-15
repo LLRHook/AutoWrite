@@ -14,7 +14,7 @@ namespace AutoWrite.Tests
     {
         private const BindingFlags PrivateInstance = BindingFlags.Instance | BindingFlags.NonPublic;
 
-        private static void Round3EvidenceTests()
+        private static void ResultEvidenceTests()
         {
             Test("speed explanation distinguishes added engine pauses from unreproduced recording pauses", delegate
             {

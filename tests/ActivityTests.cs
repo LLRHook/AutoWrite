@@ -8,7 +8,7 @@ namespace AutoWrite.Tests
         private static void ActivityTests()
         {
             InterruptionTests();
-            Round3EvidenceTests();
+            ResultEvidenceTests();
             Test("independent typist rhythm survives interruptions trailing time and early finish", delegate
             {
                 foreach (int mode in new[] { 0, 1, 2, 3 })
