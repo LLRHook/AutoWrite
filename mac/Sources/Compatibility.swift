@@ -17,6 +17,7 @@ func parseInt(_ text: String) -> Int? {
 // Framework F-format first reduces to 15 significant decimal digits, then
 // rounds ties away from zero. Swift/printf fixed formatting uses different ties.
 func fixed(_ value: Double, _ places: Int) -> String {
+    if !value.isFinite { return value.isNaN ? "NaN" : value > 0 ? "Infinity" : "-Infinity" }
     let significant = String(format: "%.14e", locale: Locale(identifier: "en_US_POSIX"), value)
     var decimal = Decimal(string: significant, locale: Locale(identifier: "en_US_POSIX"))!
     var rounded = Decimal()

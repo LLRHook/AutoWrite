@@ -272,3 +272,115 @@ Public references:
 - Pause thresholds in spontaneous writing: https://www.jowr.org/jowr/article/view/682
 - CMU Keystroke Dynamics benchmark: https://www.cs.cmu.edu/~keystroke/
 - PhysioNet Tappy keystroke data: https://physionet.org/content/tappy/1.0.0/
+
+## macOS
+
+The native Mac version uses Swift and AppKit. It builds on Apple Silicon with the
+installed Xcode command-line toolchain; it downloads and installs nothing. macOS
+14 or later is required. From the repository root, run:
+
+```sh
+mac/build.sh
+```
+
+This creates `dist/AutoWrite.app`, with the AutoWrite icon and an ad hoc code
+signature. Open that app in Finder. Closing its main window quits AutoWrite;
+**AutoWrite > Quit AutoWrite** and Command+Q also quit and save your settings.
+The Edit menu provides the usual Mac copy, cut, paste, select all and undo commands.
+Both editors keep literal text: smart quotes, smart dashes, replacement and
+spelling correction are disabled.
+
+Before AutoWrite can type into another app, allow it in **System Settings >
+Privacy & Security > Accessibility**. If typing is requested without permission,
+AutoWrite explains what is missing and offers **Open Accessibility Settings**.
+Enable AutoWrite there, return to your destination field, and try again.
+If macOS still blocks it, quit and reopen AutoWrite. These local builds use an
+ad hoc signature rather than a persistent developer signing identity. Rebuilding
+changes the signature: remove the old AutoWrite entry from Accessibility and
+allow the rebuilt `dist/AutoWrite.app` again. The same permission check runs on
+every typing request, including after a rebuild; AutoWrite does not change your
+privacy settings itself.
+
+Paste your text into AutoWrite, put the cursor in the destination app, and press
+**Fn+F7** to start. Press **Fn+F7** again to stop. On a keyboard configured to use
+standard function keys, use F7 alone. The **Type in Ns** button follows **Button
+delay s** and gives you time to focus the destination. AutoWrite waits while the
+window that was in front when typing began is no longer in front, and resumes
+when that window returns. It also waits for physically held modifier keys,
+including Command and Fn, to be released before sending a character. Its emitted
+events have no shortcut modifiers. Background typing uses a timing activity to
+prevent App Nap from stretching the pauses.
+
+The 26 settings, their defaults and ranges, the typing rhythm, corrected mistakes,
+and calibration analysis follow the Windows version. **Calibrate typing** offers
+30 or 60 seconds (60 by default); its clock starts with the first character. It
+uses key-press timestamps, accepts repeated keys directly, and ignores paste,
+Tab, caret movement, forward deletion, word/line deletion, mouse repositioning
+and shortcuts. Option-key text is treated as text, although the calibration
+passage and accepted recording characters remain ASCII, as on Windows. Review
+the result and choose **Apply** to save immediately, or **Discard** to keep your
+settings. A failed Apply restores the controls. **Cancel** leaves settings alone;
+a failed recording save still lets you review the results.
+
+Settings and logs are in:
+
+```text
+~/Library/Application Support/AutoWrite/settings.ini
+~/Library/Application Support/AutoWrite/telemetry/
+~/Library/Application Support/AutoWrite/calibration/
+```
+
+`settings.ini` uses the same keys, integer percentages and `True`/`False` values
+as Windows; you can copy it between platforms. Mac files use LF line endings.
+An absolute `AUTOWRITE_DATA_DIR` overrides this directory for diagnostics. The
+automated scripts always create their own isolated data directory and never use
+your normal AutoWrite data.
+
+Run every automated test with:
+
+```sh
+mac/test.sh
+```
+
+It compiles the production sources and the test harness, prints PASS/FAIL for
+each test and a totals line, and exits nonzero on failure. Tests compare all 223
+engine runs (including the 27 golden hashes), random sequences, settings,
+telemetry, capture sessions, alignment, and all 56 analysis cases with
+`reference/data`. They also build the real windows without showing them, deliver
+local events directly to the calibration input, exercise Apply/Discard/Cancel and
+save failures, inspect outgoing CGEvents without posting them, and measure a few
+seconds of background timing. No automated test posts keyboard/mouse input or
+activates an app. Images of AutoWrite's own windows in light and dark appearance
+and timing evidence are saved under `.git/agent-handoffs/mac-port/M1/`; set
+`AUTOWRITE_EVIDENCE_DIR` to another absolute directory if needed. Temporary build
+and test directories are removed on exit.
+
+The separately explicit live proof temporarily focuses a window it creates and
+types a short fixed text through the real system event path, deliberately making
+and repairing mistakes. Build first, then run it only when that temporary focus
+change is acceptable:
+
+```sh
+mac/smoke.sh --live-typing --require-idle-seconds 240
+```
+
+It sends nothing unless the desktop is unlocked and has had no input for at least
+240 seconds. It skips immediately if you are active; it does not wait for idle.
+The proof must acquire its own keyboard focus within half a second, stops on
+focus loss, and has an external 15-second watchdog. It first attempts a real F7
+start; if Carbon does not receive the synthetic hotkey, the report explicitly
+says `hotkey=direct-fallback`. On completion it returns the previous app to the
+front while it still owns focus; it does not override a focus change you made.
+It never types into any other window and never prints or saves received text:
+only lengths, the first differing UTF-16 position, repair count and outcome.
+Exit codes are 0 pass, 2 failed/lost focus/missing permission, 3 skipped because
+the user is active or the screen is locked, and 4 bad arguments. The idle threshold
+must be between 240 and 86400 seconds.
+
+Mac-specific differences are native controls and system light/dark colours,
+Command-key editing shortcuts, Accessibility permission, the Mac data location,
+and Unicode CGEvents instead of Windows SendInput. The engine keeps Windows
+UTF-16 indexing for parity, while the system adapter sends a surrogate pair as
+one Unicode character and uses one physical Backspace to remove that pair.
+Destination apps still control Tab navigation, text substitutions and their own
+editing behaviour; try plain text first, then check the apps you intend to use.

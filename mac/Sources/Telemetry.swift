@@ -34,7 +34,7 @@ final class Telemetry {
         let elapsed = Int((ProcessInfo.processInfo.systemUptime - start) * 1000)
         let date = ISO8601DateFormatter(); date.formatOptions = [.withInternetDateTime, .withFractionalSeconds]
         func code(_ c: Unit) -> String { c == 0 ? "" : String(format: "U+%04X", Int(c)) }
-        let columns = [String(event), date.string(from: Date()), String(elapsed), sent != 0 && lastKey >= 0 ? String(elapsed - lastKey) : "", Self.escape(name), String(index), code(intended), Self.escape(Self.charText(intended)), code(sent), Self.escape(Self.charText(sent)), delay.map(String.init) ?? "", Self.escape(note)]
+        let columns = [String(event), date.string(from: Date()).replacingOccurrences(of: "Z", with: "0000Z"), String(elapsed), sent != 0 && lastKey >= 0 ? String(elapsed - lastKey) : "", Self.escape(name), String(index), code(intended), Self.escape(Self.charText(intended)), code(sent), Self.escape(Self.charText(sent)), delay.map(String.init) ?? "", Self.escape(note)]
         write(columns.joined(separator: "\t") + "\n")
     }
     func close() { try? handle?.close(); handle = nil }
