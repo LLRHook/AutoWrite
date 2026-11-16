@@ -1,7 +1,7 @@
 $ErrorActionPreference = "Stop"
 
 $root = Split-Path -Parent $MyInvocation.MyCommand.Path
-$source = Join-Path $root "src\AutoWrite\Program.cs"
+$sources = @(Get-ChildItem -LiteralPath (Join-Path $root "src\AutoWrite") -Filter *.cs | ForEach-Object { $_.FullName })
 $manifest = Join-Path $root "app.manifest"
 $icon = Join-Path $root "assets\AutoWrite.ico"
 $dist = Join-Path $root "dist"
@@ -34,7 +34,7 @@ if (-not (Test-Path -LiteralPath $icon)) {
     /reference:System.Core.dll `
     /reference:System.Drawing.dll `
     /reference:System.Windows.Forms.dll `
-    $source
+    $sources
 
 if ($LASTEXITCODE -ne 0) {
     exit $LASTEXITCODE
