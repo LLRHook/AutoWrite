@@ -184,8 +184,8 @@ namespace AutoWrite
             else if (Math.Abs(result.PredictedWpm - result.MeasuredWpm) > result.MeasuredWpm * .05)
             {
                 result.Warning = result.PredictedWpm < result.MeasuredWpm
-                    ? "AutoWrite adds thinking pauses and mistakes at the proposed settings; lowering Thinking pause % or Mistake rate % " +
-                        "closes the speed gap."
+                    ? "AutoWrite adds thinking pauses and mistakes at the proposed settings, so it types slower overall. " +
+                        "To get closer to your test speed, set Thinking pause % and Mistake rate % to 0 and run the test again."
                     : "Your recording had pauses AutoWrite does not reproduce at the proposed settings, so AutoWrite types faster overall.";
             }
         }

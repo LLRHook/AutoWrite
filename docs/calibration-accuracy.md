@@ -77,10 +77,13 @@ settings, not a promised difference for a person or an accuracy requirement.
 | 102.8 WPM | Defaults | 77.3 WPM | 24.7% slower | 0.3% |
 | 102.8 WPM | Both probabilities zero | 103.6 WPM | 0.7% faster | 0.4% |
 
-To aim at the clean test's overall speed, lower `Thinking pause %` and
-`Mistake rate %`. Leaving them on preserves composing pauses and correction
-habits that may not appear in a copying test. Other independent timing
-models can give different overall differences even with the same rhythm.
+To aim at the clean test's overall speed, set `Thinking pause %` and
+`Mistake rate %` to zero and run the calibration test again; the "Both
+probabilities zero" rows were calibrated that way. Changing them after Apply
+without a new test keeps the chosen target, so overall speed barely moves and
+ordinary keys become slower. Leaving them on preserves composing pauses and
+correction habits that may not appear in a copying test. Other independent
+timing models can give different overall differences even with the same rhythm.
 
 ## Single-window replay scatter
 

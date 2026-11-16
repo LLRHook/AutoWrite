@@ -74,7 +74,10 @@ speed because it adds pauses and corrections at the proposed or kept values.
 In clean simulated tests at about 60 and 103 WPM, keeping the default thinking
 pauses and mistakes made AutoWrite about 14% and 25% slower overall despite
 matching key rhythm. Setting **Thinking pause %** and **Mistake rate %** to
-zero brought those examples within 1% of the test speed; real results vary.
+zero and then running the test again brought those examples within 1% of the
+test speed. Changing them after **Apply** without a new test does not: the
+target stays as chosen, so overall speed barely moves and each key gets
+slower. Real results vary.
 
 Copying is not composing. Thinking pauses are not measured unless the test
 contains at least four long pauses; otherwise they stay at their previous

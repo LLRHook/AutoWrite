@@ -21,7 +21,21 @@ namespace AutoWrite.Tests
                 var clean = TypistLog.Generate(741, 60, 0, 142);
                 var slower = CalibrationAnalysis.Analyze(clean, 60, AppSettings.Defaults());
                 Assert(slower.PredictedWpm < slower.MeasuredWpm * .95, "clean fixture has no kept-pause cost");
-                Assert(slower.Warning.Contains("lowering Thinking pause % or Mistake rate %"), "slower replay advice missing");
+                Assert(slower.Warning.Contains("to 0 and run the test again"), "slower replay advice missing");
+                // The advice must be true: a new test with both at zero reaches the test speed,
+                // while zeroing them after Apply keeps the chosen target and slows each key.
+                var zeroed = AppSettings.Defaults();
+                zeroed.ThinkingPauseChancePercent = 0;
+                zeroed.TypoChancePercent = 0;
+                var rerun = CalibrationAnalysis.Analyze(clean, 60, zeroed);
+                Assert(Math.Abs(rerun.PredictedWpm - rerun.MeasuredWpm) <= rerun.MeasuredWpm * .05,
+                    "a new test with both at zero does not reach the test speed");
+                slower.Proposed.ThinkingPauseChancePercent = 0;
+                slower.Proposed.TypoChancePercent = 0;
+                var afterApply = CalibrationReplay.Forecast(slower.Proposed, 60);
+                Assert(afterApply.Wpm < slower.MeasuredWpm * .95 &&
+                    afterApply.OrdinaryGapMilliseconds > slower.OrdinaryGapMilliseconds * 1.05,
+                    "zeroing after Apply now reaches the test speed; revise the advice and documents");
                 var paused = HumanLog(0, false, false).GetRange(0, 150);
                 double added = 0;
                 int pauses = 0;
