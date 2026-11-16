@@ -74,6 +74,19 @@ func fill(_ child: NSView, in parent: NSView, inset: CGFloat = 0) {
     NSLayoutConstraint.activate([child.leadingAnchor.constraint(equalTo: parent.leadingAnchor, constant: inset), child.trailingAnchor.constraint(equalTo: parent.trailingAnchor, constant: -inset), child.topAnchor.constraint(equalTo: parent.topAnchor, constant: inset), child.bottomAnchor.constraint(equalTo: parent.bottomAnchor, constant: -inset)])
 }
 
+// Accept the edit buffer verbatim; SettingControl validates it when committing.
+// NumberFormatter's default rejection would otherwise trap an invalid edit.
+final class SettingNumberFormatter: NumberFormatter, @unchecked Sendable {
+    override func getObjectValue(_ obj: AutoreleasingUnsafeMutablePointer<AnyObject?>?, for string: String, errorDescription error: AutoreleasingUnsafeMutablePointer<NSString?>?) -> Bool {
+        obj?.pointee = string as NSString
+        return true
+    }
+    override func string(for obj: Any?) -> String? {
+        if let text = obj as? String { return text }
+        return super.string(for: obj)
+    }
+}
+
 final class SettingControl: NSView, NSTextFieldDelegate {
     let spec: SettingSpec
     let nameLabel: NSTextField
@@ -81,14 +94,22 @@ final class SettingControl: NSView, NSTextFieldDelegate {
     let stepper: NSStepper?
     let checkbox: NSButton?
     var changed: (() -> Void)?
+    private var committedValue = 0
     var enabled: Bool = true { didSet { field?.isEnabled = enabled; stepper?.isEnabled = enabled; checkbox?.isEnabled = enabled } }
     var value: Int {
         get {
             if let checkbox { return checkbox.state == .on ? 1 : 0 }
-            return spec.clamp(roundEven((field?.doubleValue ?? 0) * (spec.isMultiplier ? 100 : 1)))
+            let text = (field?.stringValue ?? "").trimmingCharacters(in: .whitespacesAndNewlines)
+            let pattern = spec.isMultiplier ? "^[+-]?[0-9]+(?:\\.[0-9]+)?$" : "^[+-]?[0-9]+$"
+            guard text.range(of: pattern, options: .regularExpression) != nil, let number = Double(text), !number.isNaN else { return committedValue }
+            let scaled = number * (spec.isMultiplier ? 100 : 1)
+            if scaled <= Double(spec.minimum) { return spec.minimum }
+            if scaled >= Double(spec.maximum) { return spec.maximum }
+            return spec.clamp(roundEven(scaled))
         }
         set {
             let value = spec.clamp(newValue)
+            committedValue = value
             checkbox?.state = value != 0 ? .on : .off
             let display = Double(value) / (spec.isMultiplier ? 100 : 1)
             field?.doubleValue = display; stepper?.doubleValue = display
@@ -111,7 +132,7 @@ final class SettingControl: NSView, NSTextFieldDelegate {
             fill(checkbox, in: self)
         } else if let field, let stepper {
             let scale = spec.isMultiplier ? 100.0 : 1.0
-            let formatter = NumberFormatter(); formatter.locale = Locale(identifier: "en_US_POSIX"); formatter.numberStyle = .decimal
+            let formatter = SettingNumberFormatter(); formatter.locale = Locale(identifier: "en_US_POSIX"); formatter.numberStyle = .decimal
             formatter.usesGroupingSeparator = false
             formatter.minimumFractionDigits = spec.isMultiplier ? 2 : 0; formatter.maximumFractionDigits = spec.isMultiplier ? 2 : 0
             formatter.allowsFloats = spec.isMultiplier
@@ -127,16 +148,46 @@ final class SettingControl: NSView, NSTextFieldDelegate {
         self.value = value
     }
     required init?(coder: NSCoder) { fatalError("init(coder:) has not been implemented") }
-    @objc func didStep() { field?.doubleValue = stepper!.doubleValue; changed?() }
+    @objc func didStep() { field?.doubleValue = stepper!.doubleValue; valueChanged() }
     @objc func valueChanged() { let v = value; value = v; changed?() }
-    func controlTextDidChange(_ obj: Notification) { stepper?.doubleValue = field?.doubleValue ?? 0; changed?() }
+    func controlTextDidChange(_ obj: Notification) { stepper?.doubleValue = Double(value) / (spec.isMultiplier ? 100 : 1); changed?() }
     func controlTextDidEndEditing(_ obj: Notification) { valueChanged() }
+}
+
+final class ScrollAffordance {
+    let scroll: NSScrollView, hint: NSTextField
+    let text: String
+    private var observers = [NSObjectProtocol]()
+    init(scroll: NSScrollView, hint: NSTextField, text: String) {
+        self.scroll = scroll; self.hint = hint; self.text = text
+        scroll.contentView.postsBoundsChangedNotifications = true
+        scroll.contentView.postsFrameChangedNotifications = true
+        scroll.documentView?.postsFrameChangedNotifications = true
+        let watched: [(Notification.Name, NSView)] = [(NSView.boundsDidChangeNotification, scroll.contentView), (NSView.frameDidChangeNotification, scroll.contentView), (NSView.frameDidChangeNotification, scroll.documentView!)]
+        for (name, object) in watched {
+            observers.append(NotificationCenter.default.addObserver(forName: name, object: object, queue: nil) { [weak self] _ in self?.update() })
+        }
+        update()
+    }
+    func update() {
+        guard let document = scroll.documentView else { hint.isHidden = true; return }
+        let visible = document.visibleRect, bounds = document.bounds
+        let more = document.isFlipped ? visible.maxY < bounds.maxY - 1 : visible.minY > bounds.minY + 1
+        // Keep the small label's geometry stable so hiding it cannot create a
+        // layout/visibility feedback loop at the exact scroll boundary.
+        hint.stringValue = more ? text : ""
+        hint.alphaValue = more ? 1 : 0
+        hint.setAccessibilityHidden(!more)
+    }
+    deinit { for observer in observers { NotificationCenter.default.removeObserver(observer) } }
 }
 
 final class MainWindow: NSWindowController, NSWindowDelegate {
     let directory: URL
     let permission: AccessibilityPermission
     let diagnostic: Bool
+    private let presentsSheets: Bool
+    private let offscreenPresentation: Bool
     let text = LiteralTextView(), status = label("Ready"), hotkeyStatus = label("F7 pending (Fn+F7)")
     let progress = NSProgressIndicator()
     private(set) var controls = [String: SettingControl](), orderedControls = [SettingControl]()
@@ -150,20 +201,30 @@ final class MainWindow: NSWindowController, NSWindowDelegate {
     var running = false { didSet { updateControlState() } }
     var calibrationOpen = false { didSet { updateControlState() } }
     private var hotkey: GlobalHotkey?
-    private var permissionDialog: PermissionWindow?
+    private(set) var permissionDialog: PermissionWindow?
     private var lastPermissionState: PermissionState?
     let permissionNotice = label("")
     var permissionButton: NSButton!
     let settingsScroll = NSScrollView()
-    let scrollHint = label("Scroll for Difficult keys and Correction settings ↓")
+    let scrollHint = label("")
     var permissionPresentation: ((PermissionState) -> Void)?
     private(set) var modalChild: NSWindow?
-    init(directory: URL, permission: AccessibilityPermission? = nil, diagnostic: Bool = false) throws {
+    private var sheetEnded: (() -> Void)?
+    private var scrollAffordance: ScrollAffordance?
+    init(directory: URL, permission: AccessibilityPermission? = nil, diagnostic: Bool = false, offscreenPresentation: Bool = false) throws {
         self.directory = directory; self.diagnostic = diagnostic
+        presentsSheets = !diagnostic || offscreenPresentation
+        self.offscreenPresentation = offscreenPresentation
         self.permission = permission ?? (diagnostic ? AccessibilityPermission(requestListing: {}) : AccessibilityPermission())
         let settings = try Settings.load(directory: directory)
         let w = NSWindow(contentRect: NSRect(x: 0, y: 0, width: 1060, height: 740), styleMask: [.titled, .closable, .miniaturizable, .resizable], backing: .buffered, defer: false)
         w.title = "AutoWrite"; w.minSize = NSSize(width: 920, height: 580); w.isReleasedWhenClosed = false
+        if offscreenPresentation {
+            w.alphaValue = 0; w.ignoresMouseEvents = true
+            let edge = NSScreen.screens.map { $0.frame.maxX }.max() ?? 0
+            w.setFrameOrigin(NSPoint(x: edge + 10_000, y: 10_000))
+            w.animationBehavior = .none
+        }
         super.init(window: w); w.delegate = self
         let root = BackgroundView(); w.contentView = root
         let heading = label("AutoWrite", bold: true); heading.font = .boldSystemFont(ofSize: 22)
@@ -202,6 +263,7 @@ final class MainWindow: NSWindowController, NSWindowDelegate {
         fill(layout, in: root, inset: 16)
         header.heightAnchor.constraint(equalToConstant: 32).isActive = true; footer.heightAnchor.constraint(equalToConstant: 22).isActive = true
         status.maximumNumberOfLines = 1; status.lineBreakMode = .byTruncatingTail
+        scrollAffordance = ScrollAffordance(scroll: settingsScroll, hint: scrollHint, text: "More Correction settings below ↓")
         updateControlState()
         refreshPermissionStatus()
         w.contentView?.layoutSubtreeIfNeeded()
@@ -213,7 +275,7 @@ final class MainWindow: NSWindowController, NSWindowDelegate {
         permissionNotice.stringValue = missing ? "Accessibility permission is required to type into other apps." : ""
         permissionButton.isHidden = !missing
         permissionNotice.superview?.isHidden = !missing
-        if missing { setStatus(permission.message(for: state), error: true) }
+        if missing { setStatus("Accessibility permission required", error: true) }
         else if lastPermissionState != nil && lastPermissionState != .allowed { setStatus(permission.message(for: .allowed)) }
         lastPermissionState = state
     }
@@ -222,27 +284,40 @@ final class MainWindow: NSWindowController, NSWindowDelegate {
         refreshPermissionStatus()
         if state == .missing { permission.requestIfMissing() }
         permissionPresentation?(state)
-        guard !diagnostic, let window, permissionDialog == nil else { return }
-        NSApplication.shared.activate(ignoringOtherApps: true)
-        window.makeKeyAndOrderFront(nil)
+        guard presentsSheets, let window, permissionDialog == nil else { return }
+        if !diagnostic {
+            NSApplication.shared.activate(ignoringOtherApps: true)
+            window.makeKeyAndOrderFront(nil)
+        }
         let dialog = PermissionWindow(permission: permission, state: state)
         permissionDialog = dialog
+        if offscreenPresentation { dialog.window!.alphaValue = 0; dialog.window!.ignoresMouseEvents = true }
         window.beginSheet(dialog.window!) { [weak self] _ in self?.permissionDialog = nil }
     }
     private func presentCalibration(_ child: NSWindow) {
         guard let owner = window else { return }
         modalChild = child
+        if offscreenPresentation { child.alphaValue = 0; child.ignoresMouseEvents = true }
         child.setFrameOrigin(NSPoint(x: owner.frame.midX - child.frame.width / 2, y: owner.frame.midY - child.frame.height / 2))
-        if !diagnostic {
-            DispatchQueue.main.async { [weak self, weak child] in
-                guard let self, let child, self.modalChild === child else { return }
-                NSApplication.shared.runModal(for: child)
+        if presentsSheets {
+            child.animationBehavior = .none
+            owner.beginSheet(child) { [weak self, weak child] _ in
+                child?.orderOut(nil)
+                guard let self else { return }
+                self.modalChild = nil
+                let ended = self.sheetEnded; self.sheetEnded = nil
+                ended?()
             }
         }
     }
-    private func endCalibrationSheet() {
-        if let child = modalChild, NSApplication.shared.modalWindow === child { NSApplication.shared.stopModal(); child.orderOut(nil) }
-        modalChild = nil
+    private func endCalibrationSheet(_ completed: @escaping () -> Void) {
+        if let child = modalChild, let owner = child.sheetParent {
+            sheetEnded = completed
+            owner.endSheet(child)
+        } else {
+            modalChild?.orderOut(nil); modalChild = nil
+            completed()
+        }
     }
     func windowShouldClose(_ sender: NSWindow) -> Bool { !calibrationOpen }
     func armHotkey() {
@@ -324,15 +399,19 @@ final class MainWindow: NSWindowController, NSWindowDelegate {
         calibration = dialog
         dialog.completed = { [weak self] session, warning in
             guard let self else { return }
-            self.endCalibrationSheet()
-            self.calibration = nil
-            guard let session else { self.calibrationOpen = false; return }
-            let result = CalibrationAnalysis.analyze(session.keys, seconds: session.seconds, current: current)
-            if !warning.isEmpty { result.warning = warning + " " + result.warning }
-            let results = ResultsWindow(result: result, apply: { [weak self] in self?.applyCalibration($0) ?? false })
-            self.results = results
-            results.closed = { [weak self] in self?.endCalibrationSheet(); self?.results = nil; self?.calibrationOpen = false }
-            self.presentCalibration(results.window!)
+            self.endCalibrationSheet { [weak self] in
+                guard let self else { return }
+                self.calibration = nil
+                guard let session else { self.calibrationOpen = false; return }
+                let result = CalibrationAnalysis.analyze(session.keys, seconds: session.seconds, current: current)
+                if !warning.isEmpty { result.warning = warning + " " + result.warning }
+                let results = ResultsWindow(result: result, apply: { [weak self] in self?.applyCalibration($0) ?? false })
+                self.results = results
+                results.closed = { [weak self] in
+                    self?.endCalibrationSheet { [weak self] in self?.results = nil; self?.calibrationOpen = false }
+                }
+                self.presentCalibration(results.window!)
+            }
         }
         presentCalibration(dialog.window!)
         dialog.window?.makeFirstResponder(dialog.input)
@@ -360,7 +439,8 @@ func applicationMenu(target: AnyObject?) -> NSMenu {
 
 final class PermissionWindow: NSWindowController {
     let message: NSTextField
-    var openButton: NSButton!, cancelButton: NSButton!
+    var openButton: NSButton!, cancelButton: NSButton!, quitButton: NSButton!
+    var quit: () -> Void = { NSApplication.shared.terminate(nil) }
     init(permission: AccessibilityPermission, state: PermissionState) {
         message = label(permission.message(for: state))
         let window = NSWindow(contentRect: NSRect(x: 0, y: 0, width: 540, height: 280), styleMask: [.titled], backing: .buffered, defer: false)
@@ -370,12 +450,15 @@ final class PermissionWindow: NSWindowController {
         let heading = label(window.title, bold: true); heading.font = .boldSystemFont(ofSize: 16)
         openButton = button("Open Accessibility Settings", target: self, action: #selector(openSettings))
         cancelButton = button("Cancel", target: self, action: #selector(cancel)); cancelButton.keyEquivalent = "\u{1B}"
-        let buttons = stack([NSView(), cancelButton, openButton], orientation: .horizontal)
+        quitButton = button("Quit AutoWrite", target: self, action: #selector(quitApplication))
+        quitButton.isHidden = state != .restartNeeded
+        let buttons = stack([NSView(), cancelButton, quitButton, openButton], orientation: .horizontal)
         let root = stack([heading, message, NSView(), buttons], spacing: 14); root.alignment = .width
         fill(root, in: window.contentView!, inset: 24)
         buttons.heightAnchor.constraint(equalToConstant: 32).isActive = true
     }
     required init?(coder: NSCoder) { fatalError("init(coder:) has not been implemented") }
+    @objc func quitApplication() { quit() }
     @objc func openSettings() { cancel(); AccessibilityPermission.openSettings() }
     @objc func cancel() { if let parent = window?.sheetParent, let window { parent.endSheet(window) }; window?.close() }
 }

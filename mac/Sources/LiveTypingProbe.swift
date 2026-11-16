@@ -37,13 +37,16 @@ enum LiveTypingProbe {
     }
     static func run(arguments: [String], permission: AccessibilityPermission = AccessibilityPermission(), gateRead: () -> LiveGate = LiveGate.read,
                     ownerExplanation: (AccessibilityPermission, PermissionState) -> Void = explainOwnerPermission,
-                    proof: ((URL, Int?) -> Int32)? = nil) -> Int32 {
+                    proof: ((URL, Int?) -> Int32)? = nil,
+                    runningCopies: () -> [RunningCopy] = AutoWriteInstances.running,
+                    now: () -> TimeInterval = { Date().timeIntervalSince1970 }) -> Int32 {
+        let hardDeadline = ProcessInfo.processInfo.systemUptime + 15
         guard let invocation = parse(arguments) else { print("exit=4; usage: --live-typing [--require-idle-seconds N (240..86400)]"); return 4 }
         let directory: URL
         if invocation == .owner {
             guard arguments.count == 3 else { print("exit=4; owner proof must be started through mac/smoke.sh"); return 4 }
             let work = URL(fileURLWithPath: arguments[2])
-            guard let text = try? String(contentsOf: work.appendingPathComponent("deadline"), encoding: .utf8), let deadline = Double(trim(text)), Date().timeIntervalSince1970 < deadline else {
+            guard let text = try? String(contentsOf: work.appendingPathComponent("deadline"), encoding: .utf8), let deadline = Double(trim(text)), now() < deadline else {
                 print("exit=2; owner proof launch expired or was not prepared; no window or input created"); return 2
             }
             directory = work.appendingPathComponent("data")
@@ -53,6 +56,9 @@ enum LiveTypingProbe {
             directory = value
         }
         func refuse(_ code: Int32, _ text: String) -> Int32 { outcome(directory, text, code) }
+        if invocation == .owner && AutoWriteInstances.other(runningCopies()) != nil {
+            return refuse(2, "exit=2; quit AutoWrite first, then run the owner proof; no window or input created")
+        }
         let gate = gateRead(), required = invocation.idleSeconds
         guard gate.eligible(required: required ?? 0) else { return refuse(3, "exit=3; skipped: user active or screen locked; idle_seconds=\(fixed(gate.idle, 3)); no window or input created") }
         let state = permission.state()
@@ -60,7 +66,7 @@ enum LiveTypingProbe {
             if invocation == .owner { permission.requestIfMissing(); ownerExplanation(permission, state) }
             return refuse(2, "exit=2; Accessibility permission missing or restart required; no typing window or input created")
         }
-        return proof?(directory, required) ?? perform(directory: directory, required: required)
+        return proof?(directory, required) ?? perform(directory: directory, required: required, deadline: hardDeadline)
     }
     private static func outcome(_ directory: URL, _ text: String, _ code: Int32) -> Int32 {
         try? FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
@@ -77,7 +83,7 @@ enum LiveTypingProbe {
         }
         dialog.cancel()
     }
-    private static func perform(directory: URL, required: Int?) -> Int32 {
+    private static func perform(directory: URL, required: Int?, deadline: Double) -> Int32 {
         func outcome(_ text: String, _ code: Int32) -> Int32 { self.outcome(directory, text, code) }
         let gate = LiveGate.read()
         let idle = required.map { "idle_seconds=\(fixed(gate.idle, 3)); required_idle_seconds=\($0)" } ?? "owner_launch=True"
@@ -90,7 +96,7 @@ enum LiveTypingProbe {
         let input = LiteralTextView(); fill(textScroll(input), in: window.contentView!)
         window.center()
         // Check idle and lock state again immediately before the focus change.
-        guard LiveGate.read().eligible(required: required ?? 0) else { window.close(); return outcome("exit=3; skipped: user active or screen locked; no input sent", 3) }
+        guard ProcessInfo.processInfo.systemUptime < deadline - 1, LiveGate.read().eligible(required: required ?? 0) else { window.close(); return outcome("exit=3; skipped: user active or screen locked; no input sent", 3) }
         let start = ProcessInfo.processInfo.systemUptime
         window.makeKeyAndOrderFront(nil); app.activate(ignoringOtherApps: true); window.makeFirstResponder(input)
         let cancellation = Cancellation()
@@ -106,14 +112,17 @@ enum LiveTypingProbe {
                 let runtime = MacRuntime(cancellation: cancellation, seed: 751)
                 runtime.expectedWindow = ownedIdentity
                 runtime.guardBeforePost = {
-                    if ProcessInfo.processInfo.systemUptime - start >= 11 || foregroundWindowIdentity() != ownedIdentity { throw AutoWriteError.cancelled }
+                    if ProcessInfo.processInfo.systemUptime >= deadline - 1 || ProcessInfo.processInfo.systemUptime - start >= 11 || foregroundWindowIdentity() != ownedIdentity { throw AutoWriteError.cancelled }
                 }
                 let original = runtime.sink
                 runtime.sink = { event in
                     if event.type == .keyDown && event.getIntegerValueField(.keyboardEventKeycode) == 51 { lock.lock(); backspaces += 1; lock.unlock() }
                     original(event)
                 }
-                do { try TypingEngine(runtime).type(expected, options: TypingOptions(settings: settings())) }
+                do {
+                    var options = TypingOptions(settings: settings()); options.triggerKey = 98
+                    try TypingEngine(runtime).type(expected, options: options)
+                }
                 catch { lock.lock(); failed = true; lock.unlock() }
                 lock.lock(); done = true; lock.unlock()
             }
@@ -121,8 +130,8 @@ enum LiveTypingProbe {
         let hotkey = GlobalHotkey { if !started { hotkeyStarted = true; startTyping() } }
         let armed = hotkey.register()
         var sentF7 = false
-        while ProcessInfo.processInfo.systemUptime - start < 12 {
-            while let event = app.nextEvent(matching: .any, until: Date(timeIntervalSinceNow: 0.005), inMode: .default, dequeue: true) { app.sendEvent(event); if ProcessInfo.processInfo.systemUptime - start >= 12 { break } }
+        while ProcessInfo.processInfo.systemUptime < deadline - 0.5 && ProcessInfo.processInfo.systemUptime - start < 12 {
+            while let event = app.nextEvent(matching: .any, until: Date(timeIntervalSinceNow: 0.005), inMode: .default, dequeue: true) { app.sendEvent(event); if ProcessInfo.processInfo.systemUptime >= deadline - 0.5 || ProcessInfo.processInfo.systemUptime - start >= 12 { break } }
             let elapsed = ProcessInfo.processInfo.systemUptime - start
             lock.lock(); let finished = done; lock.unlock()
             if finished { break }
@@ -133,14 +142,14 @@ enum LiveTypingProbe {
             }
             if !sentF7 && armed && !MacRuntime.modifierKeys.contains(where: { CGEventSource.keyState(.hidSystemState, key: CGKeyCode($0)) }) {
                 sentF7 = true
-                guard ownsFocus(), let down = CGEvent(keyboardEventSource: CGEventSource(stateID: .privateState), virtualKey: 98, keyDown: true), let up = CGEvent(keyboardEventSource: CGEventSource(stateID: .privateState), virtualKey: 98, keyDown: false) else { failed = true; break }
-                down.flags = []; up.flags = []
-                down.post(tap: .cghidEventTap); up.post(tap: .cghidEventTap)
+                let events = GlobalHotkey.triggerEvents()
+                guard ownsFocus(), events.count == 2 else { failed = true; break }
+                for event in events { event.post(tap: .cghidEventTap) }
             }
             if !started && elapsed > 0.45 { startTyping() }
         }
         cancellation.cancel(); hotkey.unregister()
-        let settle = ProcessInfo.processInfo.systemUptime + 0.5
+        let settle = min(deadline, ProcessInfo.processInfo.systemUptime + 0.5)
         while started && ProcessInfo.processInfo.systemUptime < settle { lock.lock(); let finished = done; lock.unlock(); if finished { break }; RunLoop.current.run(until: Date(timeIntervalSinceNow: 0.005)) }
         // Drain keys already posted to our own queue before comparing.
         while let event = app.nextEvent(matching: .any, until: Date(), inMode: .default, dequeue: true) { app.sendEvent(event) }

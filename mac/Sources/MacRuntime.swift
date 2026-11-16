@@ -138,7 +138,7 @@ final class MacRuntime: EngineRuntime {
         checkedWindow = (window, ProcessInfo.processInfo.systemUptime)
         return window
     }
-    func isKeyDown(_ key: Int) throws -> Bool { try cancellation.check(); return CGEventSource.keyState(.hidSystemState, key: CGKeyCode(key)) }
+    func isKeyDown(_ key: Int) throws -> Bool { try cancellation.check(); return physicalKeyState(CGKeyCode(key)) }
     func releaseModifiers() throws {
         // Wait for physical release, including Fn from Fn+F7. Posting key-up
         // events cannot safely release a key that the human is still holding.
@@ -221,6 +221,17 @@ final class GlobalHotkey {
         let id = EventHotKeyID(signature: 0x41575445, id: 7)
         if RegisterEventHotKey(UInt32(kVK_F7), 0, id, GetApplicationEventTarget(), 0, &ref) != noErr { unregister(); return false }
         return true
+    }
+    // Function keys carry the function flag even when Fn is not physically held.
+    // The proof posts this pair only after its own window has keyboard focus.
+    static func triggerEvents() -> [CGEvent] {
+        let source = CGEventSource(stateID: .privateState)
+        return [true, false].compactMap { down in
+            guard let event = CGEvent(keyboardEventSource: source, virtualKey: CGKeyCode(kVK_F7), keyDown: down) else { return nil }
+            event.flags = .maskSecondaryFn
+            event.setIntegerValueField(.keyboardEventAutorepeat, value: 0)
+            return event
+        }
     }
     func handle(pressed: Bool) {
         if !pressed { held = false }

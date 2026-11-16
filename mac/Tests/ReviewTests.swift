@@ -14,7 +14,7 @@ extension TestRunner {
             let owner = try MainWindow(directory: directory.appendingPathComponent("permission"), permission: permission, diagnostic: true)
             defer { owner.shutdown(); owner.window?.close() }
             owner.permissionPresentation = { presentations.append($0) }
-            try require(!owner.permissionButton.isHidden && owner.permissionNotice.stringValue.contains("Accessibility") && owner.status.stringValue.contains("Accessibility"), "launch permission state missing")
+            try require(!owner.permissionButton.isHidden && owner.permissionNotice.stringValue.contains("Accessibility") && owner.status.stringValue == "Accessibility permission required", "launch permission state missing")
             try equal(requests, 0, "launch raised permission prompt")
             try renderWindow(owner.window!, evidence.appendingPathComponent("launch-permission-light.png"), appearance: .aqua)
             try renderWindow(owner.window!, evidence.appendingPathComponent("launch-permission-dark.png"), appearance: .darkAqua)
@@ -65,7 +65,7 @@ extension TestRunner {
             var windows = 0, modifierChecks = 0, held = false, unsafePost = false
             let runtime = MacRuntime(cancellation: Cancellation(), seed: 1, sink: { _ in if held { unsafePost = true } })
             runtime.expectedWindow = 1
-            runtime.windowIdentity = { windows += 1; if windows == 1 { held = true; return 2 }; return 1 }
+            runtime.windowIdentity = { windows += 1; if windows == 1 { return 2 }; if windows == 2 { held = true }; return 1 }
             runtime.modifierDown = {
                 if held { modifierChecks += 1; if modifierChecks >= 4 { held = false } }
                 return held
@@ -259,9 +259,13 @@ extension TestRunner {
             let args = ["--live-typing","--owner-proof-directory",work.path]
             let permission = AccessibilityPermission(trusted: { false }, canPost: { false }, requestListing: {})
             var explanations = 0, proofs = 0
-            func run() -> Int32 { LiveTypingProbe.run(arguments: args, permission: permission, gateRead: { LiveGate(idle: 0, onConsole: true, unlocked: true) }, ownerExplanation: { _, _ in explanations += 1 }, proof: { _, _ in proofs += 1; return 0 }) }
+            func run() -> Int32 { LiveTypingProbe.run(arguments: args, permission: permission, gateRead: { LiveGate(idle: 0, onConsole: true, unlocked: true) }, ownerExplanation: { _, _ in explanations += 1 }, proof: { _, _ in proofs += 1; return 0 }, runningCopies: { [] }) }
             try equal(run(), 2, "unprepared owner launch")
             try equal(explanations, 0, "unprepared owner prompted")
+            try String(Date().timeIntervalSince1970 - 1).write(to: work.appendingPathComponent("deadline"), atomically: true, encoding: .utf8)
+            try equal(run(), 2, "expired prepared owner launch")
+            try equal(explanations, 0, "expired owner launch reached permission explanation")
+            try equal(proofs, 0, "expired owner launch reached proof")
             try String(Date().timeIntervalSince1970 + 15).write(to: work.appendingPathComponent("deadline"), atomically: true, encoding: .utf8)
             try equal(run(), 2, "owner denied permission")
             try equal(explanations, 1, "owner permission refusal missing explanation")
@@ -269,7 +273,7 @@ extension TestRunner {
             permission.trusted = { true }; permission.canPost = { true }
             try equal(run(), 0, "owner zero-idle preflight did not reach injected proof")
             try equal(proofs, 1, "injected owner proof not called")
-            let blocked = LiveTypingProbe.run(arguments: args, permission: permission, gateRead: { LiveGate(idle: 1000, onConsole: true, unlocked: false) }, ownerExplanation: { _, _ in explanations += 1 }, proof: { _, _ in proofs += 1; return 0 })
+            let blocked = LiveTypingProbe.run(arguments: args, permission: permission, gateRead: { LiveGate(idle: 1000, onConsole: true, unlocked: false) }, ownerExplanation: { _, _ in explanations += 1 }, proof: { _, _ in proofs += 1; return 0 }, runningCopies: { [] })
             try equal(blocked, 3, "owner lock refusal")
             try equal(proofs, 1, "locked owner launched proof")
         }

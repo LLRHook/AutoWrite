@@ -297,9 +297,12 @@ entry and allow the new build again. If macOS still blocks it, quit and reopen.
 
 Paste your text, focus the destination field, and press **Fn+F7** to start or
 stop. Use F7 alone with standard function-key settings. **Type in Ns** uses
-**Button delay s**. Typing waits for the original target window and for held
-modifiers, including Command and Fn, to be released; it resumes without a burst.
-Stop also interrupts preparation of large texts.
+**Button delay s**. Typing pauses when the destination app's original frontmost
+window is no longer in front, or while modifiers, including Command and Fn,
+are held; it resumes without a burst.
+Switching tabs inside that same window is not detected. Stop also interrupts
+preparation of large texts. A second launch brings the running copy forward
+and exits.
 
 **Calibrate typing** offers 30 or 60 seconds, with 60 selected initially. The
 clock starts with the first character. Backspace corrects and Enter inserts a
@@ -333,20 +336,22 @@ mac/smoke.sh --live-typing
 mac/smoke.sh --live-typing --require-idle-seconds 240
 ```
 
-The first is **for the owner at the keyboard**. It starts AutoWrite.app through
-Launch Services, as Finder does, and therefore tests the app's own Accessibility
-permission. If permission is missing, it explains how to grant it; grant it and
-run the proof again. The second is **for automation**: it starts from the shell,
+The first is **for the owner at the keyboard**. Quit the normal AutoWrite app
+first. The proof starts AutoWrite.app through Launch Services, as Finder does,
+and tests the app's own Accessibility permission. If permission is missing, it
+explains how to grant it; grant it and run the proof again. The second is **for
+automation**: it starts from the shell,
 uses the terminal's permission, and sends nothing unless the unlocked desktop
 has been idle for at least N seconds (240–86400). It skips rather than waiting.
 
 Both type a fixed text, including repaired mistakes, only into a window they
 create. They require its keyboard focus within half a second, stop on focus
-loss, have a 15-second watchdog, and restore the previous app if they still own
-focus. Received text is never printed or saved: only lengths, differing position,
-repair count and outcome. F7 starts the proof when possible; a direct fallback
-is reported. Exit codes: 0 pass, 2 failure/permission/focus loss, 3 active or locked,
-4 bad arguments.
+loss, limit the app run to 15 seconds, and restore the previous app if they still
+own focus. The shell watchdog allows an additional launch and cleanup margin.
+Received text is never printed or saved: only lengths, differing position,
+repair count and outcome. `hotkey=F7` means the global F7 hotkey started the run;
+`hotkey=direct-fallback` proves typing only. Exit codes: 0 pass, 2 failure/permission/
+focus loss, 3 active or locked, 4 bad arguments.
 
 **Limits:** destination apps differ in Tab handling, substitutions and editing.
 The engine counts Backspaces per UTF-16 unit, as on Windows. A repair crossing

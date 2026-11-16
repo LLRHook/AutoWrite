@@ -61,9 +61,16 @@ not a final permission state. Hidden-window mode suppresses presentation and
 uses a no-op prompt callback unless a test supplies its own recorder. The owner
 proof is launched with `open -W -n`, has an expiring private launch directory,
 and must not be run by unattended tests. Shell proof mode never requests
-permission. Foreground checks read the complete ordered window-ID list, resolving metadata
-again whenever that order or the front application changes. The public C API
-returns raw IDs in a CFArray, so Swift reads them without an NSArray bridge.
+permission. Foreground checks read the front application and complete ordered
+window-ID list on every call; unchanged identities reuse resolved metadata.
+Direct uncached metadata resolution exceeded the median timing limit on the
+implementation machine, so this cache and the immediately preceding engine
+check reuse remain. Timing tests measure those real lookups but substitute
+a stable identity and released keys, so desktop activity cannot suspend them.
+Calibration and results use consecutive sheets, with no application modal loop.
+Integration tests exercise the real sheet path with transparent, mouse-ignoring
+windows and activation prohibited; AppKit can constrain a sheet back onto a screen
+even if its parent was placed outside every screen.
 
 Cancellation checkpoints in preparation do not advance the clock, draw random
 numbers or reorder calculations. Pair posting holds the cancellation lock so

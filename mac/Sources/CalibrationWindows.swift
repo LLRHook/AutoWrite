@@ -105,7 +105,6 @@ final class CalibrationWindow: NSWindowController, NSWindowDelegate {
         input.ignored = { [weak self] reason, timestamp in guard let self, !self.ending else { return }; self.ensureSession(); self.session!.ignore(reason, self.milliseconds(timestamp)) }
         timer = Timer(timeInterval: 0.02, repeats: true) { [weak self] _ in self?.tick(ProcessInfo.processInfo.systemUptime) }
         RunLoop.main.add(timer!, forMode: .common)
-        RunLoop.main.add(timer!, forMode: .modalPanel)
     }
     required init?(coder: NSCoder) { fatalError("init(coder:) has not been implemented") }
     func ensureSession() {
@@ -148,7 +147,7 @@ final class CalibrationWindow: NSWindowController, NSWindowDelegate {
         ending = true; timer?.invalidate(); timer = nil; refreshProgress()
         var warning = ""
         if let session { do { try session.save(completed: didComplete, directory: directory) } catch { warning = "The recording could not be saved. You can still review and apply these settings." } }
-        window?.close()
+        if window?.sheetParent == nil { window?.close() }
         completed?(didComplete ? session : nil, warning)
     }
     func windowShouldClose(_ sender: NSWindow) -> Bool { cancel(); return true }
@@ -163,6 +162,8 @@ final class ResultsWindow: NSWindowController, NSWindowDelegate {
     var closed: (() -> Void)?
     private let apply: (Settings) -> Bool
     private var ending = false
+    let scroll = NSScrollView(), scrollHint = label("")
+    private var scrollAffordance: ScrollAffordance?
     init(result: CalibrationResult, apply: @escaping (Settings) -> Bool) {
         self.result = result; self.apply = apply
         summary = label(result.summary); warning = label(result.warning); warning.textColor = .systemRed
@@ -186,21 +187,25 @@ final class ResultsWindow: NSWindowController, NSWindowDelegate {
             old.setAccessibilityLabel("Current " + Settings.spec(name).label); new.setAccessibilityLabel("Proposed " + Settings.spec(name).label)
             rows.append((name, title, old, new, reason)); addRow(title, old, new, reason)
         }
-        let scroll = NSScrollView(); scroll.hasVerticalScroller = true; scroll.drawsBackground = false; scroll.documentView = table; table.translatesAutoresizingMaskIntoConstraints = false
+        scroll.hasVerticalScroller = true; scroll.autohidesScrollers = false; scroll.scrollerStyle = .legacy; scroll.drawsBackground = false; scroll.documentView = table; table.translatesAutoresizingMaskIntoConstraints = false
         NSLayoutConstraint.activate([table.leadingAnchor.constraint(equalTo: scroll.contentView.leadingAnchor), table.topAnchor.constraint(equalTo: scroll.contentView.topAnchor), table.widthAnchor.constraint(equalTo: scroll.contentView.widthAnchor)])
         applyButton = button("Apply", target: self, action: #selector(applyChanges)); discardButton = button("Discard", target: self, action: #selector(discard)); discardButton.keyEquivalent = "\u{1B}"
         let buttons = stack([NSView(), applyButton, discardButton], orientation: .horizontal)
-        let root = stack([summary, warning, scroll, buttons], spacing: 12); root.alignment = .width
+        scrollHint.font = .systemFont(ofSize: 11); scrollHint.textColor = .secondaryLabelColor
+        let root = stack([summary, warning, scroll, scrollHint, buttons], spacing: 12); root.alignment = .width
         fill(root, in: w.contentView!, inset: 16)
         summary.heightAnchor.constraint(greaterThanOrEqualToConstant: 64).isActive = true
         buttons.heightAnchor.constraint(equalToConstant: 32).isActive = true
         warning.isHidden = result.warning.isEmpty
+        scrollAffordance = ScrollAffordance(scroll: scroll, hint: scrollHint, text: "More setting proposals below ↓")
+        w.contentView?.layoutSubtreeIfNeeded()
+        table.scroll(NSPoint(x: 0, y: table.isFlipped ? table.bounds.minY : table.bounds.maxY))
     }
     required init?(coder: NSCoder) { fatalError("init(coder:) has not been implemented") }
     @objc func applyChanges() {
         if apply(result.proposed) { discard() }
         else { warning.stringValue = "The settings could not be saved. Controls were restored; check the data directory's write permissions."; warning.isHidden = false }
     }
-    @objc func discard() { if ending { return }; ending = true; window?.close(); closed?() }
+    @objc func discard() { if ending { return }; ending = true; if window?.sheetParent == nil { window?.close() }; closed?() }
     func windowShouldClose(_ sender: NSWindow) -> Bool { discard(); return true }
 }

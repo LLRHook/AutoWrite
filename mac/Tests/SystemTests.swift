@@ -110,6 +110,17 @@ extension TestRunner {
                     keys.append(CaptureKey(milliseconds: (now - start) * 1000, character: eventUnicode(event).first ?? 0))
                 }
             })
+            // Measure the actual window lookup, but inject a stable result and
+            // released physical keys. Desktop activity must not suspend a test
+            // that never posts anything or owns a destination window.
+            var windowCosts = [Double]()
+            real.windowIdentity = {
+                let start = ProcessInfo.processInfo.systemUptime
+                _ = foregroundWindowIdentity()
+                windowCosts.append((ProcessInfo.processInfo.systemUptime - start) * 1000)
+                return 123
+            }
+            real.physicalKeyState = { _ in false }
             let timeout = DispatchWorkItem { real.cancellation.cancel() }
             DispatchQueue.global().asyncAfter(deadline: .now() + 8, execute: timeout)
             let activity = TimingActivity(); defer { activity.end(); timeout.cancel() }
@@ -125,6 +136,7 @@ extension TestRunner {
             let errors = zip(keys, virtual.keys).map { $0.milliseconds - $1.milliseconds }
             let median = CalibrationAnalysis.median(errors.map(abs)), worst = errors.max() ?? 0, worstAbs = errors.map(abs).max() ?? 0
             let report = "TIMING: keys=\(keys.count); background=\(dotBool(background)); median_absolute_error_ms=\(fixed(median, 3)); worst_late_ms=\(fixed(worst, 3)); worst_absolute_error_ms=\(fixed(worstAbs, 3)); duration_ms=\(virtual.time); posts=0"
+            print("WINDOW CHECK: count=\(windowCosts.count); median_ms=\(fixed(CalibrationAnalysis.median(windowCosts), 3)); worst_ms=\(fixed(windowCosts.max() ?? 0, 3)); stable injected identity; physical keys released; posts=0")
             print(report); try report.write(to: evidence.appendingPathComponent("timing.txt"), atomically: true, encoding: .utf8)
             try require(background, "timing process was foreground")
             try require(median < 2 && worst <= 20, "real pauses miss timing limits")

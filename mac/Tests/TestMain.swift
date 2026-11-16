@@ -18,6 +18,8 @@ import Foundation
             try runner.windows(fixtures, directory, evidence)
             runner.system(fixtures, evidence)
             try runner.review(directory, evidence)
+            try runner.roundThree(directory, evidence)
+            try runner.probeScript(directory)
             counts = fixtures.countSummary
         } catch { runner.test("test setup") { throw error } }
         print("TOTAL: \(runner.passed) PASS, \(runner.failed) FAIL; reference cases compared: \(runner.referenceCases); skipped: \(runner.skipped); \(counts)")
