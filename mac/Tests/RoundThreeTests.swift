@@ -55,7 +55,7 @@ extension TestRunner {
                 try equal(control.value, text == "999" ? control.spec.maximum : original["WordsPerMinute"], "AppKit field editor commit")
             }
         }
-        test("second normal launch activates the first copy and exits; owner proof refuses running copies") {
+        test("second normal launch activates the first copy and exits; both live proofs refuse running copies") {
             let own = ProcessInfo.processInfo.processIdentifier
             let copies = [RunningCopy(pid: own, bundleIdentifier: AutoWriteInstances.bundleIdentifier), RunningCopy(pid: 99991, bundleIdentifier: "other.app"), RunningCopy(pid: 99992, bundleIdentifier: AutoWriteInstances.bundleIdentifier)]
             var activated = [pid_t](), exits = 0
@@ -70,11 +70,14 @@ extension TestRunner {
             try String(Date().timeIntervalSince1970 + 30).write(to: work.appendingPathComponent("deadline"), atomically: true, encoding: .utf8)
             var requests = 0, proofs = 0
             let permission = AccessibilityPermission(trusted: { false }, canPost: { false }, requestListing: { requests += 1 })
-            let code = LiveTypingProbe.run(arguments: ["--live-typing","--owner-proof-directory",work.path], permission: permission, gateRead: { LiveGate(idle: 0, onConsole: true, unlocked: true) }, ownerExplanation: { _, _ in throwawayFailure() }, proof: { _, _ in proofs += 1; return 0 }, runningCopies: { copies })
-            try equal(code, 2, "owner allowed alongside normal app")
-            try require(requests == 0 && proofs == 0, "instance refusal requested permission or started proof")
-            let message = try String(contentsOf: work.appendingPathComponent("data/live-probe.txt"), encoding: .utf8)
-            try require(message.contains("quit AutoWrite first"), "missing owner instruction")
+            for args in [["--live-typing","--owner-proof-directory",work.path], ["--live-typing","--require-idle-seconds","240"]] {
+                let code = LiveTypingProbe.run(arguments: args, permission: permission, gateRead: { LiveGate(idle: 1000, onConsole: true, unlocked: true) }, ownerExplanation: { _, _ in throwawayFailure() }, proof: { _, _ in proofs += 1; return 0 }, runningCopies: { copies })
+                try equal(code, 2, "live proof allowed alongside normal app")
+                try require(requests == 0 && proofs == 0, "instance refusal requested permission or started proof")
+                let data = args[1] == "--owner-proof-directory" ? work.appendingPathComponent("data") : try dataDirectory()
+                let message = try String(contentsOf: data.appendingPathComponent("live-probe.txt"), encoding: .utf8)
+                try require(message.contains("quit AutoWrite first, then run the live proof"), "missing shared live-proof instruction")
+            }
         }
         test("proof F7 event pair carries the function flag and matching key code; zero posts") {
             let events = GlobalHotkey.triggerEvents()
@@ -169,7 +172,7 @@ extension TestRunner {
             func check(_ scroll: NSScrollView, _ hint: NSTextField, _ window: NSWindow, _ last: NSView) throws {
                 window.contentView?.layoutSubtreeIfNeeded()
                 try require(hint.alphaValue == 1 && !hint.stringValue.isEmpty, "missing cue above hidden rows")
-                try require(!hint.stringValue.contains("Difficult keys"), "hint claims visible section is hidden")
+                try require(!hint.stringValue.contains("Difficult keys") && !hint.stringValue.contains("Correction"), "hint names only part of the hidden settings")
                 _ = scroll.documentView!.scrollToVisible(last.frame)
                 try require(hint.alphaValue == 0 && hint.stringValue.isEmpty, "hint remains after final row")
                 window.setContentSize(NSSize(width: window.contentView!.bounds.width, height: 2400)); window.contentView?.layoutSubtreeIfNeeded()

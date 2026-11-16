@@ -2,6 +2,7 @@ import Foundation
 
 @main struct Tests {
     static func main() {
+        if CommandLine.arguments.count == 3 && CommandLine.arguments[1] == "--restart-quit-child" { RestartQuitChild.run(URL(fileURLWithPath: CommandLine.arguments[2])) }
         setbuf(stdout, nil)
         let runner = TestRunner()
         var counts = ""
@@ -20,6 +21,8 @@ import Foundation
             try runner.review(directory, evidence)
             try runner.roundThree(directory, evidence)
             try runner.probeScript(directory)
+            try runner.restartQuit(directory)
+            try runner.roundFour(directory)
             counts = fixtures.countSummary
         } catch { runner.test("test setup") { throw error } }
         print("TOTAL: \(runner.passed) PASS, \(runner.failed) FAIL; reference cases compared: \(runner.referenceCases); skipped: \(runner.skipped); \(counts)")

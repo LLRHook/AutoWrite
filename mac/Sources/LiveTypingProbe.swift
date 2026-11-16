@@ -56,8 +56,8 @@ enum LiveTypingProbe {
             directory = value
         }
         func refuse(_ code: Int32, _ text: String) -> Int32 { outcome(directory, text, code) }
-        if invocation == .owner && AutoWriteInstances.other(runningCopies()) != nil {
-            return refuse(2, "exit=2; quit AutoWrite first, then run the owner proof; no window or input created")
+        if AutoWriteInstances.other(runningCopies()) != nil {
+            return refuse(2, "exit=2; quit AutoWrite first, then run the live proof; no window or input created")
         }
         let gate = gateRead(), required = invocation.idleSeconds
         guard gate.eligible(required: required ?? 0) else { return refuse(3, "exit=3; skipped: user active or screen locked; idle_seconds=\(fixed(gate.idle, 3)); no window or input created") }

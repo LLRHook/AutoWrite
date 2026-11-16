@@ -315,6 +315,8 @@ repositioning are also ignored and counted. Repeated keys type normally without
 an accent chooser. The test and results are modal. **Apply** saves immediately
 and restores controls if saving fails; **Discard** and **Cancel** keep settings.
 A recording-save failure still lets you review results.
+Command-Q, Dock Quit and logout are refused while a calibration sheet is open;
+choose **Cancel** in the test or **Discard** in results first.
 
 Settings and logs use `~/Library/Application Support/AutoWrite/`: `settings.ini`,
 `telemetry/`, and `calibration/`. INI keys and values match Windows, with LF line
@@ -332,7 +334,8 @@ PASS/FAIL, computed reference counts and totals. It never activates an app or
 raises a permission prompt. Evidence goes to a temporary directory printed by
 the script; set absolute `AUTOWRITE_EVIDENCE_DIR` to retain it elsewhere.
 
-Build first. There are two explicit live proofs:
+Build first and **quit AutoWrite before either proof**. There are two explicit
+live proofs:
 
 ```sh
 mac/smoke.sh --live-typing

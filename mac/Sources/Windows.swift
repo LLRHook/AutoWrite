@@ -263,7 +263,7 @@ final class MainWindow: NSWindowController, NSWindowDelegate {
         fill(layout, in: root, inset: 16)
         header.heightAnchor.constraint(equalToConstant: 32).isActive = true; footer.heightAnchor.constraint(equalToConstant: 22).isActive = true
         status.maximumNumberOfLines = 1; status.lineBreakMode = .byTruncatingTail
-        scrollAffordance = ScrollAffordance(scroll: settingsScroll, hint: scrollHint, text: "More Correction settings below ↓")
+        scrollAffordance = ScrollAffordance(scroll: settingsScroll, hint: scrollHint, text: "More settings below ↓")
         updateControlState()
         refreshPermissionStatus()
         w.contentView?.layoutSubtreeIfNeeded()
@@ -292,7 +292,11 @@ final class MainWindow: NSWindowController, NSWindowDelegate {
         let dialog = PermissionWindow(permission: permission, state: state)
         permissionDialog = dialog
         if offscreenPresentation { dialog.window!.alphaValue = 0; dialog.window!.ignoresMouseEvents = true }
-        window.beginSheet(dialog.window!) { [weak self] _ in self?.permissionDialog = nil }
+        window.beginSheet(dialog.window!) { [weak self, dialog] response in
+            dialog.window?.orderOut(nil)
+            self?.permissionDialog = nil
+            if response == .abort { dialog.quit() }
+        }
     }
     private func presentCalibration(_ child: NSWindow) {
         guard let owner = window else { return }
@@ -458,7 +462,13 @@ final class PermissionWindow: NSWindowController {
         buttons.heightAnchor.constraint(equalToConstant: 32).isActive = true
     }
     required init?(coder: NSCoder) { fatalError("init(coder:) has not been implemented") }
-    @objc func quitApplication() { quit() }
+    @objc func quitApplication() {
+        if let parent = window?.sheetParent, let window {
+            // AppKit refuses termination while a sheet is attached. Its actual
+            // dismissal completion above performs Quit after detaching it.
+            parent.endSheet(window, returnCode: .abort)
+        } else { quit() }
+    }
     @objc func openSettings() { cancel(); AccessibilityPermission.openSettings() }
     @objc func cancel() { if let parent = window?.sheetParent, let window { parent.endSheet(window) }; window?.close() }
 }
