@@ -10,6 +10,7 @@ struct TypingOptions {
 
 protocol EngineRuntime: AnyObject {
     func createRandom() -> DotRandom
+    func checkCancellation() throws
     func foregroundWindow() throws -> UInt64
     func isKeyDown(_ key: Int) throws -> Bool
     func releaseModifiers() throws
@@ -17,6 +18,8 @@ protocol EngineRuntime: AnyObject {
     func sleep(_ milliseconds: Int) throws
     var milliseconds: Double { get }
 }
+
+extension EngineRuntime { func checkCancellation() throws {} }
 
 final class VirtualRuntime: EngineRuntime {
     let seed: Int
@@ -107,10 +110,12 @@ final class TypingEngine {
         }
         return Mistake(kind: .duplicate, sent: text[index], detect: detection(o, r))
     }
-    func mistakePlan(_ text: [Unit], _ o: TypingOptions, _ r: DotRandom) -> [Int: Mistake] {
+    func mistakePlan(_ text: [Unit], _ o: TypingOptions, _ r: DotRandom) throws -> [Int: Mistake] {
         if o["EnableTypos"] == 0 || o["TypoChancePercent"] <= 0 { return [:] }
         var candidates = [(Int, Double)](), totalWeight = 0.0
-        for (index, c) in text.enumerated() where Self.eligible(c) {
+        for (index, c) in text.enumerated() {
+            if index & 255 == 0 { try runtime.checkCancellation() }
+            if !Self.eligible(c) { continue }
             let weight = Self.mistakeWeight(c, o)
             if weight > 0 { candidates.append((index, weight)); totalWeight += weight }
         }
@@ -119,11 +124,18 @@ final class TypingEngine {
         target = min(target, candidates.count)
         var blocked = Set<Int>(), plan = [Int: Mistake]()
         while plan.count < target {
+            try runtime.checkCancellation()
             var weight = 0.0
-            for (index, value) in candidates where !blocked.contains(index) { weight += max(0, value) }
+            for (offset, candidate) in candidates.enumerated() {
+                if offset & 255 == 0 { try runtime.checkCancellation() }
+                if !blocked.contains(candidate.0) { weight += max(0, candidate.1) }
+            }
             if weight <= 0 { break }
             var roll = r.double() * weight, selected: Int?
-            for (index, value) in candidates where !blocked.contains(index) {
+            for (offset, candidate) in candidates.enumerated() {
+                if offset & 255 == 0 { try runtime.checkCancellation() }
+                let (index, value) = candidate
+                if blocked.contains(index) { continue }
                 roll -= max(0, value)
                 if roll <= 0 { selected = index; break }
             }
@@ -135,25 +147,34 @@ final class TypingEngine {
         }
         return plan
     }
-    func rhythmPlan(_ text: [Unit], _ o: TypingOptions, _ r: DotRandom) -> [Int: Int] {
+    func rhythmPlan(_ text: [Unit], _ o: TypingOptions, _ r: DotRandom) throws -> [Int: Int] {
         if o["ThinkingPauseChancePercent"] <= 0 || o["ThinkingPauseMilliseconds"] <= 0 { return [:] }
-        var candidates = text.indices.filter { Self.boundary(text[$0]) }
+        var candidates = [Int]()
+        for index in text.indices {
+            if index & 255 == 0 { try runtime.checkCancellation() }
+            if Self.boundary(text[index]) { candidates.append(index) }
+        }
         var target = roundEven(Double(candidates.count) * (Double(o["ThinkingPauseChancePercent"]) / 100))
         if target <= 0 && !candidates.isEmpty && o["ThinkingPauseChancePercent"] > 0 { target = 1 }
         if candidates.count > 1 {
-            for index in stride(from: candidates.count - 1, through: 1, by: -1) { candidates.swapAt(index, r.next(index + 1)) }
+            for index in stride(from: candidates.count - 1, through: 1, by: -1) {
+                if index & 255 == 0 { try runtime.checkCancellation() }
+                candidates.swapAt(index, r.next(index + 1))
+            }
         }
         var result = [Int: Int]()
         for index in candidates {
+            if index & 255 == 0 { try runtime.checkCancellation() }
             if result.count >= target { break }
             result[index] = r.next(max(1, o["ThinkingPauseMilliseconds"] / 3), o["ThinkingPauseMilliseconds"] + 1)
         }
         return result
     }
-    func baseDelay(_ text: [Unit], _ o: TypingOptions, _ count: Int, _ rhythm: [Int: Int]) -> Int {
+    func baseDelay(_ text: [Unit], _ o: TypingOptions, _ count: Int, _ rhythm: [Int: Int]) throws -> Int {
         let target = Double(text.count) * 60000 / (Double(max(1, o["WordsPerMinute"])) * 5)
         var natural = 0.0
         for (index, current) in text.enumerated() {
+            if index & 255 == 0 { try runtime.checkCancellation() }
             if Self.sentence(current) { natural += Double(o["SentencePauseMilliseconds"]) }
             else if DotChar.whitespace(current) { natural += Double(o["WordPauseMilliseconds"]) }
             if current == 10 || (current == 13 && (index + 1 >= text.count || text[index + 1] != 10)) { natural += Double(o["ParagraphPauseMilliseconds"]) }
@@ -168,7 +189,7 @@ final class TypingEngine {
         var available = target - natural - correction
         if available < Double(text.count) * 45 { available = Double(text.count) * 45 }
         var motorUnits = 0.0
-        if o["KeepTargetWpm"] != 0 { for c in text { motorUnits += Self.characterFactor(c, o) }; motorUnits = max(1, motorUnits) }
+        if o["KeepTargetWpm"] != 0 { for (index, c) in text.enumerated() { if index & 255 == 0 { try runtime.checkCancellation() }; motorUnits += Self.characterFactor(c, o) }; motorUnits = max(1, motorUnits) }
         else { motorUnits = max(1, Double(text.count)) }
         return max(45, min(220, roundEven(available / max(1, motorUnits)) - 5))
     }
@@ -222,8 +243,8 @@ final class TypingEngine {
         }
         try runtime.releaseModifiers()
         let target = try runtime.foregroundWindow(), random = runtime.createRandom()
-        let mistakes = mistakePlan(text, o, random), thinking = rhythmPlan(text, o, random)
-        let base = baseDelay(text, o, mistakes.count, thinking)
+        let mistakes = try mistakePlan(text, o, random), thinking = try rhythmPlan(text, o, random)
+        let base = try baseDelay(text, o, mistakes.count, thinking)
         telemetry.info("calibration", "base_delay_ms=\(base);planned_mistakes=\(mistakes.count);planned_thinking_pauses=\(thinking.count);target_wpm=\(o["WordsPerMinute"])")
         var state = Rhythm(); state.thinking = thinking
         var completed = 0, index = 0

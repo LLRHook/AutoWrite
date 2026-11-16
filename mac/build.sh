@@ -1,7 +1,7 @@
 #!/bin/bash
 set -euo pipefail
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
-WORK="$(mktemp -d "${TMPDIR:-/tmp}/M1-AutoWrite-build.XXXXXX")"
+WORK="$(mktemp -d "${TMPDIR:-/tmp}/AutoWrite-build.XXXXXX")"
 trap 'rm -rf "$WORK"' EXIT
 APP="$ROOT/dist/AutoWrite.app"
 mkdir -p "$APP/Contents/MacOS" "$APP/Contents/Resources" "$WORK/AutoWrite.iconset"

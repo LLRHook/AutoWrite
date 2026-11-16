@@ -21,7 +21,7 @@ extension TestRunner {
         let original = NSWorkspace.shared.frontmostApplication?.processIdentifier
         let mainData = directory.appendingPathComponent("main")
         let current = Settings(); try require(current.save(directory: mainData), "initial settings save")
-        let permission = AccessibilityPermission(state: { .missing })
+        let permission = AccessibilityPermission(trusted: { false }, canPost: { false }, requestListing: {})
         let main = try MainWindow(directory: mainData, permission: permission, diagnostic: true)
         defer { main.shutdown(); main.window?.close() }
         test("real main window: all 26 controls, ranges, defaults, labels, order and steps") {
@@ -70,11 +70,11 @@ extension TestRunner {
         test("permission states: denial, grant, rebuild revocation, restart message; no posts") {
             main.requestTyping(buttonDelay: false)
             try require(main.status.stringValue.contains("Accessibility") && !main.running, "missing permission silent")
-            permission.state = { .allowed }; main.requestTyping(buttonDelay: false)
+            permission.trusted = { true }; permission.canPost = { true }; main.requestTyping(buttonDelay: false)
             try equal(main.status.stringValue, "Accessibility permission granted. Ready.", "permission after grant")
-            permission.state = { .missing }; main.requestTyping(buttonDelay: true)
+            permission.trusted = { false }; main.requestTyping(buttonDelay: true)
             try require(main.status.stringValue.contains("After rebuilding") && !main.running, "revoked permission ignored")
-            permission.state = { .restartNeeded }; main.requestTyping(buttonDelay: false)
+            permission.trusted = { true }; permission.canPost = { false }; main.requestTyping(buttonDelay: false)
             try require(main.status.stringValue.contains("Quit and reopen"), "restart advice missing")
             let alert = PermissionWindow(permission: permission, state: .missing)
             try renderWindow(alert.window!, evidence.appendingPathComponent("permission-light.png"), appearance: .aqua)
@@ -82,7 +82,7 @@ extension TestRunner {
             alert.cancel()
         }
         test("real Start/Stop buttons: delay, progress, status and runtime injection without posts") {
-            permission.state = { .allowed }; main.text.string = "abc"
+            permission.trusted = { true }; permission.canPost = { true }; main.text.string = "abc"
             main.controls["ButtonDelaySeconds"]!.value = 7; main.updateControlState()
             let virtual = VirtualRuntime(seed: 17)
             main.runtimeFactory = { _ in virtual }

@@ -275,112 +275,82 @@ Public references:
 
 ## macOS
 
-The native Mac version uses Swift and AppKit. It builds on Apple Silicon with the
-installed Xcode command-line toolchain; it downloads and installs nothing. macOS
-14 or later is required. From the repository root, run:
+The native Swift/AppKit version builds for Apple Silicon, macOS 14+, with the
+installed Xcode command-line toolchain. It downloads and installs nothing:
 
 ```sh
 mac/build.sh
 ```
 
-This creates `dist/AutoWrite.app`, with the AutoWrite icon and an ad hoc code
-signature. Open that app in Finder. Closing its main window quits AutoWrite;
-**AutoWrite > Quit AutoWrite** and Command+Q also quit and save your settings.
-The Edit menu provides the usual Mac copy, cut, paste, select all and undo commands.
-Both editors keep literal text: smart quotes, smart dashes, replacement and
-spelling correction are disabled.
+Open `dist/AutoWrite.app` in Finder. Closing the main window or choosing **Quit
+AutoWrite** saves settings and quits. The Edit menu has standard Command-key
+shortcuts. AutoWrite's editors preserve literal text without smart quotes,
+smart dashes, text replacement or autocorrection.
 
-Before AutoWrite can type into another app, allow it in **System Settings >
-Privacy & Security > Accessibility**. If typing is requested without permission,
-AutoWrite explains what is missing and offers **Open Accessibility Settings**.
-Enable AutoWrite there, return to your destination field, and try again.
-If macOS still blocks it, quit and reopen AutoWrite. These local builds use an
-ad hoc signature rather than a persistent developer signing identity. Rebuilding
-changes the signature: remove the old AutoWrite entry from Accessibility and
-allow the rebuilt `dist/AutoWrite.app` again. The same permission check runs on
-every typing request, including after a rebuild; AutoWrite does not change your
-privacy settings itself.
+**Accessibility:** the main window shows missing permission before you start.
+Choose **Allow Accessibility…**, or request typing. AutoWrite asks macOS to add
+it to **System Settings > Privacy & Security > Accessibility**; enable its switch.
+The explanation offers **Open Accessibility Settings**. A denied Fn+F7 request
+brings AutoWrite and that explanation to the front. Normal typing never takes
+focus. After rebuilding the ad hoc signed app, you may need to remove the old
+entry and allow the new build again. If macOS still blocks it, quit and reopen.
 
-Paste your text into AutoWrite, put the cursor in the destination app, and press
-**Fn+F7** to start. Press **Fn+F7** again to stop. On a keyboard configured to use
-standard function keys, use F7 alone. The **Type in Ns** button follows **Button
-delay s** and gives you time to focus the destination. AutoWrite waits while the
-window that was in front when typing began is no longer in front, and resumes
-when that window returns. It also waits for physically held modifier keys,
-including Command and Fn, to be released before sending a character. Its emitted
-events have no shortcut modifiers. Background typing uses a timing activity to
-prevent App Nap from stretching the pauses.
+Paste your text, focus the destination field, and press **Fn+F7** to start or
+stop. Use F7 alone with standard function-key settings. **Type in Ns** uses
+**Button delay s**. Typing waits for the original target window and for held
+modifiers, including Command and Fn, to be released; it resumes without a burst.
+Stop also interrupts preparation of large texts.
 
-The 26 settings, their defaults and ranges, the typing rhythm, corrected mistakes,
-and calibration analysis follow the Windows version. **Calibrate typing** offers
-30 or 60 seconds (60 by default); its clock starts with the first character. It
-uses key-press timestamps, accepts repeated keys directly, and ignores paste,
-Tab, caret movement, forward deletion, word/line deletion, mouse repositioning
-and shortcuts. Option-key text is treated as text, although the calibration
-passage and accepted recording characters remain ASCII, as on Windows. Review
-the result and choose **Apply** to save immediately, or **Discard** to keep your
-settings. A failed Apply restores the controls. **Cancel** leaves settings alone;
-a failed recording save still lets you review the results.
+**Calibrate typing** offers 30 or 60 seconds, with 60 selected initially. The
+clock starts with the first character. Backspace corrects and Enter inserts a
+line break. **Escape is ignored and counted; it starts the clock if pressed
+first.** Paste, shortcuts, Tab, navigation, forward/word/line deletion and mouse
+repositioning are also ignored and counted. Repeated keys type normally without
+an accent chooser. The test and results are modal. **Apply** saves immediately
+and restores controls if saving fails; **Discard** and **Cancel** keep settings.
+A recording-save failure still lets you review results.
 
-Settings and logs are in:
-
-```text
-~/Library/Application Support/AutoWrite/settings.ini
-~/Library/Application Support/AutoWrite/telemetry/
-~/Library/Application Support/AutoWrite/calibration/
-```
-
-`settings.ini` uses the same keys, integer percentages and `True`/`False` values
-as Windows; you can copy it between platforms. Mac files use LF line endings.
-An absolute `AUTOWRITE_DATA_DIR` overrides this directory for diagnostics. The
-automated scripts always create their own isolated data directory and never use
-your normal AutoWrite data.
-
-Run every automated test with:
+Settings and logs use `~/Library/Application Support/AutoWrite/`: `settings.ini`,
+`telemetry/`, and `calibration/`. INI keys and values match Windows, with LF line
+endings; files can be copied between platforms. An absolute `AUTOWRITE_DATA_DIR`
+overrides this location. Automated diagnostics always use isolated data.
 
 ```sh
 mac/test.sh
 ```
 
-It compiles the production sources and the test harness, prints PASS/FAIL for
-each test and a totals line, and exits nonzero on failure. Tests compare all 223
-engine runs (including the 27 golden hashes), random sequences, settings,
-telemetry, capture sessions, alignment, and all 56 analysis cases with
-`reference/data`. They also build the real windows without showing them, deliver
-local events directly to the calibration input, exercise Apply/Discard/Cancel and
-save failures, inspect outgoing CGEvents without posting them, and measure a few
-seconds of background timing. No automated test posts keyboard/mouse input or
-activates an app. Images of AutoWrite's own windows in light and dark appearance
-and timing evidence are saved under `.git/agent-handoffs/mac-port/M1/`; set
-`AUTOWRITE_EVIDENCE_DIR` to another absolute directory if needed. Temporary build
-and test directories are removed on exit.
+The complete suite compares the committed Windows reference data, exercises
+hidden native windows and failures, checks outgoing events without posting,
+and measures background timing through the production runtime. It prints each
+PASS/FAIL, computed reference counts and totals. It never activates an app or
+raises a permission prompt. Evidence goes to a temporary directory printed by
+the script; set absolute `AUTOWRITE_EVIDENCE_DIR` to retain it elsewhere.
 
-The separately explicit live proof temporarily focuses a window it creates and
-types a short fixed text through the real system event path, deliberately making
-and repairing mistakes. Build first, then run it only when that temporary focus
-change is acceptable:
+Build first. There are two explicit live proofs:
 
 ```sh
+mac/smoke.sh --live-typing
 mac/smoke.sh --live-typing --require-idle-seconds 240
 ```
 
-It sends nothing unless the desktop is unlocked and has had no input for at least
-240 seconds. It skips immediately if you are active; it does not wait for idle.
-The proof must acquire its own keyboard focus within half a second, stops on
-focus loss, and has an external 15-second watchdog. It first attempts a real F7
-start; if Carbon does not receive the synthetic hotkey, the report explicitly
-says `hotkey=direct-fallback`. On completion it returns the previous app to the
-front while it still owns focus; it does not override a focus change you made.
-It never types into any other window and never prints or saves received text:
-only lengths, the first differing UTF-16 position, repair count and outcome.
-Exit codes are 0 pass, 2 failed/lost focus/missing permission, 3 skipped because
-the user is active or the screen is locked, and 4 bad arguments. The idle threshold
-must be between 240 and 86400 seconds.
+The first is **for the owner at the keyboard**. It starts AutoWrite.app through
+Launch Services, as Finder does, and therefore tests the app's own Accessibility
+permission. If permission is missing, it explains how to grant it; grant it and
+run the proof again. The second is **for automation**: it starts from the shell,
+uses the terminal's permission, and sends nothing unless the unlocked desktop
+has been idle for at least N seconds (240–86400). It skips rather than waiting.
 
-Mac-specific differences are native controls and system light/dark colours,
-Command-key editing shortcuts, Accessibility permission, the Mac data location,
-and Unicode CGEvents instead of Windows SendInput. The engine keeps Windows
-UTF-16 indexing for parity, while the system adapter sends a surrogate pair as
-one Unicode character and uses one physical Backspace to remove that pair.
-Destination apps still control Tab navigation, text substitutions and their own
-editing behaviour; try plain text first, then check the apps you intend to use.
+Both type a fixed text, including repaired mistakes, only into a window they
+create. They require its keyboard focus within half a second, stop on focus
+loss, have a 15-second watchdog, and restore the previous app if they still own
+focus. Received text is never printed or saved: only lengths, differing position,
+repair count and outcome. F7 starts the proof when possible; a direct fallback
+is reported. Exit codes: 0 pass, 2 failure/permission/focus loss, 3 active or locked,
+4 bad arguments.
+
+**Limits:** destination apps differ in Tab handling, substitutions and editing.
+The engine counts Backspaces per UTF-16 unit, as on Windows. A repair crossing
+a multi-part character—an emoji with a skin tone, a flag, or a base letter plus
+combining accent—may remove one character too many or too few depending on the
+app. Turn **Corrected mistakes** off for such text. Test plain text first, then
+the destination apps you intend to use.

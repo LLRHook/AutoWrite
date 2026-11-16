@@ -5,6 +5,7 @@ extension TestRunner {
         test("reference capture sessions: recording rules and saved files") {
             let lines = try f.read("capture-sessions.txt").components(separatedBy: "\n")
             let sections = lines.joined(separator: "\n").components(separatedBy: "== ").dropFirst()
+            f.counts["capture-sessions"] = sections.count
             for section in sections {
                 let rows = section.components(separatedBy: "\n").dropFirst().filter { !$0.isEmpty }.map { $0.components(separatedBy: "\t") }
                 let seconds = Int(rows.first { $0[0] == "in" && $0[1] == "seconds" }![2])!
@@ -63,7 +64,7 @@ extension TestRunner {
                 try equal(estimateIndex, 26, "estimate count"); referenceCases += 1
             }
         }
-        print("REFERENCE calibration: 8 capture sessions, 23 alignments, \(cases.count) analysis cases compared")
+        print("REFERENCE calibration data: \(f.counts["capture-sessions"] ?? 0) capture sessions, \(f.counts["alignment"] ?? 0) alignments, \(cases.count) analysis cases")
     }
 }
 func readCapture(_ f: Fixtures, _ path: String) throws -> CaptureSession {

@@ -27,6 +27,13 @@ final class CaptureInputView: LiteralTextView {
             else { character?(c, time) }
         }
     }
+    func consumeKeyEquivalent(_ event: NSEvent) -> Bool {
+        if event.keyCode == 53 || (event.modifierFlags.contains(.command) && "zvxca".contains((event.charactersIgnoringModifiers ?? "").lowercased()) && !(event.charactersIgnoringModifiers ?? "").isEmpty) {
+            keyDown(with: event); return true
+        }
+        return false
+    }
+    override func performKeyEquivalent(with event: NSEvent) -> Bool { consumeKeyEquivalent(event) }
     override func flagsChanged(with event: NSEvent) {
         let modifiers: [UInt16: (NSEvent.ModifierFlags, Int)] = [56:(.shift, 16), 60:(.shift, 16), 59:(.control, 17), 62:(.control, 17), 58:(.option, 18), 61:(.option, 18), 55:(.command, 91), 54:(.command, 92), 63:(.function, 255)]
         if let (flag, code) = modifiers[event.keyCode], event.modifierFlags.contains(flag) { press?(code, event.timestamp) }
@@ -45,9 +52,20 @@ final class CaptureInputView: LiteralTextView {
     override func delete(_ sender: Any?) { ignoreEdit("edit message 771") }
     override func mouseDown(with event: NSEvent) { window?.makeFirstResponder(self); setSelectedRange(NSRange(location: (string as NSString).length, length: 0)); ignored?("edit message 513", event.timestamp) }
     override func mouseDragged(with event: NSEvent) {}
-    override func rightMouseDown(with event: NSEvent) { ignored?("edit message 515", event.timestamp) }
+    override func rightMouseDown(with event: NSEvent) { ignored?("right-click", event.timestamp) }
     override func performDragOperation(_ sender: NSDraggingInfo) -> Bool { ignoreEdit("edit message 770"); return false }
     override func insertText(_ insertString: Any, replacementRange: NSRange) { ignoreEdit("edit message 770") }
+}
+
+final class CaptureWindow: NSWindow {
+    weak var captureInput: CaptureInputView?
+    override func performKeyEquivalent(with event: NSEvent) -> Bool {
+        if captureInput?.consumeKeyEquivalent(event) == true { return true }
+        return super.performKeyEquivalent(with: event)
+    }
+    override func cancelOperation(_ sender: Any?) {
+        captureInput?.character?(27, NSApplication.shared.currentEvent?.timestamp ?? ProcessInfo.processInfo.systemUptime)
+    }
 }
 
 final class CalibrationWindow: NSWindowController, NSWindowDelegate {
@@ -61,9 +79,9 @@ final class CalibrationWindow: NSWindowController, NSWindowDelegate {
     var completed: ((CaptureSession?, String) -> Void)?
     init(current: Settings, directory: URL) {
         self.current = current; self.directory = directory
-        let w = NSWindow(contentRect: NSRect(x: 0, y: 0, width: 840, height: 660), styleMask: [.titled, .closable, .resizable], backing: .buffered, defer: false)
+        let w = CaptureWindow(contentRect: NSRect(x: 0, y: 0, width: 840, height: 660), styleMask: [.titled, .closable, .resizable], backing: .buffered, defer: false)
         w.title = "Typing calibration"; w.minSize = NSSize(width: 700, height: 560); w.isReleasedWhenClosed = false
-        super.init(window: w); w.delegate = self; w.contentView = BackgroundView()
+        super.init(window: w); w.delegate = self; w.contentView = BackgroundView(); w.captureInput = input
         length.addItems(withTitles: ["30 seconds", "60 seconds"]); length.selectItem(at: 1)
         length.identifier = NSUserInterfaceItemIdentifier("CalibrationLength")
         let top = stack([length, clock], orientation: .horizontal)
@@ -71,7 +89,7 @@ final class CalibrationWindow: NSWindowController, NSWindowDelegate {
         configurePlainText(passage); passage.string = string(calibrationPassage); passage.isEditable = false; passage.isSelectable = false
         passage.identifier = NSUserInterfaceItemIdentifier("CalibrationPassage"); passage.setAccessibilityLabel("Calibration passage")
         let passageScroll = textScroll(passage), inputScroll = textScroll(input)
-        cancelButton = button("Cancel", target: self, action: #selector(cancel)); cancelButton.keyEquivalent = "\u{1B}"
+        cancelButton = button("Cancel", target: self, action: #selector(cancel))
         let bottom = stack([NSView(), cancelButton], orientation: .horizontal)
         let root = stack([top, instructions, passageScroll, inputScroll, bottom], spacing: 12); root.alignment = .width
         fill(root, in: w.contentView!, inset: 16)
@@ -85,7 +103,9 @@ final class CalibrationWindow: NSWindowController, NSWindowDelegate {
         }
         input.character = { [weak self] c, timestamp in self?.accept(c, timestamp) }
         input.ignored = { [weak self] reason, timestamp in guard let self, !self.ending else { return }; self.ensureSession(); self.session!.ignore(reason, self.milliseconds(timestamp)) }
-        timer = Timer.scheduledTimer(withTimeInterval: 0.02, repeats: true) { [weak self] _ in self?.tick(ProcessInfo.processInfo.systemUptime) }
+        timer = Timer(timeInterval: 0.02, repeats: true) { [weak self] _ in self?.tick(ProcessInfo.processInfo.systemUptime) }
+        RunLoop.main.add(timer!, forMode: .common)
+        RunLoop.main.add(timer!, forMode: .modalPanel)
     }
     required init?(coder: NSCoder) { fatalError("init(coder:) has not been implemented") }
     func ensureSession() {

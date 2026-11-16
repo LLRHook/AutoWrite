@@ -25,22 +25,62 @@ enum LiveTypingProbe {
         let difference = i == expected.count && i == received.count ? -1 : i
         return "expected_length=\(expected.count); received_length=\(received.count); first_difference=\(difference)"
     }
-    static func parse(_ arguments: [String]) -> Int? {
-        guard arguments.count == 3, arguments[0] == "--live-typing", arguments[1] == "--require-idle-seconds", let n = parseInt(arguments[2]), n >= 240 && n <= 86400 else { return nil }
-        return n
+    enum Invocation: Equatable {
+        case automation(Int), owner
+        var idleSeconds: Int? { if case .automation(let seconds) = self { return seconds }; return nil }
     }
-    static func run(arguments: [String]) -> Int32 {
-        guard let required = parse(arguments) else { print("exit=4; usage: --live-typing --require-idle-seconds N (240..86400)"); return 4 }
-        guard let override = ProcessInfo.processInfo.environment["AUTOWRITE_DATA_DIR"], override.hasPrefix("/"), let directory = try? dataDirectory() else { print("exit=4; an isolated absolute AUTOWRITE_DATA_DIR is required"); return 4 }
-        func outcome(_ text: String, _ code: Int32) -> Int32 {
-            try? FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
-            try? text.write(to: directory.appendingPathComponent("live-probe.txt"), atomically: true, encoding: .utf8)
-            print(text); return code
+    static func parse(_ arguments: [String]) -> Invocation? {
+        if arguments == ["--live-typing"] { return .owner }
+        if arguments.count == 3 && arguments[0] == "--live-typing" && arguments[1] == "--owner-proof-directory" && arguments[2].hasPrefix("/") { return .owner }
+        guard arguments.count == 3, arguments[0] == "--live-typing", arguments[1] == "--require-idle-seconds", let n = Int(arguments[2]), n >= 240 && n <= 86400 else { return nil }
+        return .automation(n)
+    }
+    static func run(arguments: [String], permission: AccessibilityPermission = AccessibilityPermission(), gateRead: () -> LiveGate = LiveGate.read,
+                    ownerExplanation: (AccessibilityPermission, PermissionState) -> Void = explainOwnerPermission,
+                    proof: ((URL, Int?) -> Int32)? = nil) -> Int32 {
+        guard let invocation = parse(arguments) else { print("exit=4; usage: --live-typing [--require-idle-seconds N (240..86400)]"); return 4 }
+        let directory: URL
+        if invocation == .owner {
+            guard arguments.count == 3 else { print("exit=4; owner proof must be started through mac/smoke.sh"); return 4 }
+            let work = URL(fileURLWithPath: arguments[2])
+            guard let text = try? String(contentsOf: work.appendingPathComponent("deadline"), encoding: .utf8), let deadline = Double(trim(text)), Date().timeIntervalSince1970 < deadline else {
+                print("exit=2; owner proof launch expired or was not prepared; no window or input created"); return 2
+            }
+            directory = work.appendingPathComponent("data")
+            try? String(ProcessInfo.processInfo.processIdentifier).write(to: work.appendingPathComponent("proof.pid"), atomically: true, encoding: .utf8)
+        } else {
+            guard let override = ProcessInfo.processInfo.environment["AUTOWRITE_DATA_DIR"], override.hasPrefix("/"), let value = try? dataDirectory() else { print("exit=4; an isolated absolute AUTOWRITE_DATA_DIR is required"); return 4 }
+            directory = value
         }
+        func refuse(_ code: Int32, _ text: String) -> Int32 { outcome(directory, text, code) }
+        let gate = gateRead(), required = invocation.idleSeconds
+        guard gate.eligible(required: required ?? 0) else { return refuse(3, "exit=3; skipped: user active or screen locked; idle_seconds=\(fixed(gate.idle, 3)); no window or input created") }
+        let state = permission.state()
+        guard state == .allowed else {
+            if invocation == .owner { permission.requestIfMissing(); ownerExplanation(permission, state) }
+            return refuse(2, "exit=2; Accessibility permission missing or restart required; no typing window or input created")
+        }
+        return proof?(directory, required) ?? perform(directory: directory, required: required)
+    }
+    private static func outcome(_ directory: URL, _ text: String, _ code: Int32) -> Int32 {
+        try? FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
+        try? text.write(to: directory.appendingPathComponent("live-probe.txt"), atomically: true, encoding: .utf8)
+        print(text); return code
+    }
+    static func explainOwnerPermission(_ permission: AccessibilityPermission, _ state: PermissionState) {
+        let app = NSApplication.shared; app.setActivationPolicy(.accessory)
+        let dialog = PermissionWindow(permission: permission, state: state)
+        dialog.window?.center(); dialog.showWindow(nil); app.activate(ignoringOtherApps: true)
+        let deadline = Date(timeIntervalSinceNow: 10)
+        while Date() < deadline && dialog.window?.isVisible == true {
+            if let event = app.nextEvent(matching: .any, until: Date(timeIntervalSinceNow: 0.02), inMode: .default, dequeue: true) { app.sendEvent(event) }
+        }
+        dialog.cancel()
+    }
+    private static func perform(directory: URL, required: Int?) -> Int32 {
+        func outcome(_ text: String, _ code: Int32) -> Int32 { self.outcome(directory, text, code) }
         let gate = LiveGate.read()
-        let idle = "idle_seconds=\(fixed(gate.idle, 3)); required_idle_seconds=\(required)"
-        guard gate.eligible(required: required) else { return outcome("exit=3; skipped: user active or screen locked; \(idle); no window or input created", 3) }
-        guard AccessibilityPermission().state() == .allowed else { return outcome("exit=2; Accessibility permission missing or restart required; no window or input created", 2) }
+        let idle = required.map { "idle_seconds=\(fixed(gate.idle, 3)); required_idle_seconds=\($0)" } ?? "owner_launch=True"
         // Only this explicit mode creates/activates a proof window. It never logs
         // received content; the engine's telemetry is disabled as well.
         let app = NSApplication.shared; app.setActivationPolicy(.accessory)
@@ -50,7 +90,7 @@ enum LiveTypingProbe {
         let input = LiteralTextView(); fill(textScroll(input), in: window.contentView!)
         window.center()
         // Check idle and lock state again immediately before the focus change.
-        guard LiveGate.read().eligible(required: required) else { window.close(); return outcome("exit=3; skipped: user active or screen locked; no input sent", 3) }
+        guard LiveGate.read().eligible(required: required ?? 0) else { window.close(); return outcome("exit=3; skipped: user active or screen locked; no input sent", 3) }
         let start = ProcessInfo.processInfo.systemUptime
         window.makeKeyAndOrderFront(nil); app.activate(ignoringOtherApps: true); window.makeFirstResponder(input)
         let cancellation = Cancellation()
@@ -93,10 +133,9 @@ enum LiveTypingProbe {
             }
             if !sentF7 && armed && !MacRuntime.modifierKeys.contains(where: { CGEventSource.keyState(.hidSystemState, key: CGKeyCode($0)) }) {
                 sentF7 = true
-                for down in [true, false] {
-                    guard ownsFocus(), let event = CGEvent(keyboardEventSource: CGEventSource(stateID: .privateState), virtualKey: 98, keyDown: down) else { failed = true; break }
-                    event.flags = []; event.post(tap: .cghidEventTap)
-                }
+                guard ownsFocus(), let down = CGEvent(keyboardEventSource: CGEventSource(stateID: .privateState), virtualKey: 98, keyDown: true), let up = CGEvent(keyboardEventSource: CGEventSource(stateID: .privateState), virtualKey: 98, keyDown: false) else { failed = true; break }
+                down.flags = []; up.flags = []
+                down.post(tap: .cghidEventTap); up.post(tap: .cghidEventTap)
             }
             if !started && elapsed > 0.45 { startTyping() }
         }

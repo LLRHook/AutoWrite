@@ -69,18 +69,17 @@ struct Settings: Equatable {
         for raw in input.components(separatedBy: CharacterSet(charactersIn: "\r\n")) {
             let line = trim(raw)
             guard !line.isEmpty, !line.hasPrefix("#"), let eq = line.firstIndex(of: "="), eq != line.startIndex else { continue }
-            let key = trim(String(line[..<eq])).lowercased(), value = trim(String(line[line.index(after: eq)...]))
+            let key = asciiLower(trim(String(line[..<eq]))), value = trim(String(line[line.index(after: eq)...]))
             if key == "characterspersecond" {
                 if let cps = parseInt(value), cps > 0, cps != 15 {
-                    settings["WordsPerMinute"] = spec("WordsPerMinute").clamp(roundEven(Double(cps) * 60 / 5))
+                    settings["WordsPerMinute"] = spec("WordsPerMinute").clamp(int32Cast((Double(cps) * 60 / 5).rounded(.toNearestOrEven)))
                 }
                 continue
             }
             let mapped = key == "variancemilliseconds" ? "jitterpercent" : key
-            guard let spec = specs.first(where: { $0.storageKey.lowercased() == mapped }) else { continue }
+            guard let spec = specs.first(where: { asciiLower($0.storageKey) == mapped }) else { continue }
             if spec.isBool {
-                if value.lowercased() == "true" { settings[spec.name] = 1 }
-                if value.lowercased() == "false" { settings[spec.name] = 0 }
+                if let parsed = parseBool(value) { settings[spec.name] = parsed ? 1 : 0 }
             } else if let number = parseInt(value) { settings[spec.name] = number }
         }
         for spec in specs { settings[spec.name] = spec.clamp(settings[spec.name]) }
@@ -89,7 +88,17 @@ struct Settings: Equatable {
     static func load(directory: URL) throws -> Settings {
         let file = directory.appendingPathComponent("settings.ini")
         if !FileManager.default.fileExists(atPath: file.path) { return Settings() }
-        return loadText(String(decoding: try Data(contentsOf: file), as: UTF8.self))
+        let bytes = Array(try Data(contentsOf: file))
+        if bytes.starts(with: [0xFF, 0xFE]) || bytes.starts(with: [0xFE, 0xFF]) {
+            let little = bytes[0] == 0xFF
+            var codeUnits = [Unit](), i = 2
+            while i + 1 < bytes.count {
+                codeUnits.append(little ? Unit(bytes[i]) | Unit(bytes[i + 1]) << 8 : Unit(bytes[i]) << 8 | Unit(bytes[i + 1])); i += 2
+            }
+            if i < bytes.count { codeUnits.append(0xFFFD) }
+            return loadText(string(codeUnits))
+        }
+        return loadText(String(decoding: bytes, as: UTF8.self))
     }
     @discardableResult func save(directory: URL) -> Bool {
         do {

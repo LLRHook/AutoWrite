@@ -10,7 +10,14 @@ callback interfaces usable with the installed Swift 6 toolchain.
 `test.sh` compiles the same production sources with `Tests/*.swift`. The core
 uses only Foundation; the native runtime and windows add Apple's AppKit,
 ApplicationServices, Carbon, and Darwin. The test entry point is separate from
-the application's entry point. Running tests never runs the live probe.
+the application's entry point. Tests exercise only injected refusal paths of the live probe; they never run
+the desktop proof or call permission-prompt APIs.
+
+The test script prints its temporary evidence directory. An absolute
+`AUTOWRITE_EVIDENCE_DIR` overrides it. `AUTOWRITE_TEST_FILTER` runs only tests
+whose names contain the filter and reports skipped counts; omit it for the full
+suite. Tracked reference files are checked for readability before comparisons,
+and counts and telemetry enumeration are derived from the files.
 
 - `Compatibility.swift`: seeded .NET Framework Random, UTF-16 character tests,
   integer parsing, even rounding and Framework fixed-decimal formatting.
@@ -24,10 +31,11 @@ the application's entry point. Running tests never runs the live probe.
   window identity, literal event encoding, modifier guards, Accessibility checks
   and Carbon F7 registration. `KeyboardEncoder` constructs events; only the
   explicitly supplied production sink posts them.
+- `ApplicationLifecycle.swift`: launch, activation refresh and Quit callbacks.
 - `Windows.swift`, `CalibrationWindows.swift`: real AppKit windows. Tests inject
   permissions, saving and a runtime; diagnostic windows are never ordered front.
 - `LiveTypingProbe.swift`: the explicit guarded desktop proof. Its default is
-  refusal: arguments, isolated data, idle time, unlocked console, permission,
+  refusal: arguments, isolated data, optional automation idle time, unlocked console, permission,
   owned focus and deadlines must all pass before it sends input.
 
 Porting rules worth preserving: use UTF-16 units throughout the model, preserve
@@ -47,3 +55,17 @@ A logged-in graphical Mac session is needed for native-control rendering and the
 background timing assertion. A restrictive execution sandbox may block Apple's
 `iconutil` or native control rendering; run the scripts in an ordinary Terminal
 session on the Mac. Do not change privacy permissions to run automated tests.
+
+Permission tests inject the two system answers and the request-to-list callback,
+not a final permission state. Hidden-window mode suppresses presentation and
+uses a no-op prompt callback unless a test supplies its own recorder. The owner
+proof is launched with `open -W -n`, has an expiring private launch directory,
+and must not be run by unattended tests. Shell proof mode never requests
+permission. Foreground checks read the complete ordered window-ID list, resolving metadata
+again whenever that order or the front application changes. The public C API
+returns raw IDs in a CFArray, so Swift reads them without an NSArray bridge.
+
+Cancellation checkpoints in preparation do not advance the clock, draw random
+numbers or reorder calculations. Pair posting holds the cancellation lock so
+Quit cannot finish between a down and its matching up. Once a pair begins, it
+finishes even if Stop or focus loss arrives between its events.

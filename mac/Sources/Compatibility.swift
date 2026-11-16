@@ -5,13 +5,31 @@ func units(_ text: String) -> [Unit] { Array(text.utf16) }
 func string(_ text: [Unit]) -> String { String(decoding: text, as: UTF16.self) }
 func dotBool(_ value: Bool) -> String { value ? "True" : "False" }
 func roundEven(_ value: Double) -> Int { Int(value.rounded(.toNearestOrEven)) }
-func trim(_ text: String) -> String { text.trimmingCharacters(in: .whitespacesAndNewlines) }
+func trim(_ text: String) -> String {
+    let chars = units(text)
+    var first = 0, last = chars.count
+    while first < last && DotChar.whitespace(chars[first]) { first += 1 }
+    while last > first && DotChar.whitespace(chars[last - 1]) { last -= 1 }
+    return string(Array(chars[first..<last]))
+}
+func asciiLower(_ text: String) -> String { string(units(text).map { (65...90).contains($0) ? $0 + 32 : $0 }) }
 func parseInt(_ text: String) -> Int? {
-    let chars = Array(trim(text).utf8)
+    var input = units(text)
+    while input.last == 0 { input.removeLast() }
+    let chars = Array(trim(string(input)).utf8)
     guard !chars.isEmpty else { return nil }
     let start = chars[0] == 43 || chars[0] == 45 ? 1 : 0
-    guard start < chars.count, chars.dropFirst(start).allSatisfy({ $0 >= 48 && $0 <= 57 }), let value = Int32(trim(text)) else { return nil }
+    guard start < chars.count, chars.dropFirst(start).allSatisfy({ $0 >= 48 && $0 <= 57 }), let value = Int32(String(decoding: chars, as: UTF8.self)) else { return nil }
     return Int(value)
+}
+func parseBool(_ text: String) -> Bool? {
+    var chars = units(text)
+    while let c = chars.first, c == 0 || DotChar.whitespace(c) { chars.removeFirst() }
+    while let c = chars.last, c == 0 || DotChar.whitespace(c) { chars.removeLast() }
+    switch asciiLower(string(chars)) { case "true": return true; case "false": return false; default: return nil }
+}
+func int32Cast(_ value: Double) -> Int {
+    value.isFinite && value >= Double(Int32.min) && value < Double(Int32.max) + 1 ? Int(value) : Int(Int32.min)
 }
 
 // Framework F-format first reduces to 15 significant decimal digits, then
@@ -79,7 +97,10 @@ enum DotChar {
     static func scalar(_ c: Unit) -> Unicode.Scalar? { Unicode.Scalar(UInt32(c)) }
     static func whitespace(_ c: Unit) -> Bool {
         guard let s = scalar(c) else { return false }
-        return s.properties.isWhitespace
+        switch s.properties.generalCategory {
+        case .spaceSeparator, .lineSeparator, .paragraphSeparator: return true
+        default: return (9...13).contains(c) || c == 0x85
+        }
     }
     static func category(_ c: Unit) -> Unicode.GeneralCategory? { scalar(c)?.properties.generalCategory }
     static func control(_ c: Unit) -> Bool { category(c) == .control }

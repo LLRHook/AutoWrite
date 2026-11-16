@@ -5,26 +5,6 @@ func eventUnicode(_ event: CGEvent) -> [Unit] {
     event.keyboardGetUnicodeString(maxStringLength: chars.count, actualStringLength: &actual, unicodeString: &chars)
     return Array(chars.prefix(actual))
 }
-final class TimedRuntime: EngineRuntime {
-    let cancellation = Cancellation()
-    lazy var pauses = PrecisePauses(cancellation)
-    var keys = [CaptureKey](), start = 0.0
-    var background = true
-    let seed: Int
-    init(seed: Int) { self.seed = seed; _ = pauses }
-    func createRandom() -> DotRandom { DotRandom(seed) }
-    func foregroundWindow() throws -> UInt64 { 0 }
-    func isKeyDown(_ key: Int) throws -> Bool { false }
-    func releaseModifiers() throws { pauses.reset() }
-    func sendCharacter(_ value: Unit) throws {
-        let now = ProcessInfo.processInfo.systemUptime
-        if keys.isEmpty { start = now }
-        background = background && NSWorkspace.shared.frontmostApplication?.processIdentifier != ProcessInfo.processInfo.processIdentifier
-        keys.append(CaptureKey(milliseconds: (now - start) * 1000, character: value))
-    }
-    func sleep(_ milliseconds: Int) throws { try pauses.sleep(milliseconds) }
-    var milliseconds: Double { ProcessInfo.processInfo.systemUptime * 1000 }
-}
 extension TestRunner {
     func system(_ fixtures: Fixtures, _ evidence: URL) {
         test("CGEvent encoding: literal Unicode, emoji pairs, Tab, Enter and Backspace; zero posts") {
@@ -50,7 +30,7 @@ extension TestRunner {
             try equal(emoji.events(for: 8).count, 2, "emoji Backspace")
             try require(emoji.events(for: 8).isEmpty, "second UTF16 half deletes a second character")
         }
-        test("reference event transport: all 223 runs repair to the exact intended text; zero posts") {
+        test("reference event transport: all reference runs repair to the exact intended text; zero posts") {
             let rows = try fixtures.rows("engine.tsv")
             for row in rows {
                 let encoder = KeyboardEncoder(), runtime = VirtualRuntime(seed: Int(row[1])!)
@@ -98,8 +78,8 @@ extension TestRunner {
             try equal(posts, 2, "cancelled input")
         }
         test("live proof safety gates, argument exits, fixed seed corrections and redacted differences") {
-            for args in [[], ["--live-typing"], ["--live-typing", "--require-idle-seconds", "239"], ["--live-typing", "--require-idle-seconds", "x"], ["--live-typing", "--require-idle-seconds", "86401"]] { try require(LiveTypingProbe.parse(args) == nil, "bad arguments accepted") }
-            try equal(LiveTypingProbe.parse(["--live-typing", "--require-idle-seconds", "240"]), 240, "valid idle threshold")
+            for args in [[], ["--live-typing", "--require-idle-seconds", "239"], ["--live-typing", "--require-idle-seconds", "x"], ["--live-typing", "--require-idle-seconds", "86401"]] { try require(LiveTypingProbe.parse(args) == nil, "bad arguments accepted") }
+            try equal(LiveTypingProbe.parse(["--live-typing", "--require-idle-seconds", "240"]), .automation(240), "valid idle threshold")
             try require(!LiveGate(idle: 239, onConsole: true, unlocked: true).eligible(required: 240), "active gate")
             try require(!LiveGate(idle: 300, onConsole: true, unlocked: false).eligible(required: 240), "locked gate")
             try require(!LiveGate(idle: 300, onConsole: false, unlocked: true).eligible(required: 240), "console gate")
@@ -121,14 +101,32 @@ extension TestRunner {
             settings["WordsPerMinute"] = 180; settings["EnableTypos"] = 0; settings["KeepTargetWpm"] = 1
             let text = units("thequickbrownfoxjumpsoverthelazydogthequickbrownfox"), virtual = VirtualRuntime(seed: 17)
             try TypingEngine(virtual).type(text, options: TypingOptions(settings: settings))
-            let real = TimedRuntime(seed: 17), activity = TimingActivity(); defer { activity.end() }
-            try TypingEngine(real).type(text, options: TypingOptions(settings: settings))
-            try equal(real.keys.count, virtual.keys.count, "timing key count")
-            let errors = zip(real.keys, virtual.keys).map { $0.milliseconds - $1.milliseconds }
+            var keys = [CaptureKey](), start = 0.0, background = true
+            let real = MacRuntime(cancellation: Cancellation(), seed: 17, sink: { event in
+                if event.type == .keyDown {
+                    let now = ProcessInfo.processInfo.systemUptime
+                    if keys.isEmpty { start = now }
+                    background = background && NSWorkspace.shared.frontmostApplication?.processIdentifier != ProcessInfo.processInfo.processIdentifier
+                    keys.append(CaptureKey(milliseconds: (now - start) * 1000, character: eventUnicode(event).first ?? 0))
+                }
+            })
+            let timeout = DispatchWorkItem { real.cancellation.cancel() }
+            DispatchQueue.global().asyncAfter(deadline: .now() + 8, execute: timeout)
+            let activity = TimingActivity(); defer { activity.end(); timeout.cancel() }
+            let finished = DispatchSemaphore(value: 0)
+            var failure: Error?
+            DispatchQueue.global(qos: .userInteractive).async {
+                do { try TypingEngine(real).type(text, options: TypingOptions(settings: settings)) } catch { failure = error }
+                finished.signal()
+            }
+            try require(finished.wait(timeout: .now() + 9) == .success, "timing worker exceeded timeout")
+            if let failure { throw failure }
+            try equal(keys.count, virtual.keys.count, "timing key count")
+            let errors = zip(keys, virtual.keys).map { $0.milliseconds - $1.milliseconds }
             let median = CalibrationAnalysis.median(errors.map(abs)), worst = errors.max() ?? 0, worstAbs = errors.map(abs).max() ?? 0
-            let report = "TIMING: keys=\(real.keys.count); background=\(dotBool(real.background)); median_absolute_error_ms=\(fixed(median, 3)); worst_late_ms=\(fixed(worst, 3)); worst_absolute_error_ms=\(fixed(worstAbs, 3)); duration_ms=\(virtual.time); posts=0"
+            let report = "TIMING: keys=\(keys.count); background=\(dotBool(background)); median_absolute_error_ms=\(fixed(median, 3)); worst_late_ms=\(fixed(worst, 3)); worst_absolute_error_ms=\(fixed(worstAbs, 3)); duration_ms=\(virtual.time); posts=0"
             print(report); try report.write(to: evidence.appendingPathComponent("timing.txt"), atomically: true, encoding: .utf8)
-            try require(real.background, "timing process was foreground")
+            try require(background, "timing process was foreground")
             try require(median < 2 && worst <= 20, "real pauses miss timing limits")
         }
     }

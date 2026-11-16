@@ -4,11 +4,16 @@ import Carbon
 import Darwin
 
 final class Cancellation {
-    private let lock = NSLock()
+    private let lock = NSRecursiveLock()
     private var stopped = false
     func cancel() { lock.lock(); stopped = true; lock.unlock() }
     var isCancelled: Bool { lock.lock(); defer { lock.unlock() }; return stopped }
     func check() throws { if isCancelled { throw AutoWriteError.cancelled } }
+    func postPair(_ body: () -> Void) throws {
+        lock.lock(); defer { lock.unlock() }
+        if stopped { throw AutoWriteError.cancelled }
+        body()
+    }
 }
 
 // No event is posted by this type: the application and its tests use the same
@@ -69,13 +74,39 @@ final class PrecisePauses {
     func suspend(_ ms: Int) throws { reset(); try sleep(ms); reset() }
 }
 
-func foregroundWindowIdentity() -> UInt64 {
-    guard let pid = NSWorkspace.shared.frontmostApplication?.processIdentifier else { return 0 }
-    if let windows = CGWindowListCopyWindowInfo([.optionOnScreenOnly, .excludeDesktopElements], kCGNullWindowID) as? [[String: Any]],
-       let window = windows.first(where: { ($0[kCGWindowOwnerPID as String] as? Int) == Int(pid) && ($0[kCGWindowLayer as String] as? Int) == 0 }),
-       let number = window[kCGWindowNumber as String] as? UInt32 { return UInt64(number) << 32 | UInt64(UInt32(bitPattern: pid)) }
-    return UInt64(UInt32(bitPattern: pid))
+// CGWindowListCreate is a public C API in CGWindow.h, unavailable to Swift's
+// importer because this CFArray contains raw window IDs rather than CF objects.
+// Read those IDs with CFArrayGetValueAtIndex, never through an NSArray bridge.
+private typealias WindowListCreate = @convention(c) (UInt32, UInt32) -> Unmanaged<CFArray>?
+private let windowListCreate: WindowListCreate? = {
+    guard let symbol = dlsym(UnsafeMutableRawPointer(bitPattern: -2), "CGWindowListCreate") else { return nil }
+    return unsafeBitCast(symbol, to: WindowListCreate.self)
+}()
+private func orderedWindowIDs() -> [UInt32]? {
+    guard let create = windowListCreate, let list = create(CGWindowListOption([.optionOnScreenOnly, .excludeDesktopElements]).rawValue, kCGNullWindowID)?.takeRetainedValue() else { return nil }
+    return (0..<CFArrayGetCount(list)).map { UInt32(truncatingIfNeeded: UInt(bitPattern: CFArrayGetValueAtIndex(list, $0))) }
 }
+private final class ForegroundIdentityCache {
+    let lock = NSLock()
+    var pid: pid_t = 0, identity: UInt64 = 0, order = [UInt32]()
+    func current() -> UInt64 {
+        lock.lock(); defer { lock.unlock() }
+        guard let front = NSWorkspace.shared.frontmostApplication?.processIdentifier else { return 0 }
+        let ids = orderedWindowIDs()
+        // Only reuse metadata if BOTH the front application and the complete
+        // front-to-back window order are unchanged. Closed/new/reordered windows
+        // and application switches all force a fresh resolution.
+        if let ids, front == pid && ids == order && identity != 0 { return identity }
+        var result = UInt64(UInt32(bitPattern: front))
+        if let windows = CGWindowListCopyWindowInfo([.optionOnScreenOnly, .excludeDesktopElements], kCGNullWindowID) as? [[String: Any]],
+           let window = windows.first(where: { ($0[kCGWindowOwnerPID as String] as? Int) == Int(front) && ($0[kCGWindowLayer as String] as? Int) == 0 }),
+           let number = window[kCGWindowNumber as String] as? UInt32 { result = UInt64(number) << 32 | UInt64(UInt32(bitPattern: front)) }
+        pid = front; order = ids ?? []; identity = result
+        return result
+    }
+}
+private let foregroundIdentityCache = ForegroundIdentityCache()
+func foregroundWindowIdentity() -> UInt64 { foregroundIdentityCache.current() }
 
 final class MacRuntime: EngineRuntime {
     let cancellation: Cancellation, pauses: PrecisePauses
@@ -84,18 +115,27 @@ final class MacRuntime: EngineRuntime {
     let start = ProcessInfo.processInfo.systemUptime
     var expectedWindow: UInt64 = 0
     var guardBeforePost: (() throws -> Void)?
-    var modifierDown: () -> Bool = { modifierKeys.contains { CGEventSource.keyState(.hidSystemState, key: CGKeyCode($0)) } }
+    var physicalKeyState: (CGKeyCode) -> Bool = { CGEventSource.keyState(.hidSystemState, key: $0) }
+    var modifierDown: () -> Bool = { false }
     var windowIdentity: () -> UInt64 = foregroundWindowIdentity
+    var preparationCheckpoint: (() -> Void)?
+    private var hasPosted = false
+    private var waitingForWindow = false
+    private var checkedWindow: (identity: UInt64, at: Double)?
     var sink: (CGEvent) -> Void
     static let modifierKeys = [54, 55, 56, 60, 58, 61, 59, 62, 63]
     init(cancellation: Cancellation, seed: Int = Int.random(in: 0...Int(Int32.max)), sink: @escaping (CGEvent) -> Void = { $0.post(tap: .cghidEventTap) }) {
         self.cancellation = cancellation; self.pauses = PrecisePauses(cancellation); self.seed = seed; self.sink = sink
+        modifierDown = { [unowned self] in Self.modifierKeys.contains { self.physicalKeyState(CGKeyCode($0)) } }
     }
     func createRandom() -> DotRandom { DotRandom(seed) }
+    func checkCancellation() throws { preparationCheckpoint?(); try cancellation.check() }
     func foregroundWindow() throws -> UInt64 {
         try cancellation.check(); try guardBeforePost?()
         let window = windowIdentity()
         if expectedWindow == 0 { expectedWindow = window }
+        waitingForWindow = expectedWindow != 0 && window != expectedWindow
+        checkedWindow = (window, ProcessInfo.processInfo.systemUptime)
         return window
     }
     func isKeyDown(_ key: Int) throws -> Bool { try cancellation.check(); return CGEventSource.keyState(.hidSystemState, key: CGKeyCode(key)) }
@@ -105,14 +145,29 @@ final class MacRuntime: EngineRuntime {
         while modifierDown() { try pauses.suspend(5); try guardBeforePost?() }
     }
     func sendCharacter(_ value: Unit) throws {
-        try cancellation.check(); try releaseModifiers()
-        if expectedWindow != 0 {
-            while windowIdentity() != expectedWindow { try guardBeforePost?(); try pauses.suspend(50) }
+        let events = encoder.events(for: value)
+        guard !events.isEmpty else { try cancellation.check(); return }
+        while true {
+            try cancellation.check(); try guardBeforePost?()
+            let window: UInt64
+            if let checked = checkedWindow, ProcessInfo.processInfo.systemUptime - checked.at < 0.005 { window = checked.identity }
+            else { window = windowIdentity() }
+            checkedWindow = nil
+            if expectedWindow != 0 && window != expectedWindow { try pauses.suspend(5); continue }
+            // This is the final state check, after every window wait and directly
+            // before the indivisible down/up pair. Never throw between its events.
+            if modifierDown() { try pauses.suspend(5); continue }
+            break
         }
-        try guardBeforePost?()
-        for event in encoder.events(for: value) { try cancellation.check(); try guardBeforePost?(); sink(event) }
+        if !hasPosted { pauses.reset(); hasPosted = true }
+        try cancellation.postPair { for event in events { sink(event) } }
     }
-    func sleep(_ milliseconds: Int) throws { try guardBeforePost?(); try pauses.sleep(milliseconds); try guardBeforePost?() }
+    func sleep(_ milliseconds: Int) throws {
+        checkedWindow = nil
+        try guardBeforePost?()
+        if waitingForWindow { try pauses.suspend(milliseconds) } else { try pauses.sleep(milliseconds) }
+        try guardBeforePost?()
+    }
     var milliseconds: Double { (ProcessInfo.processInfo.systemUptime - start) * 1000 }
 }
 
@@ -125,11 +180,17 @@ final class TimingActivity {
 
 enum PermissionState { case allowed, missing, restartNeeded }
 final class AccessibilityPermission {
-    var state: () -> PermissionState
-    init(state: @escaping () -> PermissionState = {
-        if !AXIsProcessTrusted() { return .missing }
-        return CGPreflightPostEventAccess() ? .allowed : .restartNeeded
-    }) { self.state = state }
+    var trusted: () -> Bool, canPost: () -> Bool
+    let requestListing: () -> Void
+    init(trusted: @escaping () -> Bool = { AXIsProcessTrusted() }, canPost: @escaping () -> Bool = { CGPreflightPostEventAccess() }, requestListing: @escaping () -> Void = {
+        let options = [kAXTrustedCheckOptionPrompt.takeUnretainedValue() as String: true] as CFDictionary
+        _ = AXIsProcessTrustedWithOptions(options)
+    }) { self.trusted = trusted; self.canPost = canPost; self.requestListing = requestListing }
+    func state() -> PermissionState {
+        if !trusted() { return .missing }
+        return canPost() ? .allowed : .restartNeeded
+    }
+    func requestIfMissing() { if state() == .missing { requestListing() } }
     func message(for value: PermissionState) -> String {
         switch value {
         case .allowed: return "Accessibility permission granted. Ready."
@@ -153,14 +214,17 @@ final class GlobalHotkey {
             let owner = Unmanaged<GlobalHotkey>.fromOpaque(userData).takeUnretainedValue()
             var id = EventHotKeyID()
             guard GetEventParameter(event, EventParamName(kEventParamDirectObject), EventParamType(typeEventHotKeyID), nil, MemoryLayout<EventHotKeyID>.size, nil, &id) == noErr, id.signature == 0x41575445 else { return OSStatus(eventNotHandledErr) }
-            if GetEventKind(event) == UInt32(kEventHotKeyReleased) { owner.held = false }
-            else if !owner.held { owner.held = true; owner.action() }
+            owner.handle(pressed: GetEventKind(event) == UInt32(kEventHotKeyPressed))
             return noErr
         }, events.count, &events, context, &handler)
         guard status == noErr else { return false }
         let id = EventHotKeyID(signature: 0x41575445, id: 7)
         if RegisterEventHotKey(UInt32(kVK_F7), 0, id, GetApplicationEventTarget(), 0, &ref) != noErr { unregister(); return false }
         return true
+    }
+    func handle(pressed: Bool) {
+        if !pressed { held = false }
+        else if !held { held = true; action() }
     }
     func unregister() { if let ref { UnregisterEventHotKey(ref); self.ref = nil }; if let handler { RemoveEventHandler(handler); self.handler = nil } }
     deinit { unregister() }

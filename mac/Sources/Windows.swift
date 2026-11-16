@@ -112,7 +112,7 @@ final class SettingControl: NSView, NSTextFieldDelegate {
         } else if let field, let stepper {
             let scale = spec.isMultiplier ? 100.0 : 1.0
             let formatter = NumberFormatter(); formatter.locale = Locale(identifier: "en_US_POSIX"); formatter.numberStyle = .decimal
-            formatter.usesGroupingSeparator = false; formatter.minimum = NSNumber(value: Double(spec.minimum) / scale); formatter.maximum = NSNumber(value: Double(spec.maximum) / scale)
+            formatter.usesGroupingSeparator = false
             formatter.minimumFractionDigits = spec.isMultiplier ? 2 : 0; formatter.maximumFractionDigits = spec.isMultiplier ? 2 : 0
             formatter.allowsFloats = spec.isMultiplier
             field.formatter = formatter; field.alignment = .right; field.delegate = self; field.target = self; field.action = #selector(valueChanged)
@@ -151,8 +151,16 @@ final class MainWindow: NSWindowController, NSWindowDelegate {
     var calibrationOpen = false { didSet { updateControlState() } }
     private var hotkey: GlobalHotkey?
     private var permissionDialog: PermissionWindow?
-    init(directory: URL, permission: AccessibilityPermission = AccessibilityPermission(), diagnostic: Bool = false) throws {
-        self.directory = directory; self.permission = permission; self.diagnostic = diagnostic
+    private var lastPermissionState: PermissionState?
+    let permissionNotice = label("")
+    var permissionButton: NSButton!
+    let settingsScroll = NSScrollView()
+    let scrollHint = label("Scroll for Difficult keys and Correction settings ↓")
+    var permissionPresentation: ((PermissionState) -> Void)?
+    private(set) var modalChild: NSWindow?
+    init(directory: URL, permission: AccessibilityPermission? = nil, diagnostic: Bool = false) throws {
+        self.directory = directory; self.diagnostic = diagnostic
+        self.permission = permission ?? (diagnostic ? AccessibilityPermission(requestListing: {}) : AccessibilityPermission())
         let settings = try Settings.load(directory: directory)
         let w = NSWindow(contentRect: NSRect(x: 0, y: 0, width: 1060, height: 740), styleMask: [.titled, .closable, .miniaturizable, .resizable], backing: .buffered, defer: false)
         w.title = "AutoWrite"; w.minSize = NSSize(width: 920, height: 580); w.isReleasedWhenClosed = false
@@ -174,25 +182,69 @@ final class MainWindow: NSWindowController, NSWindowDelegate {
             settingsStack.addArrangedSubview(control)
             control.widthAnchor.constraint(equalTo: settingsStack.widthAnchor).isActive = true
         }
-        let settingsScroll = NSScrollView(); settingsScroll.hasVerticalScroller = true; settingsScroll.drawsBackground = false
+        settingsScroll.hasVerticalScroller = true; settingsScroll.autohidesScrollers = false; settingsScroll.scrollerStyle = .legacy; settingsScroll.drawsBackground = false
         settingsScroll.documentView = settingsStack; settingsStack.translatesAutoresizingMaskIntoConstraints = false
         NSLayoutConstraint.activate([settingsStack.leadingAnchor.constraint(equalTo: settingsScroll.contentView.leadingAnchor), settingsStack.topAnchor.constraint(equalTo: settingsScroll.contentView.topAnchor), settingsStack.widthAnchor.constraint(equalTo: settingsScroll.contentView.widthAnchor)])
         startButton = button("Type in 3s", target: self, action: #selector(startFromButton)); stopButton = button("Stop", target: self, action: #selector(stop)); calibrateButton = button("Calibrate typing", target: self, action: #selector(openCalibration))
         let buttons = stack([startButton, stopButton, calibrateButton], orientation: .horizontal, spacing: 4)
-        let side = stack([settingsScroll, buttons]); side.alignment = .width
+        scrollHint.font = .systemFont(ofSize: 11); scrollHint.textColor = .secondaryLabelColor
+        let side = stack([settingsScroll, scrollHint, buttons]); side.alignment = .width
         let content = stack([editor, side], orientation: .horizontal, spacing: 16)
         content.alignment = .height
         side.widthAnchor.constraint(equalToConstant: 365).isActive = true
         progress.minValue = 0; progress.maxValue = 100; progress.isIndeterminate = false; progress.style = .bar
         progress.widthAnchor.constraint(equalToConstant: 220).isActive = true
         let footer = stack([status, NSView(), progress], orientation: .horizontal)
-        let layout = stack([header, content, footer], spacing: 14); layout.alignment = .width
+        permissionButton = button("Allow Accessibility…", target: self, action: #selector(requestPermission))
+        let permissionRow = stack([permissionNotice, permissionButton], orientation: .horizontal)
+        permissionRow.identifier = NSUserInterfaceItemIdentifier("PermissionNotice")
+        let layout = stack([header, permissionRow, content, footer], spacing: 14); layout.alignment = .width
         fill(layout, in: root, inset: 16)
         header.heightAnchor.constraint(equalToConstant: 32).isActive = true; footer.heightAnchor.constraint(equalToConstant: 22).isActive = true
         status.maximumNumberOfLines = 1; status.lineBreakMode = .byTruncatingTail
         updateControlState()
+        refreshPermissionStatus()
+        w.contentView?.layoutSubtreeIfNeeded()
+        if let document = settingsScroll.documentView { document.scroll(NSPoint(x: 0, y: document.isFlipped ? document.bounds.minY : document.bounds.maxY)) }
     }
     required init?(coder: NSCoder) { fatalError("init(coder:) has not been implemented") }
+    func refreshPermissionStatus() {
+        let state = permission.state(), missing = state != .allowed
+        permissionNotice.stringValue = missing ? "Accessibility permission is required to type into other apps." : ""
+        permissionButton.isHidden = !missing
+        permissionNotice.superview?.isHidden = !missing
+        if missing { setStatus(permission.message(for: state), error: true) }
+        else if lastPermissionState != nil && lastPermissionState != .allowed { setStatus(permission.message(for: .allowed)) }
+        lastPermissionState = state
+    }
+    @objc func requestPermission() { explainPermission(permission.state()) }
+    private func explainPermission(_ state: PermissionState) {
+        refreshPermissionStatus()
+        if state == .missing { permission.requestIfMissing() }
+        permissionPresentation?(state)
+        guard !diagnostic, let window, permissionDialog == nil else { return }
+        NSApplication.shared.activate(ignoringOtherApps: true)
+        window.makeKeyAndOrderFront(nil)
+        let dialog = PermissionWindow(permission: permission, state: state)
+        permissionDialog = dialog
+        window.beginSheet(dialog.window!) { [weak self] _ in self?.permissionDialog = nil }
+    }
+    private func presentCalibration(_ child: NSWindow) {
+        guard let owner = window else { return }
+        modalChild = child
+        child.setFrameOrigin(NSPoint(x: owner.frame.midX - child.frame.width / 2, y: owner.frame.midY - child.frame.height / 2))
+        if !diagnostic {
+            DispatchQueue.main.async { [weak self, weak child] in
+                guard let self, let child, self.modalChild === child else { return }
+                NSApplication.shared.runModal(for: child)
+            }
+        }
+    }
+    private func endCalibrationSheet() {
+        if let child = modalChild, NSApplication.shared.modalWindow === child { NSApplication.shared.stopModal(); child.orderOut(nil) }
+        modalChild = nil
+    }
+    func windowShouldClose(_ sender: NSWindow) -> Bool { !calibrationOpen }
     func armHotkey() {
         guard !diagnostic else { return }
         hotkey = GlobalHotkey { [weak self] in self?.requestTyping(buttonDelay: false) }
@@ -226,11 +278,7 @@ final class MainWindow: NSWindowController, NSWindowDelegate {
         let state = permission.state()
         if state != .allowed {
             setStatus(permission.message(for: state), error: true)
-            if !diagnostic, let window {
-                let dialog = PermissionWindow(permission: permission, state: state)
-                permissionDialog = dialog
-                window.beginSheet(dialog.window!) { [weak self] _ in self?.permissionDialog = nil }
-            }
+            explainPermission(state)
             return
         }
         // Diagnostics can exercise the permission and control path without global input.
@@ -276,23 +324,32 @@ final class MainWindow: NSWindowController, NSWindowDelegate {
         calibration = dialog
         dialog.completed = { [weak self] session, warning in
             guard let self else { return }
+            self.endCalibrationSheet()
             self.calibration = nil
             guard let session else { self.calibrationOpen = false; return }
             let result = CalibrationAnalysis.analyze(session.keys, seconds: session.seconds, current: current)
             if !warning.isEmpty { result.warning = warning + " " + result.warning }
             let results = ResultsWindow(result: result, apply: { [weak self] in self?.applyCalibration($0) ?? false })
             self.results = results
-            results.closed = { [weak self] in self?.results = nil; self?.calibrationOpen = false }
-            if !self.diagnostic { results.showWindow(nil) }
+            results.closed = { [weak self] in self?.endCalibrationSheet(); self?.results = nil; self?.calibrationOpen = false }
+            self.presentCalibration(results.window!)
         }
-        if !diagnostic { dialog.showWindow(nil); dialog.window?.makeFirstResponder(dialog.input) }
+        presentCalibration(dialog.window!)
+        dialog.window?.makeFirstResponder(dialog.input)
     }
     func shutdown() { stop(); hotkey?.unregister(); _ = currentSettings().save(directory: directory); calibration?.cancel(); results?.discard() }
     func windowWillClose(_ notification: Notification) { shutdown(); quit?() }
 }
 
+final class CaptureAwareMenu: NSMenu {
+    var captureInput: () -> CaptureInputView? = { NSApplication.shared.keyWindow?.firstResponder as? CaptureInputView }
+    override func performKeyEquivalent(with event: NSEvent) -> Bool {
+        if let input = captureInput(), input.consumeKeyEquivalent(event) { return true }
+        return super.performKeyEquivalent(with: event)
+    }
+}
 func applicationMenu(target: AnyObject?) -> NSMenu {
-    let main = NSMenu()
+    let main = CaptureAwareMenu()
     let app = NSMenuItem(); main.addItem(app); app.submenu = NSMenu(title: "AutoWrite")
     let quit = NSMenuItem(title: "Quit AutoWrite", action: #selector(NSApplication.terminate(_:)), keyEquivalent: "q"); app.submenu?.addItem(quit)
     let edit = NSMenuItem(); main.addItem(edit); edit.submenu = NSMenu(title: "Edit")

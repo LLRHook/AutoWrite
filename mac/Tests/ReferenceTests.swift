@@ -28,16 +28,38 @@ func escape(_ text: [Unit]) -> String {
         switch c { case 92: return "\\\\"; case 9: return "\\t"; case 10: return "\\n"; case 13: return "\\r"; case 0..<32, 127...UInt16.max: return String(format: "\\u%04X", Int(c)); default: return string([c]) }
     }.joined()
 }
-struct Fixtures {
+final class Fixtures {
     let root: URL
+    var counts = [String: Int]()
+    init(root: URL) { self.root = root }
+    var countSummary: String { counts.keys.sorted().map { "\($0)=\(counts[$0]!)" }.joined(separator: ", ") }
+    func files(_ folder: String) throws -> [String] {
+        try FileManager.default.contentsOfDirectory(atPath: root.appendingPathComponent(folder).path).filter { $0.hasSuffix(".tsv") }.sorted().map { folder + "/" + $0 }
+    }
+    func verifyTrackedFiles() throws {
+        let command = Process(), output = Pipe()
+        command.executableURL = URL(fileURLWithPath: "/usr/bin/git")
+        command.arguments = ["-C", root.deletingLastPathComponent().deletingLastPathComponent().path, "ls-files", "reference/data"]
+        command.standardOutput = output
+        try command.run(); let data = output.fileHandleForReading.readDataToEndOfFile(); command.waitUntilExit()
+        let paths = String(decoding: data, as: UTF8.self).split(separator: "\n").map(String.init)
+        try require(command.terminationStatus == 0 && !paths.isEmpty, "cannot read the tracked reference manifest")
+        for path in paths { _ = try Data(contentsOf: root.deletingLastPathComponent().deletingLastPathComponent().appendingPathComponent(path)) }
+    }
     func read(_ file: String) throws -> String { try String(contentsOf: root.appendingPathComponent(file), encoding: .utf8) }
     func rows(_ file: String) throws -> [[String]] {
-        try read(file).components(separatedBy: "\n").filter { !$0.isEmpty && !$0.hasPrefix("#") }.map { $0.components(separatedBy: "\t") }
+        let result = try read(file).components(separatedBy: "\n").filter { !$0.isEmpty && !$0.hasPrefix("#") }.map { $0.components(separatedBy: "\t") }
+        try require(!result.isEmpty, "empty reference file: \(file)")
+        if !file.contains("/") { counts[String(file.dropLast(4))] = result.count }
+        if file == "analysis/index.tsv" { counts["analysis"] = result.count }
+        return result
     }
 }
 final class TestRunner {
-    var passed = 0, failed = 0, referenceCases = 0
+    var passed = 0, failed = 0, referenceCases = 0, skipped = 0
+    let filter = ProcessInfo.processInfo.environment["AUTOWRITE_TEST_FILTER"]
     func test(_ name: String, _ body: () throws -> Void) {
+        if let filter, !name.localizedCaseInsensitiveContains(filter), name != "test setup" { skipped += 1; return }
         do { try body(); passed += 1; print("PASS \(name)") }
         catch { failed += 1; print("FAIL \(name): \(error)") }
     }
@@ -70,7 +92,7 @@ final class TestRunner {
                 try equal(Int(value), Int(row[6])!, "integer cast"); referenceCases += 1
             }
         }
-        test("reference passage") { try equal(calibrationPassage, unescape(trim(try f.read("passage.txt"))), "passage"); referenceCases += 1 }
+        test("reference passage") { let text = try f.read("passage.txt"); f.counts["passage"] = text.split(separator: "\n").count; try equal(calibrationPassage, unescape(trim(text)), "passage"); referenceCases += 1 }
         let expectedLogs = Dictionary(uniqueKeysWithValues: try f.rows("engine-logs.tsv").map { ($0[0], $0[1]) })
         let engines = try f.rows("engine.tsv")
         for row in engines {
@@ -90,13 +112,20 @@ final class TestRunner {
                 try equal(hash, row[4], "SHA256"); referenceCases += 1
             }
         }
-        print("REFERENCE engine: \(engines.count) runs compared, including 27 golden hashes")
+        print("REFERENCE engine data: \(engines.count) runs, including \(engines.filter { $0[0].hasPrefix("g") }.count) golden hashes")
         for row in try f.rows("settings-load.tsv") {
             test("reference settings load \(row[0])") {
                 let path = directory.appendingPathComponent("settings.ini")
                 if row[1] == "<missing>" { try? FileManager.default.removeItem(at: path) }
                 else { try string(unescape(row[1])).write(to: path, atomically: true, encoding: .utf8) }
                 try equal(try Settings.load(directory: directory).line, row[2], "settings"); referenceCases += 1
+            }
+        }
+        for row in try f.rows("settings-load-bytes.tsv") {
+            test("reference settings bytes \(row[0])") {
+                let hex = Array(row[1]), bytes = stride(from: 0, to: hex.count, by: 2).map { UInt8(String(hex[$0...($0 + 1)]), radix: 16)! }
+                try Data(bytes).write(to: directory.appendingPathComponent("settings.ini"))
+                try equal(try Settings.load(directory: directory).line, row[2], "byte-decoded settings"); referenceCases += 1
             }
         }
         for row in try f.rows("settings-save.tsv") {
@@ -116,15 +145,18 @@ final class TestRunner {
                 try equal(Settings().raw(spec.name), row[4], "default"); referenceCases += 1
             }
         }
-        for n in 0..<6 {
-            test("reference telemetry t\(n)") {
-                let expectedFile = try f.read("telemetry/t\(n).tsv")
+        let telemetryFiles = try f.files("telemetry")
+        f.counts["telemetry"] = telemetryFiles.count
+        try require(!telemetryFiles.isEmpty, "no telemetry reference files")
+        for file in telemetryFiles {
+            test("reference telemetry \(file)") {
+                let expectedFile = try f.read(file)
                 let lines = expectedFile.components(separatedBy: "\n")
                 let seed = Int(lines[0].dropFirst(7))!
                 let settings = Settings(line: String(lines[1].dropFirst(11)))
                 let text = unescape(String(lines[2].dropFirst(7)))
                 let runtime = VirtualRuntime(seed: seed)
-                let path = directory.appendingPathComponent("t\(n).tsv")
+                let path = directory.appendingPathComponent(URL(fileURLWithPath: file).lastPathComponent)
                 var o = TypingOptions(settings: settings); o.telemetryPath = path.path
                 try TypingEngine(runtime).type(text, options: o)
                 let generated = try String(contentsOf: path, encoding: .utf8).components(separatedBy: "\n").enumerated().map { i, line -> String in
