@@ -1,0 +1,58 @@
+# id	seconds	note. Each id has <id>.capture.tsv (a recording as the app saves it) and
+# <id>.expected.tsv (what the analysis and the results window make of it).
+a00	60	typist 70 ms, 60 s
+a01	30	typist 70 ms, 30 s
+a02	60	typist 95 ms, 60 s
+a03	30	typist 95 ms, 30 s
+a04	60	typist 130 ms, 60 s
+a05	30	typist 130 ms, 30 s
+a06	60	typist 170 ms, 60 s
+a07	30	typist 170 ms, 30 s
+a08	60	typist 215 ms, 60 s
+a09	30	typist 215 ms, 30 s
+a10	60	typist 260 ms, 60 s
+a11	30	typist 260 ms, 30 s
+a12	60	typist 110 ms, mode 1
+a13	60	typist 150 ms, mode 1
+a14	60	typist 110 ms, mode 2
+a15	60	typist 150 ms, mode 2
+a16	60	typist 110 ms, mode 3
+a17	60	typist 150 ms, mode 3
+a18	60	typist 400 ms: slower than the engine can go
+a19	30	typist 30 ms: faster than the engine can go
+a20	60	engine recording: defaults
+a21	60	engine recording: duplicates
+a22	60	engine recording: transposes
+a23	60	engine recording: mixed-kinds
+a24	60	engine recording: letters-only-mistakes
+a25	60	engine recording: heavy-difficult-keys
+a26	60	engine recording: detect-0
+a27	60	engine recording: keep-target-off
+a28	60	engine recording: metronome
+a29	60	engine recording: wild-rhythm
+a30	60	engine recording: test profile 0, 60 s
+a31	30	engine recording: test profile 0, 30 s
+a32	60	engine recording: test profile 1, 60 s
+a33	30	engine recording: test profile 1, 30 s
+a34	60	engine recording: test profile 2, 60 s
+a35	30	engine recording: test profile 2, 30 s
+a36	60	engine recording: many long thinking pauses
+a37	60	engine recording: 30 WPM
+a38	60	engine recording: 140 WPM
+a39	60	typist 130 ms, current settings: test profile 1
+a40	60	typist 130 ms, current settings: no pauses or mistakes
+a41	60	typist 95 ms, current settings: keep target off
+a42	60	typist 170 ms, current settings: mistakes off
+a43	60	typist 215 ms, current settings: maximums
+a44	60	engine recording: defaults, current settings: minimums
+a45	30	one key
+a46	30	twelve correct keys
+a47	30	different text
+a48	60	starts at the second line
+a49	60	second line skipped
+a50	60	all capitals
+a51	30	ends with ten Backspaces
+a52	60	twelve-second interruption
+a53	60	five long pauses at word starts
+a54	60	one pause just under ten seconds
+a55	60	typist 130 ms with scattered wrong letters

@@ -1,0 +1,41 @@
+measuredWpm	66.666666666666671
+predictedWpm	0
+accuracy	100
+minimumWpm	0
+maximumWpm	0
+baseDelay	0
+ordinaryGap	180
+predictedOrdinaryGap	0
+ordinaryGapCount	5
+correctedMistakes	0
+alignedCharacters	12
+summary	Measured speed: 66.7 WPM active; AutoWrite expected: 0.0 WPM     Accuracy: 100.0%     Corrected episodes: 0\nActive typing: first to last key; gaps under 10 s included. No long pauses omitted.
+warning	
+activity	Active typing: first to last key; gaps under 10 s included. No long pauses omitted.
+estimate	WordsPerMinute	Target WPM	80	80	False	False	Kept: 11 consecutive aligned gaps; need 30 for a replay target.
+estimate	JitterPercent	Jitter %	55	55	False	False	Kept: insufficient independent samples.
+estimate	KeyPairRhythmPercent	Key-pair rhythm %	80	80	False	False	Kept: insufficient independent samples.
+estimate	BurstPercent	Burst drift %	30	30	False	False	Kept: insufficient independent samples.
+estimate	WordPauseMilliseconds	Word pause ms	120	120	False	False	Kept: insufficient independent samples.
+estimate	SentencePauseMilliseconds	Sentence pause ms	850	850	False	False	Kept: insufficient independent samples.
+estimate	ParagraphPauseMilliseconds	Paragraph pause ms	0	0	False	False	Kept: insufficient independent samples.
+estimate	ThinkingPauseChancePercent	Thinking pause %	4	4	False	False	Kept: insufficient independent samples.
+estimate	ThinkingPauseMilliseconds	Thinking max ms	2200	2200	False	False	Kept: insufficient independent samples.
+estimate	KeepTargetWpm	Keep target WPM	On	On	False	False	Kept: insufficient independent samples.
+estimate	UppercaseDelayPenaltyPercent	Uppercase delay %	10	10	False	False	Kept: insufficient independent samples.
+estimate	NumberDelayPenaltyPercent	Number delay %	25	25	False	False	Kept: insufficient independent samples.
+estimate	PunctuationDelayPenaltyPercent	Punctuation delay %	30	30	False	False	Kept: insufficient independent samples.
+estimate	ShiftSymbolDelayPenaltyPercent	Shift-symbol delay %	55	55	False	False	Kept: insufficient independent samples.
+estimate	NumberTypoMultiplierPercent	Number mistakes x	1.75x	1.75x	False	False	Kept: insufficient independent samples.
+estimate	PunctuationTypoMultiplierPercent	Punct. mistakes x	2.00x	2.00x	False	False	Kept: insufficient independent samples.
+estimate	ShiftSymbolTypoMultiplierPercent	Shift mistakes x	3.00x	3.00x	False	False	Kept: insufficient independent samples.
+estimate	EnableTypos	Corrected mistakes	On	On	False	False	Kept: insufficient independent samples.
+estimate	TypoChancePercent	Mistake rate %	1	1	False	False	Kept: insufficient independent samples.
+estimate	DuplicateChancePercent	Duplicate share %	0	0	False	False	Kept: insufficient independent samples.
+estimate	TransposeChancePercent	Transpose share %	0	0	False	False	Kept: insufficient independent samples.
+estimate	CorrectionNoticeMilliseconds	Notice delay ms	850	850	False	False	Kept: insufficient independent samples.
+estimate	CorrectionDetectChars	Detect after chars	3	3	False	False	Kept: insufficient independent samples.
+estimate	CorrectionPauseMilliseconds	Repair key pause ms	120	120	False	False	Kept: insufficient independent samples.
+estimate	CorrectionResumeMilliseconds	Resume pause ms	260	260	False	False	Kept: insufficient independent samples.
+estimate	ButtonDelaySeconds	Button delay s	3	3	False	False	Kept: start-button preference is unrelated to typing.
+proposed	WordsPerMinute=80;JitterPercent=55;KeyPairRhythmPercent=80;BurstPercent=30;WordPauseMilliseconds=120;SentencePauseMilliseconds=850;ParagraphPauseMilliseconds=0;ThinkingPauseChancePercent=4;ThinkingPauseMilliseconds=2200;KeepTargetWpm=True;UppercaseDelayPenaltyPercent=10;NumberDelayPenaltyPercent=25;PunctuationDelayPenaltyPercent=30;ShiftSymbolDelayPenaltyPercent=55;NumberTypoMultiplierPercent=175;PunctuationTypoMultiplierPercent=200;ShiftSymbolTypoMultiplierPercent=300;EnableTypos=True;TypoChancePercent=1;DuplicateChancePercent=0;TransposeChancePercent=0;CorrectionNoticeMilliseconds=850;CorrectionDetectChars=3;CorrectionPauseMilliseconds=120;CorrectionResumeMilliseconds=260;ButtonDelaySeconds=3

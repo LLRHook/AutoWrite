@@ -1,0 +1,68 @@
+# seed=0
+# settings=WordsPerMinute=80;JitterPercent=55;KeyPairRhythmPercent=80;BurstPercent=30;WordPauseMilliseconds=120;SentencePauseMilliseconds=850;ParagraphPauseMilliseconds=0;ThinkingPauseChancePercent=4;ThinkingPauseMilliseconds=2200;KeepTargetWpm=True;UppercaseDelayPenaltyPercent=10;NumberDelayPenaltyPercent=25;PunctuationDelayPenaltyPercent=30;ShiftSymbolDelayPenaltyPercent=55;NumberTypoMultiplierPercent=175;PunctuationTypoMultiplierPercent=200;ShiftSymbolTypoMultiplierPercent=300;EnableTypos=True;TypoChancePercent=1;DuplicateChancePercent=0;TransposeChancePercent=0;CorrectionNoticeMilliseconds=850;CorrectionDetectChars=3;CorrectionPauseMilliseconds=120;CorrectionResumeMilliseconds=260;ButtonDelaySeconds=3
+# text=one\r\ntwo\rthree\n\nfour\r\n\r\nfive
+event_id	utc_iso	elapsed_ms	gap_ms	event	source_index	intended_code	intended_text	sent_code	sent_text	delay_ms	note
+1	T	E		run_start	-1						length=28;wpm=80;keep_target_wpm=True;mistake_rate_percent=1;number_delay_penalty_percent=25;punctuation_delay_penalty_percent=30;shift_symbol_delay_penalty_percent=55;number_typo_multiplier_percent=175;punctuation_typo_multiplier_percent=200;shift_symbol_typo_multiplier_percent=300;paragraph_pause_ms=0;notice_ms=850;detect_chars=3;repair_ms=120;resume_ms=260
+2	T	E		calibration	-1						base_delay_ms=45;planned_mistakes=1;planned_thinking_pauses=1;target_wpm=80
+3	T	E		final_key	0	U+006F	o	U+006F	o		normal
+4	T	E		motor_delay	0					68	after key
+5	T	E	G	final_key	1	U+006E	n	U+006E	n		normal
+6	T	E		motor_delay	1					137	after key
+7	T	E	G	final_key	2	U+0065	e	U+0065	e		normal
+8	T	E		motor_delay	2					72	after key
+9	T	E	G	enter	3	U+000D	<cr>	U+000A	<enter>		newline
+10	T	E		motor_delay	4					137	after newline
+11	T	E	G	final_key	5	U+0074	t	U+0074	t		normal
+12	T	E		motor_delay	5					70	after key
+13	T	E	G	final_key	6	U+0077	w	U+0077	w		normal
+14	T	E		motor_delay	6					103	after key
+15	T	E	G	final_key	7	U+006F	o	U+006F	o		normal
+16	T	E		motor_delay	7					44	after key
+17	T	E	G	enter	8	U+000D	<cr>	U+000A	<enter>		newline
+18	T	E		motor_delay	8					154	after newline
+19	T	E	G	final_key	9	U+0074	t	U+0074	t		normal
+20	T	E		motor_delay	9					110	after key
+21	T	E	G	final_key	10	U+0068	h	U+0068	h		normal
+22	T	E		motor_delay	10					43	after key
+23	T	E	G	final_key	11	U+0072	r	U+0072	r		normal
+24	T	E		motor_delay	11					48	after key
+25	T	E	G	final_key	12	U+0065	e	U+0065	e		normal
+26	T	E		motor_delay	12					76	after key
+27	T	E	G	final_key	13	U+0065	e	U+0065	e		normal
+28	T	E		motor_delay	13					37	after key
+29	T	E	G	enter	14	U+000A	<enter>	U+000A	<enter>		newline
+30	T	E		motor_delay	14					1892	after newline
+31	T	E	G	enter	15	U+000A	<enter>	U+000A	<enter>		newline
+32	T	E		motor_delay	15					140	after newline
+33	T	E	G	final_key	16	U+0066	f	U+0066	f		normal
+34	T	E		motor_delay	16					52	after key
+35	T	E	G	final_key	17	U+006F	o	U+006F	o		normal
+36	T	E		motor_delay	17					32	after key
+37	T	E	G	mistake_nearby	18	U+0075	u	U+0069	i		nearby substitution
+38	T	E		motor_delay	18					68	after key
+39	T	E	G	final_key	19	U+0072	r	U+0072	r		normal
+40	T	E		motor_delay	19					63	after key
+41	T	E		notice_error	19					957	kind=Nearby;start=18;through=19
+42	T	E	G	repair_backspace	19	U+0008	<backspace>	U+0008	<backspace>		correction
+43	T	E		repair_delay	19					130	after backspace
+44	T	E	G	repair_backspace	18	U+0008	<backspace>	U+0008	<backspace>		correction
+45	T	E		repair_delay	19					96	after backspace
+46	T	E	G	repair_retype	18	U+0075	u	U+0075	u		correction
+47	T	E		repair_delay	18					153	after retype
+48	T	E	G	repair_retype	19	U+0072	r	U+0072	r		correction
+49	T	E		repair_delay	19					153	after retype
+50	T	E		resume_after_fix	19					174	correction complete
+51	T	E		correction_done	-1						kind=Nearby;start=18;through=19;backspaces=2
+52	T	E	G	enter	20	U+000D	<cr>	U+000A	<enter>		newline
+53	T	E		motor_delay	21					154	after newline
+54	T	E	G	enter	22	U+000D	<cr>	U+000A	<enter>		newline
+55	T	E		motor_delay	23					183	after newline
+56	T	E	G	final_key	24	U+0066	f	U+0066	f		normal
+57	T	E		motor_delay	24					49	after key
+58	T	E	G	final_key	25	U+0069	i	U+0069	i		normal
+59	T	E		motor_delay	25					60	after key
+60	T	E	G	final_key	26	U+0076	v	U+0076	v		normal
+61	T	E		motor_delay	26					55	after key
+62	T	E	G	final_key	27	U+0065	e	U+0065	e		normal
+63	T	E		motor_delay	27					27	after key
+64	T	E		run_done	-1						completed=28;total=28

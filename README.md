@@ -168,6 +168,10 @@ benchmark. Without an output argument it creates an isolated temporary directory
 `AUTOWRITE_TEST_SCOPE=estimators` explicitly skips the expensive recovery benchmark for focused debugging
 and reports that skip; leave it unset for the complete test suite.
 
+`reference/data` holds this build's output for fixed inputs: engine runs, file formats, recording rules and
+calibration analyses. Ports to other platforms are tested against it. `test.ps1` fails when the committed
+files no longer match this build; `.\reference.ps1` rewrites them. See `reference/README.md`.
+
 `e2e.ps1` drives the built `dist\AutoWrite.exe` through UI Automation and window messages, never
 through global input. Its windows are shown without activation; it verifies the foreground stays
 unchanged, selects 30 seconds from the default 60, enters the actual passage, reads all proposals,

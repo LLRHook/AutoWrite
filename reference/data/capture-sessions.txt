@@ -1,0 +1,411 @@
+# The recording rules of the calibration test. "in" rows are the calls, in order;
+# "out" rows are the state afterwards and the lines of the saved recording.
+# accept: character code, milliseconds since the first character. ignore: reason, milliseconds.
+== plain
+in	seconds	30
+in	settings	WordsPerMinute=80;JitterPercent=55;KeyPairRhythmPercent=80;BurstPercent=30;WordPauseMilliseconds=120;SentencePauseMilliseconds=850;ParagraphPauseMilliseconds=0;ThinkingPauseChancePercent=4;ThinkingPauseMilliseconds=2200;KeepTargetWpm=True;UppercaseDelayPenaltyPercent=10;NumberDelayPenaltyPercent=25;PunctuationDelayPenaltyPercent=30;ShiftSymbolDelayPenaltyPercent=55;NumberTypoMultiplierPercent=175;PunctuationTypoMultiplierPercent=200;ShiftSymbolTypoMultiplierPercent=300;EnableTypos=True;TypoChancePercent=1;DuplicateChancePercent=0;TransposeChancePercent=0;CorrectionNoticeMilliseconds=850;CorrectionDetectChars=3;CorrectionPauseMilliseconds=120;CorrectionResumeMilliseconds=260;ButtonDelaySeconds=3
+in	accept	83	0
+in	accept	109	140.5
+in	accept	105	262
+in	accept	116	401.25
+in	accept	104	533.125
+out	returns	True True True True True
+out	typed	Smith
+out	ignored	0
+out	started	True
+out	finished	False
+out	key	0	83
+out	key	140.5	109
+out	key	262	105
+out	key	401.25	116
+out	key	533.125	104
+out	saved	# version=1;seconds=30;completed=True;ignored_keys=0
+out	saved	# setting\tWordsPerMinute\t80
+out	saved	# setting\tJitterPercent\t55
+out	saved	# setting\tKeyPairRhythmPercent\t80
+out	saved	# setting\tBurstPercent\t30
+out	saved	# setting\tWordPauseMilliseconds\t120
+out	saved	# setting\tSentencePauseMilliseconds\t850
+out	saved	# setting\tParagraphPauseMilliseconds\t0
+out	saved	# setting\tThinkingPauseChancePercent\t4
+out	saved	# setting\tThinkingPauseMilliseconds\t2200
+out	saved	# setting\tKeepTargetWpm\tTrue
+out	saved	# setting\tUppercaseDelayPenaltyPercent\t10
+out	saved	# setting\tNumberDelayPenaltyPercent\t25
+out	saved	# setting\tPunctuationDelayPenaltyPercent\t30
+out	saved	# setting\tShiftSymbolDelayPenaltyPercent\t55
+out	saved	# setting\tNumberTypoMultiplierPercent\t175
+out	saved	# setting\tPunctuationTypoMultiplierPercent\t200
+out	saved	# setting\tShiftSymbolTypoMultiplierPercent\t300
+out	saved	# setting\tEnableTypos\tTrue
+out	saved	# setting\tTypoChancePercent\t1
+out	saved	# setting\tDuplicateChancePercent\t0
+out	saved	# setting\tTransposeChancePercent\t0
+out	saved	# setting\tCorrectionNoticeMilliseconds\t850
+out	saved	# setting\tCorrectionDetectChars\t3
+out	saved	# setting\tCorrectionPauseMilliseconds\t120
+out	saved	# setting\tCorrectionResumeMilliseconds\t260
+out	saved	# setting\tButtonDelaySeconds\t3
+out	saved	elapsed_ms\tkind\tcharacter_code_or_reason
+out	saved	0.000\tcharacter\t83
+out	saved	140.500\tcharacter\t109
+out	saved	262.000\tcharacter\t105
+out	saved	401.250\tcharacter\t116
+out	saved	533.125\tcharacter\t104
+== backspace
+in	seconds	30
+in	settings	WordsPerMinute=80;JitterPercent=55;KeyPairRhythmPercent=80;BurstPercent=30;WordPauseMilliseconds=120;SentencePauseMilliseconds=850;ParagraphPauseMilliseconds=0;ThinkingPauseChancePercent=4;ThinkingPauseMilliseconds=2200;KeepTargetWpm=True;UppercaseDelayPenaltyPercent=10;NumberDelayPenaltyPercent=25;PunctuationDelayPenaltyPercent=30;ShiftSymbolDelayPenaltyPercent=55;NumberTypoMultiplierPercent=175;PunctuationTypoMultiplierPercent=200;ShiftSymbolTypoMultiplierPercent=300;EnableTypos=True;TypoChancePercent=1;DuplicateChancePercent=0;TransposeChancePercent=0;CorrectionNoticeMilliseconds=850;CorrectionDetectChars=3;CorrectionPauseMilliseconds=120;CorrectionResumeMilliseconds=260;ButtonDelaySeconds=3
+in	accept	8	0
+in	accept	83	10
+in	accept	110	150
+in	accept	8	420
+in	accept	109	600
+in	accept	8	700
+in	accept	8	760
+in	accept	8	820
+in	accept	83	900
+out	returns	True True True True True True True True True
+out	typed	S
+out	ignored	0
+out	started	True
+out	finished	False
+out	key	0	8
+out	key	10	83
+out	key	150	110
+out	key	420	8
+out	key	600	109
+out	key	700	8
+out	key	760	8
+out	key	820	8
+out	key	900	83
+out	saved	# version=1;seconds=30;completed=True;ignored_keys=0
+out	saved	# setting\tWordsPerMinute\t80
+out	saved	# setting\tJitterPercent\t55
+out	saved	# setting\tKeyPairRhythmPercent\t80
+out	saved	# setting\tBurstPercent\t30
+out	saved	# setting\tWordPauseMilliseconds\t120
+out	saved	# setting\tSentencePauseMilliseconds\t850
+out	saved	# setting\tParagraphPauseMilliseconds\t0
+out	saved	# setting\tThinkingPauseChancePercent\t4
+out	saved	# setting\tThinkingPauseMilliseconds\t2200
+out	saved	# setting\tKeepTargetWpm\tTrue
+out	saved	# setting\tUppercaseDelayPenaltyPercent\t10
+out	saved	# setting\tNumberDelayPenaltyPercent\t25
+out	saved	# setting\tPunctuationDelayPenaltyPercent\t30
+out	saved	# setting\tShiftSymbolDelayPenaltyPercent\t55
+out	saved	# setting\tNumberTypoMultiplierPercent\t175
+out	saved	# setting\tPunctuationTypoMultiplierPercent\t200
+out	saved	# setting\tShiftSymbolTypoMultiplierPercent\t300
+out	saved	# setting\tEnableTypos\tTrue
+out	saved	# setting\tTypoChancePercent\t1
+out	saved	# setting\tDuplicateChancePercent\t0
+out	saved	# setting\tTransposeChancePercent\t0
+out	saved	# setting\tCorrectionNoticeMilliseconds\t850
+out	saved	# setting\tCorrectionDetectChars\t3
+out	saved	# setting\tCorrectionPauseMilliseconds\t120
+out	saved	# setting\tCorrectionResumeMilliseconds\t260
+out	saved	# setting\tButtonDelaySeconds\t3
+out	saved	elapsed_ms\tkind\tcharacter_code_or_reason
+out	saved	0.000\tcharacter\t8
+out	saved	10.000\tcharacter\t83
+out	saved	150.000\tcharacter\t110
+out	saved	420.000\tcharacter\t8
+out	saved	600.000\tcharacter\t109
+out	saved	700.000\tcharacter\t8
+out	saved	760.000\tcharacter\t8
+out	saved	820.000\tcharacter\t8
+out	saved	900.000\tcharacter\t83
+== enter-forms
+in	seconds	60
+in	settings	WordsPerMinute=80;JitterPercent=55;KeyPairRhythmPercent=80;BurstPercent=30;WordPauseMilliseconds=120;SentencePauseMilliseconds=850;ParagraphPauseMilliseconds=0;ThinkingPauseChancePercent=4;ThinkingPauseMilliseconds=2200;KeepTargetWpm=True;UppercaseDelayPenaltyPercent=10;NumberDelayPenaltyPercent=25;PunctuationDelayPenaltyPercent=30;ShiftSymbolDelayPenaltyPercent=55;NumberTypoMultiplierPercent=175;PunctuationTypoMultiplierPercent=200;ShiftSymbolTypoMultiplierPercent=300;EnableTypos=True;TypoChancePercent=1;DuplicateChancePercent=0;TransposeChancePercent=0;CorrectionNoticeMilliseconds=850;CorrectionDetectChars=3;CorrectionPauseMilliseconds=120;CorrectionResumeMilliseconds=260;ButtonDelaySeconds=3
+in	accept	97	0
+in	accept	13	100
+in	accept	98	200
+in	accept	10	300
+in	accept	99	400
+out	returns	True True True True True
+out	typed	a\nb\nc
+out	ignored	0
+out	started	True
+out	finished	False
+out	key	0	97
+out	key	100	10
+out	key	200	98
+out	key	300	10
+out	key	400	99
+out	saved	# version=1;seconds=60;completed=True;ignored_keys=0
+out	saved	# setting\tWordsPerMinute\t80
+out	saved	# setting\tJitterPercent\t55
+out	saved	# setting\tKeyPairRhythmPercent\t80
+out	saved	# setting\tBurstPercent\t30
+out	saved	# setting\tWordPauseMilliseconds\t120
+out	saved	# setting\tSentencePauseMilliseconds\t850
+out	saved	# setting\tParagraphPauseMilliseconds\t0
+out	saved	# setting\tThinkingPauseChancePercent\t4
+out	saved	# setting\tThinkingPauseMilliseconds\t2200
+out	saved	# setting\tKeepTargetWpm\tTrue
+out	saved	# setting\tUppercaseDelayPenaltyPercent\t10
+out	saved	# setting\tNumberDelayPenaltyPercent\t25
+out	saved	# setting\tPunctuationDelayPenaltyPercent\t30
+out	saved	# setting\tShiftSymbolDelayPenaltyPercent\t55
+out	saved	# setting\tNumberTypoMultiplierPercent\t175
+out	saved	# setting\tPunctuationTypoMultiplierPercent\t200
+out	saved	# setting\tShiftSymbolTypoMultiplierPercent\t300
+out	saved	# setting\tEnableTypos\tTrue
+out	saved	# setting\tTypoChancePercent\t1
+out	saved	# setting\tDuplicateChancePercent\t0
+out	saved	# setting\tTransposeChancePercent\t0
+out	saved	# setting\tCorrectionNoticeMilliseconds\t850
+out	saved	# setting\tCorrectionDetectChars\t3
+out	saved	# setting\tCorrectionPauseMilliseconds\t120
+out	saved	# setting\tCorrectionResumeMilliseconds\t260
+out	saved	# setting\tButtonDelaySeconds\t3
+out	saved	elapsed_ms\tkind\tcharacter_code_or_reason
+out	saved	0.000\tcharacter\t97
+out	saved	100.000\tcharacter\t10
+out	saved	200.000\tcharacter\t98
+out	saved	300.000\tcharacter\t10
+out	saved	400.000\tcharacter\t99
+== rejected-characters
+in	seconds	30
+in	settings	WordsPerMinute=80;JitterPercent=55;KeyPairRhythmPercent=80;BurstPercent=30;WordPauseMilliseconds=120;SentencePauseMilliseconds=850;ParagraphPauseMilliseconds=0;ThinkingPauseChancePercent=4;ThinkingPauseMilliseconds=2200;KeepTargetWpm=True;UppercaseDelayPenaltyPercent=10;NumberDelayPenaltyPercent=25;PunctuationDelayPenaltyPercent=30;ShiftSymbolDelayPenaltyPercent=55;NumberTypoMultiplierPercent=175;PunctuationTypoMultiplierPercent=200;ShiftSymbolTypoMultiplierPercent=300;EnableTypos=True;TypoChancePercent=1;DuplicateChancePercent=0;TransposeChancePercent=0;CorrectionNoticeMilliseconds=850;CorrectionDetectChars=3;CorrectionPauseMilliseconds=120;CorrectionResumeMilliseconds=260;ButtonDelaySeconds=3
+in	accept	9	0
+in	accept	27	50
+in	accept	233	100
+in	accept	97	150
+in	accept	127	200
+in	accept	8364	250
+in	accept	126	300
+in	accept	32	350
+in	accept	31	400
+in	accept	0	450
+in	accept	55357	500
+out	returns	False False False True False False True True False False False
+out	typed	a~ 
+out	ignored	8
+out	started	True
+out	finished	False
+out	key	150	97
+out	key	300	126
+out	key	350	32
+out	saved	# version=1;seconds=30;completed=True;ignored_keys=8
+out	saved	# setting\tWordsPerMinute\t80
+out	saved	# setting\tJitterPercent\t55
+out	saved	# setting\tKeyPairRhythmPercent\t80
+out	saved	# setting\tBurstPercent\t30
+out	saved	# setting\tWordPauseMilliseconds\t120
+out	saved	# setting\tSentencePauseMilliseconds\t850
+out	saved	# setting\tParagraphPauseMilliseconds\t0
+out	saved	# setting\tThinkingPauseChancePercent\t4
+out	saved	# setting\tThinkingPauseMilliseconds\t2200
+out	saved	# setting\tKeepTargetWpm\tTrue
+out	saved	# setting\tUppercaseDelayPenaltyPercent\t10
+out	saved	# setting\tNumberDelayPenaltyPercent\t25
+out	saved	# setting\tPunctuationDelayPenaltyPercent\t30
+out	saved	# setting\tShiftSymbolDelayPenaltyPercent\t55
+out	saved	# setting\tNumberTypoMultiplierPercent\t175
+out	saved	# setting\tPunctuationTypoMultiplierPercent\t200
+out	saved	# setting\tShiftSymbolTypoMultiplierPercent\t300
+out	saved	# setting\tEnableTypos\tTrue
+out	saved	# setting\tTypoChancePercent\t1
+out	saved	# setting\tDuplicateChancePercent\t0
+out	saved	# setting\tTransposeChancePercent\t0
+out	saved	# setting\tCorrectionNoticeMilliseconds\t850
+out	saved	# setting\tCorrectionDetectChars\t3
+out	saved	# setting\tCorrectionPauseMilliseconds\t120
+out	saved	# setting\tCorrectionResumeMilliseconds\t260
+out	saved	# setting\tButtonDelaySeconds\t3
+out	saved	elapsed_ms\tkind\tcharacter_code_or_reason
+out	saved	0.000\tignored\tcharacter 9
+out	saved	50.000\tignored\tcharacter 27
+out	saved	100.000\tignored\tcharacter 233
+out	saved	150.000\tcharacter\t97
+out	saved	200.000\tignored\tcharacter 127
+out	saved	250.000\tignored\tcharacter 8364
+out	saved	300.000\tcharacter\t126
+out	saved	350.000\tcharacter\t32
+out	saved	400.000\tignored\tcharacter 31
+out	saved	450.000\tignored\tcharacter 0
+out	saved	500.000\tignored\tcharacter 55357
+== ignored-keys
+in	seconds	30
+in	settings	WordsPerMinute=80;JitterPercent=55;KeyPairRhythmPercent=80;BurstPercent=30;WordPauseMilliseconds=120;SentencePauseMilliseconds=850;ParagraphPauseMilliseconds=0;ThinkingPauseChancePercent=4;ThinkingPauseMilliseconds=2200;KeepTargetWpm=True;UppercaseDelayPenaltyPercent=10;NumberDelayPenaltyPercent=25;PunctuationDelayPenaltyPercent=30;ShiftSymbolDelayPenaltyPercent=55;NumberTypoMultiplierPercent=175;PunctuationTypoMultiplierPercent=200;ShiftSymbolTypoMultiplierPercent=300;EnableTypos=True;TypoChancePercent=1;DuplicateChancePercent=0;TransposeChancePercent=0;CorrectionNoticeMilliseconds=850;CorrectionDetectChars=3;CorrectionPauseMilliseconds=120;CorrectionResumeMilliseconds=260;ButtonDelaySeconds=3
+in	accept	97	0
+in	ignore	key Tab	80
+in	ignore	Ctrl+Backspace	120
+in	ignore	edit message 770	200
+in	accept	98	260
+in	ignore	shortcut character 22	300
+out	returns	True True
+out	typed	ab
+out	ignored	4
+out	started	True
+out	finished	False
+out	key	0	97
+out	key	260	98
+out	saved	# version=1;seconds=30;completed=True;ignored_keys=4
+out	saved	# setting\tWordsPerMinute\t80
+out	saved	# setting\tJitterPercent\t55
+out	saved	# setting\tKeyPairRhythmPercent\t80
+out	saved	# setting\tBurstPercent\t30
+out	saved	# setting\tWordPauseMilliseconds\t120
+out	saved	# setting\tSentencePauseMilliseconds\t850
+out	saved	# setting\tParagraphPauseMilliseconds\t0
+out	saved	# setting\tThinkingPauseChancePercent\t4
+out	saved	# setting\tThinkingPauseMilliseconds\t2200
+out	saved	# setting\tKeepTargetWpm\tTrue
+out	saved	# setting\tUppercaseDelayPenaltyPercent\t10
+out	saved	# setting\tNumberDelayPenaltyPercent\t25
+out	saved	# setting\tPunctuationDelayPenaltyPercent\t30
+out	saved	# setting\tShiftSymbolDelayPenaltyPercent\t55
+out	saved	# setting\tNumberTypoMultiplierPercent\t175
+out	saved	# setting\tPunctuationTypoMultiplierPercent\t200
+out	saved	# setting\tShiftSymbolTypoMultiplierPercent\t300
+out	saved	# setting\tEnableTypos\tTrue
+out	saved	# setting\tTypoChancePercent\t1
+out	saved	# setting\tDuplicateChancePercent\t0
+out	saved	# setting\tTransposeChancePercent\t0
+out	saved	# setting\tCorrectionNoticeMilliseconds\t850
+out	saved	# setting\tCorrectionDetectChars\t3
+out	saved	# setting\tCorrectionPauseMilliseconds\t120
+out	saved	# setting\tCorrectionResumeMilliseconds\t260
+out	saved	# setting\tButtonDelaySeconds\t3
+out	saved	elapsed_ms\tkind\tcharacter_code_or_reason
+out	saved	0.000\tcharacter\t97
+out	saved	80.000\tignored\tkey Tab
+out	saved	120.000\tignored\tCtrl+Backspace
+out	saved	200.000\tignored\tedit message 770
+out	saved	260.000\tcharacter\t98
+out	saved	300.000\tignored\tshortcut character 22
+== time-limit
+in	seconds	30
+in	settings	WordsPerMinute=80;JitterPercent=55;KeyPairRhythmPercent=80;BurstPercent=30;WordPauseMilliseconds=120;SentencePauseMilliseconds=850;ParagraphPauseMilliseconds=0;ThinkingPauseChancePercent=4;ThinkingPauseMilliseconds=2200;KeepTargetWpm=True;UppercaseDelayPenaltyPercent=10;NumberDelayPenaltyPercent=25;PunctuationDelayPenaltyPercent=30;ShiftSymbolDelayPenaltyPercent=55;NumberTypoMultiplierPercent=175;PunctuationTypoMultiplierPercent=200;ShiftSymbolTypoMultiplierPercent=300;EnableTypos=True;TypoChancePercent=1;DuplicateChancePercent=0;TransposeChancePercent=0;CorrectionNoticeMilliseconds=850;CorrectionDetectChars=3;CorrectionPauseMilliseconds=120;CorrectionResumeMilliseconds=260;ButtonDelaySeconds=3
+in	accept	97	0
+in	accept	98	29999.999
+in	accept	99	30000
+in	accept	100	30000.5
+in	accept	101	100
+in	ignore	key Left	31000
+out	returns	True True False False False
+out	typed	ab
+out	ignored	1
+out	started	True
+out	finished	True
+out	key	0	97
+out	key	29999.999	98
+out	saved	# version=1;seconds=30;completed=True;ignored_keys=1
+out	saved	# setting\tWordsPerMinute\t80
+out	saved	# setting\tJitterPercent\t55
+out	saved	# setting\tKeyPairRhythmPercent\t80
+out	saved	# setting\tBurstPercent\t30
+out	saved	# setting\tWordPauseMilliseconds\t120
+out	saved	# setting\tSentencePauseMilliseconds\t850
+out	saved	# setting\tParagraphPauseMilliseconds\t0
+out	saved	# setting\tThinkingPauseChancePercent\t4
+out	saved	# setting\tThinkingPauseMilliseconds\t2200
+out	saved	# setting\tKeepTargetWpm\tTrue
+out	saved	# setting\tUppercaseDelayPenaltyPercent\t10
+out	saved	# setting\tNumberDelayPenaltyPercent\t25
+out	saved	# setting\tPunctuationDelayPenaltyPercent\t30
+out	saved	# setting\tShiftSymbolDelayPenaltyPercent\t55
+out	saved	# setting\tNumberTypoMultiplierPercent\t175
+out	saved	# setting\tPunctuationTypoMultiplierPercent\t200
+out	saved	# setting\tShiftSymbolTypoMultiplierPercent\t300
+out	saved	# setting\tEnableTypos\tTrue
+out	saved	# setting\tTypoChancePercent\t1
+out	saved	# setting\tDuplicateChancePercent\t0
+out	saved	# setting\tTransposeChancePercent\t0
+out	saved	# setting\tCorrectionNoticeMilliseconds\t850
+out	saved	# setting\tCorrectionDetectChars\t3
+out	saved	# setting\tCorrectionPauseMilliseconds\t120
+out	saved	# setting\tCorrectionResumeMilliseconds\t260
+out	saved	# setting\tButtonDelaySeconds\t3
+out	saved	elapsed_ms\tkind\tcharacter_code_or_reason
+out	saved	0.000\tcharacter\t97
+out	saved	29999.999\tcharacter\t98
+out	saved	31000.000\tignored\tkey Left
+== limit-before-start
+in	seconds	30
+in	settings	WordsPerMinute=80;JitterPercent=55;KeyPairRhythmPercent=80;BurstPercent=30;WordPauseMilliseconds=120;SentencePauseMilliseconds=850;ParagraphPauseMilliseconds=0;ThinkingPauseChancePercent=4;ThinkingPauseMilliseconds=2200;KeepTargetWpm=True;UppercaseDelayPenaltyPercent=10;NumberDelayPenaltyPercent=25;PunctuationDelayPenaltyPercent=30;ShiftSymbolDelayPenaltyPercent=55;NumberTypoMultiplierPercent=175;PunctuationTypoMultiplierPercent=200;ShiftSymbolTypoMultiplierPercent=300;EnableTypos=True;TypoChancePercent=1;DuplicateChancePercent=0;TransposeChancePercent=0;CorrectionNoticeMilliseconds=850;CorrectionDetectChars=3;CorrectionPauseMilliseconds=120;CorrectionResumeMilliseconds=260;ButtonDelaySeconds=3
+in	accept	233	45000
+in	accept	9	46000
+in	accept	97	47000
+in	accept	98	47100
+out	returns	False False True False
+out	typed	a
+out	ignored	2
+out	started	True
+out	finished	True
+out	key	47000	97
+out	saved	# version=1;seconds=30;completed=True;ignored_keys=2
+out	saved	# setting\tWordsPerMinute\t80
+out	saved	# setting\tJitterPercent\t55
+out	saved	# setting\tKeyPairRhythmPercent\t80
+out	saved	# setting\tBurstPercent\t30
+out	saved	# setting\tWordPauseMilliseconds\t120
+out	saved	# setting\tSentencePauseMilliseconds\t850
+out	saved	# setting\tParagraphPauseMilliseconds\t0
+out	saved	# setting\tThinkingPauseChancePercent\t4
+out	saved	# setting\tThinkingPauseMilliseconds\t2200
+out	saved	# setting\tKeepTargetWpm\tTrue
+out	saved	# setting\tUppercaseDelayPenaltyPercent\t10
+out	saved	# setting\tNumberDelayPenaltyPercent\t25
+out	saved	# setting\tPunctuationDelayPenaltyPercent\t30
+out	saved	# setting\tShiftSymbolDelayPenaltyPercent\t55
+out	saved	# setting\tNumberTypoMultiplierPercent\t175
+out	saved	# setting\tPunctuationTypoMultiplierPercent\t200
+out	saved	# setting\tShiftSymbolTypoMultiplierPercent\t300
+out	saved	# setting\tEnableTypos\tTrue
+out	saved	# setting\tTypoChancePercent\t1
+out	saved	# setting\tDuplicateChancePercent\t0
+out	saved	# setting\tTransposeChancePercent\t0
+out	saved	# setting\tCorrectionNoticeMilliseconds\t850
+out	saved	# setting\tCorrectionDetectChars\t3
+out	saved	# setting\tCorrectionPauseMilliseconds\t120
+out	saved	# setting\tCorrectionResumeMilliseconds\t260
+out	saved	# setting\tButtonDelaySeconds\t3
+out	saved	elapsed_ms\tkind\tcharacter_code_or_reason
+out	saved	45000.000\tignored\tcharacter 233
+out	saved	46000.000\tignored\tcharacter 9
+out	saved	47000.000\tcharacter\t97
+== late-first-key
+in	seconds	60
+in	settings	WordsPerMinute=52;JitterPercent=70;KeyPairRhythmPercent=95;BurstPercent=40;WordPauseMilliseconds=40;SentencePauseMilliseconds=180;ParagraphPauseMilliseconds=80;ThinkingPauseChancePercent=8;ThinkingPauseMilliseconds=2400;KeepTargetWpm=True;UppercaseDelayPenaltyPercent=95;NumberDelayPenaltyPercent=115;PunctuationDelayPenaltyPercent=125;ShiftSymbolDelayPenaltyPercent=155;NumberTypoMultiplierPercent=175;PunctuationTypoMultiplierPercent=200;ShiftSymbolTypoMultiplierPercent=300;EnableTypos=True;TypoChancePercent=5;DuplicateChancePercent=0;TransposeChancePercent=0;CorrectionNoticeMilliseconds=350;CorrectionDetectChars=6;CorrectionPauseMilliseconds=55;CorrectionResumeMilliseconds=100;ButtonDelaySeconds=3
+in	accept	97	59999.5
+in	accept	98	60000
+in	accept	99	10
+out	returns	True False False
+out	typed	a
+out	ignored	0
+out	started	True
+out	finished	True
+out	key	59999.5	97
+out	saved	# version=1;seconds=60;completed=True;ignored_keys=0
+out	saved	# setting\tWordsPerMinute\t52
+out	saved	# setting\tJitterPercent\t70
+out	saved	# setting\tKeyPairRhythmPercent\t95
+out	saved	# setting\tBurstPercent\t40
+out	saved	# setting\tWordPauseMilliseconds\t40
+out	saved	# setting\tSentencePauseMilliseconds\t180
+out	saved	# setting\tParagraphPauseMilliseconds\t80
+out	saved	# setting\tThinkingPauseChancePercent\t8
+out	saved	# setting\tThinkingPauseMilliseconds\t2400
+out	saved	# setting\tKeepTargetWpm\tTrue
+out	saved	# setting\tUppercaseDelayPenaltyPercent\t95
+out	saved	# setting\tNumberDelayPenaltyPercent\t115
+out	saved	# setting\tPunctuationDelayPenaltyPercent\t125
+out	saved	# setting\tShiftSymbolDelayPenaltyPercent\t155
+out	saved	# setting\tNumberTypoMultiplierPercent\t175
+out	saved	# setting\tPunctuationTypoMultiplierPercent\t200
+out	saved	# setting\tShiftSymbolTypoMultiplierPercent\t300
+out	saved	# setting\tEnableTypos\tTrue
+out	saved	# setting\tTypoChancePercent\t5
+out	saved	# setting\tDuplicateChancePercent\t0
+out	saved	# setting\tTransposeChancePercent\t0
+out	saved	# setting\tCorrectionNoticeMilliseconds\t350
+out	saved	# setting\tCorrectionDetectChars\t6
+out	saved	# setting\tCorrectionPauseMilliseconds\t55
+out	saved	# setting\tCorrectionResumeMilliseconds\t100
+out	saved	# setting\tButtonDelaySeconds\t3
+out	saved	elapsed_ms\tkind\tcharacter_code_or_reason
+out	saved	59999.500\tcharacter\t97

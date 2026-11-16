@@ -1,0 +1,73 @@
+# version=1;seconds=60;completed=True;ignored_keys=0
+# setting	WordsPerMinute	80
+# setting	JitterPercent	55
+# setting	KeyPairRhythmPercent	80
+# setting	BurstPercent	30
+# setting	WordPauseMilliseconds	120
+# setting	SentencePauseMilliseconds	850
+# setting	ParagraphPauseMilliseconds	0
+# setting	ThinkingPauseChancePercent	4
+# setting	ThinkingPauseMilliseconds	2200
+# setting	KeepTargetWpm	True
+# setting	UppercaseDelayPenaltyPercent	10
+# setting	NumberDelayPenaltyPercent	25
+# setting	PunctuationDelayPenaltyPercent	30
+# setting	ShiftSymbolDelayPenaltyPercent	55
+# setting	NumberTypoMultiplierPercent	175
+# setting	PunctuationTypoMultiplierPercent	200
+# setting	ShiftSymbolTypoMultiplierPercent	300
+# setting	EnableTypos	True
+# setting	TypoChancePercent	1
+# setting	DuplicateChancePercent	0
+# setting	TransposeChancePercent	0
+# setting	CorrectionNoticeMilliseconds	850
+# setting	CorrectionDetectChars	3
+# setting	CorrectionPauseMilliseconds	120
+# setting	CorrectionResumeMilliseconds	260
+# setting	ButtonDelaySeconds	3
+elapsed_ms	kind	character_code_or_reason
+0.000	character	83
+126.916	character	109
+332.886	character	105
+474.366	character	116
+596.634	character	104
+709.325	character	32
+927.165	character	101
+1061.384	character	116
+1293.660	character	32
+1544.682	character	97
+1718.909	character	108
+1982.204	character	46
+2536.536	character	32
+2908.590	character	40
+3105.195	character	50
+3288.026	character	48
+3594.937	character	50
+3765.670	character	49
+4028.475	character	41
+4126.574	character	32
+4333.982	character	102
+4473.869	character	111
+4574.767	character	117
+4731.580	character	110
+4830.959	character	100
+4985.554	character	32
+5209.732	character	97
+5419.937	character	32
+5729.398	character	52
+6012.063	character	50
+6199.755	character	46
+6793.059	character	53
+7038.552	character	37
+7200.540	character	32
+7438.715	character	114
+7615.322	character	105
+7768.596	character	115
+7927.241	character	101
+8023.182	character	32
+8381.373	character	91
+8515.451	character	49
+8700.641	character	50
+8920.972	character	93
+9130.481	character	46
+9610.702	character	10
