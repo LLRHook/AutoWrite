@@ -42,9 +42,10 @@ files with the change, and make every port match them again.
 | `format.tsv` | How the Windows build prints and rounds numbers: fixed decimals (`F1`, `F2`, `F3`), `Math.Round`, and integer casts, including the tie cases. |
 | `passage.txt` | The calibration passage, escaped, on one line. |
 | `settings-ranges.tsv` | Each setting's name, label, minimum, maximum and default. |
-| `engine.tsv`, `engine-logs.tsv` | 223 runs of the typing engine on a virtual clock: settings, text and seed in, every key and its time out. Ids `g00` to `g26` are the golden cases of `tests/GoldenTests.cs`, in the same order. |
+| `engine.tsv`, `engine-logs.tsv` | 235 runs of the typing engine on a virtual clock: settings, text and seed in, every key and its time out. Ids `g00` to `g26` are the golden cases of `tests/GoldenTests.cs`, in the same order. |
 | `telemetry/t*.tsv` | The telemetry file of six runs. The wall-clock columns are replaced: `utc_iso` by `T`, `elapsed_ms` by `E`, and `gap_ms` by `G` where present. |
 | `settings-load.tsv` | Settings files, including damaged and legacy ones, and the settings each one loads as. |
+| `settings-load-bytes.tsv` | The same for files given as raw bytes: other encodings and invalid UTF-8. |
 | `settings-save.tsv` | The file text written for given settings. |
 | `capture-sessions.txt` | The recording rules of the calibration test: which keys count, when the test ends, and the saved recording. |
 | `alignment.tsv` | How typed text is matched to the passage, which drives the position marker and the accuracy figure. |
@@ -71,14 +72,35 @@ because another language's defaults differ.
   value to 15 significant digits. `0.25` prints as `0.3` and `2.0005` to three
   decimals as `2.001`. See `format.tsv`.
 - Character tests (`Char.IsWhiteSpace`, `IsControl`, `IsLetterOrDigit`,
-  `IsDigit`, `IsUpper`, `IsPunctuation`, `IsSymbol`) and `ToLowerInvariant` /
-  `ToUpperInvariant` apply to one UTF-16 code unit and follow Unicode general
-  categories. `IsDigit` is decimal digits only. A surrogate half is none of
-  these.
-- `Int32.TryParse` accepts an optional sign, ASCII digits and surrounding
-  white space, and rejects anything that overflows. `Boolean.TryParse` accepts
-  `true` and `false` in any case with surrounding white space, and nothing else.
-- Settings files are read as UTF-8 with a byte-order mark skipped, split on CR
-  LF, LF or CR, and each line is trimmed of Unicode white space.
+  `IsDigit`, `IsUpper`, `IsPunctuation`, `IsSymbol`) apply to one UTF-16 code
+  unit and follow Unicode general categories. `IsDigit` is decimal digits only.
+  A surrogate half is none of these. White space is the space, line and
+  paragraph separators plus U+0009 to U+000D, U+0085 and U+00A0; U+180E and
+  U+200B are not white space.
+- `Int32.TryParse` accepts an optional sign, ASCII digits, surrounding white
+  space and trailing NUL characters, and rejects anything that overflows.
+  `Boolean.TryParse` accepts `true` and `false` in any case with surrounding
+  white space and NUL characters, and nothing else.
+- A conversion from a floating-point value that does not fit an `int` gives
+  the lowest `int`. The legacy `charactersPerSecond` key can reach this.
+- Settings keys are compared without regard to case for ASCII letters only. A
+  key containing U+212A, U+0131 or U+017F does not match.
+- Settings files are read as UTF-8, or as UTF-16 when they begin with a UTF-16
+  byte-order mark. A UTF-8 byte-order mark is skipped and invalid bytes become
+  U+FFFD. Lines are split on CR LF, LF or CR only, and each line is trimmed of
+  white space as defined above.
 - Exact floating-point equality is used where the analysis looks for tied
   forecasts, so the order of arithmetic operations matters there.
+
+## Where a port may differ
+
+The Windows build classifies characters by Unicode 8.0. A character assigned
+later, such as U+20BF, is unassigned to it: never a letter, digit, symbol or
+mistake target. Its case mapping is also narrower than Unicode's: U+0130,
+U+1E9E, U+212A, U+212B, U+2126 and U+01C5, among others, map to themselves.
+Case mapping is used only to decide whether two neighbouring characters are the
+same key.
+
+A port that uses its platform's current Unicode data will differ for those
+characters in rhythm class and mistake eligibility, never in the text typed.
+That difference is accepted, and the reference texts avoid depending on it.

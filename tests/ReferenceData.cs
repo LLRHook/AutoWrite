@@ -51,6 +51,15 @@ namespace AutoWrite.Tests
             new[] { "passage", CalibrationPassage.Text }
         };
 
+        // Added after the first port was reviewed. Kept apart from Texts so that
+        // the ids and inputs of the earlier cases do not change.
+        private static readonly string[][] MoreTexts =
+        {
+            new[] { "scripts", "\u0395\u03BB\u03BB\u03B7\u03BD\u03B9\u03BA\u03AC \u03A3\u039F\u03A6\u039F\u03A3 \u03C3\u03BF\u03C6\u03CC\u03C2, \u041F\u0440\u0438\u0432\u0435\u0442 \u041C\u0418\u0420! \u0130stanbul \u0131l\u0131k i\u0130 I\u0131; \u01C4 \u01C5 \u01C6, \u1E9E \u00DF, \u212A \u212B \u2126. \u65E5\u672C\u8A9E\u3001\u4E2D\u6587\u3002 \uFF21\uFF22\uFF43\uFF11\uFF12\uFF01\uFF1F \u0663\u0664 \u05E9\u05DC\u05D5\u05DD \u0633\u0644\u0627\u0645." },
+            new[] { "spaces", "a\u180Eb\u200Bc\u00A0d\u2028e\u2029f\u0085g\u3000h\uFEFFi\u2009j\u202Fk\u205Fl\u1680m\u001Cn\u001Fo\u000Bp\u000Cq\u200Dr\u2060s. Two\u00A0words,\u2009thin; end\u3000wide." },
+            new[] { "clusters", "e\u0301 n\u0303o; \uD83D\uDC4D\uD83C\uDFFD ok \uD83D\uDC68\u200D\uD83D\uDC69\u200D\uD83D\uDC67 fam \uD83C\uDDEB\uD83C\uDDF7 fr \u2764\uFE0F 1\uFE0F\u20E3 \u1112\u1161\u11AB \u0928\u092E\u0938\u094D\u0924\u0947 \u0E2A\u0E27\u0E31\u0E2A\u0E14\u0E35. Cafe\u0301 at 9." }
+        };
+
         internal static SortedDictionary<string, string> Build()
         {
             var files = new SortedDictionary<string, string>(StringComparer.Ordinal);
@@ -69,6 +78,7 @@ namespace AutoWrite.Tests
                 EngineFiles(files);
                 TelemetryFiles(files);
                 files["settings-load.tsv"] = SettingsLoadFile(settingsPath);
+                files["settings-load-bytes.tsv"] = SettingsLoadBytesFile(settingsPath);
                 files["settings-save.tsv"] = SettingsSaveFile(settingsPath);
                 files["capture-sessions.txt"] = SessionsFile();
                 files["alignment.tsv"] = AlignmentFile();
@@ -439,6 +449,21 @@ namespace AutoWrite.Tests
                 int seed = random.Next(4) == 0 ? -random.Next(1, 100000) : random.Next();
                 Engine(index, logs, "r" + i.ToString("00", Inv), "random settings / " + pair[0], settings, pair[1], seed);
             }
+            int extra = 0;
+            foreach (var pair in MoreTexts)
+            {
+                foreach (string name in new[] { "defaults", "mixed-kinds", "heavy-difficult-keys", "maximums" })
+                {
+                    foreach (var profile in profiles)
+                    {
+                        if (profile.Key == name)
+                        {
+                            Engine(index, logs, "x" + extra.ToString("00", Inv), name + " / " + pair[0], profile.Value, pair[1], 17);
+                            extra++;
+                        }
+                    }
+                }
+            }
             files["engine.tsv"] = index.ToString();
             files["engine-logs.tsv"] = logs.ToString();
         }
@@ -547,7 +572,24 @@ namespace AutoWrite.Tests
                 new[] { "no-separator", "wordsPerMinute\r\n=74\r\nwordsPerMinute=75=6\r\njitterPercent==16\r\n" },
                 new[] { "unknown-keys", "favouriteColour=blue\r\nwordsPerMinute=76\r\n" },
                 new[] { "multipliers", "numberTypoMultiplierPercent=250\r\npunctuationTypoMultiplierPercent=501\r\n" +
-                    "shiftSymbolTypoMultiplierPercent=0\r\n" }
+                    "shiftSymbolTypoMultiplierPercent=0\r\n" },
+                new[] { "kelvin-sign-in-key", "\u212AeepTargetWpm=False\r\n" },
+                new[] { "dotless-i-in-key", "wordsPerM\u0131nute=100\r\n" },
+                new[] { "dotted-capital-i-in-key", "wordsPerM\u0130nute=101\r\n" },
+                new[] { "long-s-in-key", "\u017FentencePauseMilliseconds=0\r\n" },
+                new[] { "nul-after-boolean", "keepTargetWpm=false\u0000\r\n" },
+                new[] { "nul-after-number", "wordsPerMinute=90\u0000\r\n" },
+                new[] { "nul-before-number", "wordsPerMinute=\u000091\r\n" },
+                new[] { "zero-width-space", "wordsPerMinute=\u200B100\r\n" },
+                new[] { "mongolian-vowel-separator", "wordsPerMinute=\u180E102\u180E\r\n" },
+                new[] { "unusual-spaces", "wordsPerMinute=\u2003103\u3000\r\n\u2028jitterPercent=21\r\n" },
+                new[] { "line-separator", "wordsPerMinute=104\u2028jitterPercent=22\u0085burstPercent=23\r\n" },
+                new[] { "form-feed-and-vertical-tab", "wordsPerMinute=105\u000CjitterPercent=24\u000BburstPercent=25\r\n" },
+                new[] { "legacy-speed-overflow", "charactersPerSecond=200000000\r\n" },
+                new[] { "legacy-speed-negative", "charactersPerSecond=-10\r\n" },
+                new[] { "legacy-speed-zero", "wordsPerMinute=44\r\ncharactersPerSecond=0\r\n" },
+                new[] { "hash-inside-line", "wordsPerMinute=106 # fast\r\n  # jitterPercent=1\r\nburstPercent=26#\r\n" },
+                new[] { "boolean-with-inner-space", "keepTargetWpm=fal se\r\nenableTypos=\tFALSE\t\r\n" }
             };
             var s = new StringBuilder();
             s.Append("# id\tsettings file text (escaped; <missing> means no file)\tsettings after loading\n");
@@ -559,6 +601,36 @@ namespace AutoWrite.Tests
                 }
                 else File.WriteAllBytes(path, new UTF8Encoding(false).GetBytes(item[1]));
                 s.Append(item[0]).Append('\t').Append(item[1] == null ? "<missing>" : Esc(item[1])).Append('\t')
+                    .Append(SettingsLine(SettingsStore.Load())).Append('\n');
+            }
+            return s.ToString();
+        }
+
+        private static string SettingsLoadBytesFile(string path)
+        {
+            var cases = new List<KeyValuePair<string, byte[]>>();
+            var utf16le = new List<byte>(new byte[] { 0xFF, 0xFE });
+            utf16le.AddRange(Encoding.Unicode.GetBytes("wordsPerMinute=120\r\njitterPercent=10\r\n"));
+            cases.Add(new KeyValuePair<string, byte[]>("utf-16-little-endian-with-mark", utf16le.ToArray()));
+            var utf16be = new List<byte>(new byte[] { 0xFE, 0xFF });
+            utf16be.AddRange(Encoding.BigEndianUnicode.GetBytes("wordsPerMinute=121\r\n"));
+            cases.Add(new KeyValuePair<string, byte[]>("utf-16-big-endian-with-mark", utf16be.ToArray()));
+            cases.Add(new KeyValuePair<string, byte[]>("utf-16-without-mark", Encoding.Unicode.GetBytes("wordsPerMinute=122\r\n")));
+            cases.Add(new KeyValuePair<string, byte[]>("utf-8-mark-only", new byte[] { 0xEF, 0xBB, 0xBF }));
+            var invalid = new List<byte>(Encoding.ASCII.GetBytes("wordsPerMinute=9"));
+            invalid.Add(0xFF);
+            invalid.AddRange(Encoding.ASCII.GetBytes("1\r\njitterPercent=17\r\n"));
+            cases.Add(new KeyValuePair<string, byte[]>("invalid-utf-8-byte", invalid.ToArray()));
+            var latin1 = new List<byte>(Encoding.ASCII.GetBytes("# caf"));
+            latin1.Add(0xE9);
+            latin1.AddRange(Encoding.ASCII.GetBytes("\r\nwordsPerMinute=123\r\n"));
+            cases.Add(new KeyValuePair<string, byte[]>("latin-1-comment", latin1.ToArray()));
+            var s = new StringBuilder();
+            s.Append("# id\tsettings file bytes in hex\tsettings after loading\n");
+            foreach (var item in cases)
+            {
+                File.WriteAllBytes(path, item.Value);
+                s.Append(item.Key).Append('\t').Append(BitConverter.ToString(item.Value).Replace("-", "")).Append('\t')
                     .Append(SettingsLine(SettingsStore.Load())).Append('\n');
             }
             return s.ToString();
@@ -694,6 +766,22 @@ namespace AutoWrite.Tests
             cases.Add(passage.Substring(0, 700));
             cases.Add(passage);
             cases.Add(passage + "more");
+            // Short inputs with several equally good matches pin down the tie rules.
+            cases.Add("mtS ");
+            cases.Add("mtmh");
+            cases.Add("mSith te la.");
+            var ties = new Random(8128);
+            string alphabet = passage.Substring(0, 24) + "\n";
+            for (int i = 0; i < 60; i++)
+            {
+                var text = new StringBuilder();
+                int length = 1 + ties.Next(10);
+                for (int j = 0; j < length; j++)
+                {
+                    text.Append(alphabet[ties.Next(alphabet.Length)]);
+                }
+                cases.Add(text.ToString());
+            }
             var s = new StringBuilder();
             s.Append("# How typed text is matched to the passage: CalibrationAnalysis.AlignPrefix(typed, passage).\n");
             s.Append("# typed (escaped)\tend\tdistance\tpassage index of each typed character, -1 where unmatched\n");
