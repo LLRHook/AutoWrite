@@ -1,7 +1,10 @@
 # AutoWrite
 
-AutoWrite is a small Windows desktop app that types pasted text into the active field when the
-global `F7` hotkey is pressed.
+AutoWrite is a small desktop app for Windows and macOS that types pasted text into the active
+field when the global `F7` hotkey is pressed.
+
+The sections below describe the Windows version. The native macOS version behaves the same and
+has its own section: [macOS](#macos).
 
 ## Build
 
