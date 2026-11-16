@@ -273,14 +273,14 @@ final class MainWindow: NSWindowController, NSWindowDelegate {
     func requestTyping(buttonDelay: Bool) {
         if calibrationOpen || permissionDialog != nil { return }
         if running { stop(); return }
-        let source = units(text.string)
-        if source.isEmpty { setStatus("No text", error: true); return }
         let state = permission.state()
         if state != .allowed {
             setStatus(permission.message(for: state), error: true)
             explainPermission(state)
             return
         }
+        let source = units(text.string)
+        if source.isEmpty { setStatus("No text", error: true); return }
         // Diagnostics can exercise the permission and control path without global input.
         if diagnostic && runtimeFactory == nil { setStatus(permission.message(for: .allowed)); return }
         do {

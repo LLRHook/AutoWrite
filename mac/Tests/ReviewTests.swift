@@ -18,13 +18,16 @@ extension TestRunner {
             try equal(requests, 0, "launch raised permission prompt")
             try renderWindow(owner.window!, evidence.appendingPathComponent("launch-permission-light.png"), appearance: .aqua)
             try renderWindow(owner.window!, evidence.appendingPathComponent("launch-permission-dark.png"), appearance: .darkAqua)
+            owner.requestTyping(buttonDelay: false)
+            try equal(requests, 1, "empty-text hotkey denial did not request Accessibility listing")
+            try equal(presentations, [.missing], "empty-text background denial not presented")
             owner.text.string = "q"; owner.requestTyping(buttonDelay: false)
-            try equal(requests, 1, "denied app path did not request Accessibility listing")
-            try equal(presentations, [.missing], "background denial not presented")
+            try equal(requests, 2, "denied app path did not request Accessibility listing")
+            try equal(presentations, [.missing,.missing], "background denial not presented")
             try require(!owner.running, "denied request started typing")
             permission.trusted = { true }; permission.canPost = { false }; owner.requestTyping(buttonDelay: true)
             try equal(presentations.last, .restartNeeded, "restart-needed explanation unreachable")
-            try equal(requests, 1, "restart case requested redundant prompt")
+            try equal(requests, 2, "restart case requested redundant prompt")
             permission.canPost = { true }; owner.refreshPermissionStatus()
             try require(owner.permissionButton.isHidden, "allowed launch banner still visible")
         }
@@ -189,6 +192,51 @@ extension TestRunner {
             for value in [0,1,0,1] {
                 main.controls["EnableTypos"]!.value = value; main.controls["EnableTypos"]!.valueChanged()
                 for name in names { let c = main.controls[name]!; try equal(c.enabled, value != 0, "dependent \(name)"); try equal(c.field!.isEnabled, value != 0, "field \(name)"); try equal(c.stepper!.isEnabled, value != 0, "stepper \(name)") }
+            }
+        }
+        test("test script uses temporary product evidence by default and honours its override") {
+            let root = directory.appendingPathComponent("script-default"), mac = root.appendingPathComponent("mac"), bin = root.appendingPathComponent("bin"), temporary = root.appendingPathComponent("temporary")
+            for folder in [mac,bin,temporary] { try FileManager.default.createDirectory(at: folder, withIntermediateDirectories: true) }
+            let source = URL(fileURLWithPath: #filePath).deletingLastPathComponent().deletingLastPathComponent()
+            let script = mac.appendingPathComponent("test.sh")
+            try FileManager.default.copyItem(at: source.appendingPathComponent("test.sh"), to: script)
+            // Only compilation is replaced: exercise the real script's directory
+            // creation, environment, evidence selection, output and cleanup.
+            let compiler = bin.appendingPathComponent("swiftc")
+            let fixture = """
+            #!/bin/bash
+            set -eu
+            target=''
+            while [[ "$#" -gt 0 ]]; do
+              if [[ "$1" == -o ]]; then target="$2"; shift 2; else shift; fi
+            done
+            printf '%s\\n' "$target" > "$AUTOWRITE_SCRIPT_BINARY"
+            cat > "$target" <<'PROGRAM'
+            #!/bin/bash
+            printf '%s\\n' "$2" > "$AUTOWRITE_SCRIPT_RESULT"
+            PROGRAM
+            chmod 755 "$target"
+            """
+            try fixture.write(to: compiler, atomically: true, encoding: .utf8)
+            try FileManager.default.setAttributes([.posixPermissions:0o755], ofItemAtPath: compiler.path)
+            let result = root.appendingPathComponent("result"), binary = root.appendingPathComponent("binary")
+            for useOverride in [false,true] {
+                let process = Process(), output = Pipe()
+                var env = ProcessInfo.processInfo.environment
+                env["PATH"] = bin.path + ":" + (env["PATH"] ?? "/usr/bin:/bin")
+                env["TMPDIR"] = temporary.path; env["AUTOWRITE_SCRIPT_RESULT"] = result.path; env["AUTOWRITE_SCRIPT_BINARY"] = binary.path
+                let custom = root.appendingPathComponent("chosen-evidence")
+                if useOverride { env["AUTOWRITE_EVIDENCE_DIR"] = custom.path } else { env.removeValue(forKey: "AUTOWRITE_EVIDENCE_DIR") }
+                process.environment = env; process.executableURL = URL(fileURLWithPath: "/bin/bash"); process.arguments = [script.path]
+                process.standardOutput = output; process.standardError = output
+                try process.run(); let printed = String(decoding: output.fileHandleForReading.readDataToEndOfFile(), as: UTF8.self); process.waitUntilExit()
+                try equal(process.terminationStatus, 0, "test script fixture: " + printed)
+                let path = trim(try String(contentsOf: result, encoding: .utf8)), build = trim(try String(contentsOf: binary, encoding: .utf8))
+                if useOverride { try equal(path, custom.path, "evidence override") }
+                else { try require(URL(fileURLWithPath: path).lastPathComponent.hasPrefix("AutoWrite-evidence.") && URL(fileURLWithPath: path).deletingLastPathComponent().path == temporary.path, "evidence is not a product temporary directory") }
+                try require(printed.contains("Evidence: " + path), "evidence location not printed")
+                try require(URL(fileURLWithPath: build).deletingLastPathComponent().lastPathComponent.hasPrefix("AutoWrite-tests."), "build temporary name is not product based")
+                try require(!FileManager.default.fileExists(atPath: URL(fileURLWithPath: build).deletingLastPathComponent().path), "test work directory not cleaned")
             }
         }
         test("smoke script rejects bad arguments and missing builds without launching") {

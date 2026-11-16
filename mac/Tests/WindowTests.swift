@@ -68,6 +68,7 @@ extension TestRunner {
             try require(text.allowsUndo, "Undo is disabled")
         }
         test("permission states: denial, grant, rebuild revocation, restart message; no posts") {
+            main.text.string = "q"
             main.requestTyping(buttonDelay: false)
             try require(main.status.stringValue.contains("Accessibility") && !main.running, "missing permission silent")
             permission.trusted = { true }; permission.canPost = { true }; main.requestTyping(buttonDelay: false)
