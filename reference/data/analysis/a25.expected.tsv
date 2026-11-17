@@ -1,0 +1,41 @@
+measuredWpm	31.812194674625275
+predictedWpm	37.66655984486961
+accuracy	87.5
+minimumWpm	22.516079521936653
+maximumWpm	39.912880403019294
+baseDelay	51.526049362287424
+ordinaryGap	55
+predictedOrdinaryGap	57.333333333333336
+ordinaryGapCount	36
+correctedMistakes	20
+alignedCharacters	160
+summary	Measured speed: 31.8 WPM active; AutoWrite expected: 37.7 WPM     Accuracy: 87.5%     Corrected episodes: 20\nActive typing: first to last key; gaps under 10 s included. No long pauses omitted.
+warning	Your recording had pauses AutoWrite does not reproduce at the proposed settings, so AutoWrite types faster overall.
+activity	Active typing: first to last key; gaps under 10 s included. No long pauses omitted.
+estimate	WordsPerMinute	Target WPM	80	39	True	False	Measured from 36 ordinary letter gaps: 55.0 ms; replay: 57.3 ms. Target chosen by forward replay.
+estimate	JitterPercent	Jitter %	55	55	False	False	Kept: 50 ordinary motor residuals; need 60.
+estimate	KeyPairRhythmPercent	Key-pair rhythm %	80	36	True	False	Measured from 51 key pairs (few samples).
+estimate	BurstPercent	Burst drift %	30	30	False	False	Kept: 50 ordinary motor residuals; need 60.
+estimate	WordPauseMilliseconds	Word pause ms	120	114	True	False	Measured from 21 word gaps (few samples).
+estimate	SentencePauseMilliseconds	Sentence pause ms	850	835	True	False	Measured from 3 sentence endings (few samples).
+estimate	ParagraphPauseMilliseconds	Paragraph pause ms	0	0	False	False	Kept: n=2; need 3 independent gaps.
+estimate	ThinkingPauseChancePercent	Thinking pause %	4	4	False	False	Kept: 0 long pauses / 22 boundaries; need 4 / 30. Transcription reads composing pauses low.
+estimate	ThinkingPauseMilliseconds	Thinking max ms	2200	2200	False	False	Kept: 0 long pauses; need 4 across at least 30 boundaries.
+estimate	KeepTargetWpm	Keep target WPM	On	On	False	False	Kept: timing-budget preference is not identifiable from a single typing recording.
+estimate	UppercaseDelayPenaltyPercent	Uppercase delay %	10	10	False	False	Kept: n=5; need 6 independent gaps.
+estimate	NumberDelayPenaltyPercent	Number delay %	25	25	False	False	Kept: n=5; need 6 independent gaps.
+estimate	PunctuationDelayPenaltyPercent	Punctuation delay %	30	30	False	False	Kept: n=3; need 6 independent gaps.
+estimate	ShiftSymbolDelayPenaltyPercent	Shift-symbol delay %	55	300	True	False	Measured from 7 shifted-symbol key gaps (few samples) (limited to the 300% maximum).
+estimate	NumberTypoMultiplierPercent	Number mistakes x	1.75x	1.75x	False	False	Kept: class/letter errors=4/11; need at least 10 each and 30 class opportunities.
+estimate	PunctuationTypoMultiplierPercent	Punct. mistakes x	2.00x	2.00x	False	False	Kept: class/letter errors=3/11; need at least 10 each and 30 class opportunities.
+estimate	ShiftSymbolTypoMultiplierPercent	Shift mistakes x	3.00x	3.00x	False	False	Kept: class/letter errors=2/11; need at least 10 each and 30 class opportunities.
+estimate	EnableTypos	Corrected mistakes	On	On	True	False	Measured from 20 corrected mistakes.
+estimate	TypoChancePercent	Mistake rate %	1	10	True	False	Measured from 11 corrected mistakes (limited to the 10% maximum).
+estimate	DuplicateChancePercent	Duplicate share %	0	0	True	False	Measured from 20 corrected mistakes (few samples).
+estimate	TransposeChancePercent	Transpose share %	0	0	True	False	Measured from 20 corrected mistakes (few samples).
+estimate	CorrectionNoticeMilliseconds	Notice delay ms	850	786	True	False	Measured from 20 first Backspace presses.
+estimate	CorrectionDetectChars	Detect after chars	3	3	False	False	Kept: boundary-censored detection distances do not distinguish maximum distances (likelihood ratio below 3).
+estimate	CorrectionPauseMilliseconds	Repair key pause ms	120	119	True	False	Measured from 72 repair key gaps.
+estimate	CorrectionResumeMilliseconds	Resume pause ms	260	423	True	False	Measured from 20 resumes after a correction.
+estimate	ButtonDelaySeconds	Button delay s	3	3	False	False	Kept: start-button preference is unrelated to typing.
+proposed	WordsPerMinute=39;JitterPercent=55;KeyPairRhythmPercent=36;BurstPercent=30;WordPauseMilliseconds=114;SentencePauseMilliseconds=835;ParagraphPauseMilliseconds=0;ThinkingPauseChancePercent=4;ThinkingPauseMilliseconds=2200;KeepTargetWpm=True;UppercaseDelayPenaltyPercent=10;NumberDelayPenaltyPercent=25;PunctuationDelayPenaltyPercent=30;ShiftSymbolDelayPenaltyPercent=300;NumberTypoMultiplierPercent=175;PunctuationTypoMultiplierPercent=200;ShiftSymbolTypoMultiplierPercent=300;EnableTypos=True;TypoChancePercent=10;DuplicateChancePercent=0;TransposeChancePercent=0;CorrectionNoticeMilliseconds=786;CorrectionDetectChars=3;CorrectionPauseMilliseconds=119;CorrectionResumeMilliseconds=423;ButtonDelaySeconds=3

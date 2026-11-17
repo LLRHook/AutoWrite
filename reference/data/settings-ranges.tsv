@@ -1,0 +1,27 @@
+# name	label	minimum	maximum	default, in the order the settings are stored.
+WordsPerMinute	Target WPM	5	180	80
+JitterPercent	Jitter %	0	100	55
+KeyPairRhythmPercent	Key-pair rhythm %	0	100	80
+BurstPercent	Burst drift %	0	100	30
+WordPauseMilliseconds	Word pause ms	0	1000	120
+SentencePauseMilliseconds	Sentence pause ms	0	3000	850
+ParagraphPauseMilliseconds	Paragraph pause ms	0	3000	0
+ThinkingPauseChancePercent	Thinking pause %	0	25	4
+ThinkingPauseMilliseconds	Thinking max ms	0	5000	2200
+KeepTargetWpm	Keep target WPM	False	True	True
+UppercaseDelayPenaltyPercent	Uppercase delay %	0	200	10
+NumberDelayPenaltyPercent	Number delay %	0	200	25
+PunctuationDelayPenaltyPercent	Punctuation delay %	0	200	30
+ShiftSymbolDelayPenaltyPercent	Shift-symbol delay %	0	300	55
+NumberTypoMultiplierPercent	Number mistakes x	0	500	175
+PunctuationTypoMultiplierPercent	Punct. mistakes x	0	500	200
+ShiftSymbolTypoMultiplierPercent	Shift mistakes x	0	500	300
+EnableTypos	Corrected mistakes	False	True	True
+TypoChancePercent	Mistake rate %	0	10	1
+DuplicateChancePercent	Duplicate share %	0	100	0
+TransposeChancePercent	Transpose share %	0	100	0
+CorrectionNoticeMilliseconds	Notice delay ms	0	3000	850
+CorrectionDetectChars	Detect after chars	0	8	3
+CorrectionPauseMilliseconds	Repair key pause ms	0	1000	120
+CorrectionResumeMilliseconds	Resume pause ms	0	2000	260
+ButtonDelaySeconds	Button delay s	0	10	3

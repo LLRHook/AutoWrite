@@ -1,0 +1,530 @@
+# seed=17
+# settings=WordsPerMinute=180;JitterPercent=100;KeyPairRhythmPercent=100;BurstPercent=100;WordPauseMilliseconds=1000;SentencePauseMilliseconds=3000;ParagraphPauseMilliseconds=3000;ThinkingPauseChancePercent=25;ThinkingPauseMilliseconds=5000;KeepTargetWpm=True;UppercaseDelayPenaltyPercent=200;NumberDelayPenaltyPercent=200;PunctuationDelayPenaltyPercent=200;ShiftSymbolDelayPenaltyPercent=300;NumberTypoMultiplierPercent=500;PunctuationTypoMultiplierPercent=500;ShiftSymbolTypoMultiplierPercent=500;EnableTypos=True;TypoChancePercent=10;DuplicateChancePercent=100;TransposeChancePercent=100;CorrectionNoticeMilliseconds=3000;CorrectionDetectChars=8;CorrectionPauseMilliseconds=1000;CorrectionResumeMilliseconds=2000;ButtonDelaySeconds=10
+# text=Hello, World! 123 (test) #1 @home ~50% <tag> {x} [y] a|b c\\d "q" 'r' `s` ^ & * _ + = ; : / ?
+event_id	utc_iso	elapsed_ms	gap_ms	event	source_index	intended_code	intended_text	sent_code	sent_text	delay_ms	note
+1	T	E		run_start	-1						length=92;wpm=180;keep_target_wpm=True;mistake_rate_percent=10;number_delay_penalty_percent=200;punctuation_delay_penalty_percent=200;shift_symbol_delay_penalty_percent=300;number_typo_multiplier_percent=500;punctuation_typo_multiplier_percent=500;shift_symbol_typo_multiplier_percent=500;paragraph_pause_ms=3000;notice_ms=3000;detect_chars=8;repair_ms=1000;resume_ms=2000
+2	T	E		calibration	-1						base_delay_ms=45;planned_mistakes=22;planned_thinking_pauses=7;target_wpm=180
+3	T	E		final_key	0	U+0048	H	U+0048	H		normal
+4	T	E		motor_delay	0					81	after key
+5	T	E	G	final_key	1	U+0065	e	U+0065	e		normal
+6	T	E		motor_delay	1					43	after key
+7	T	E	G	final_key	2	U+006C	l	U+006C	l		normal
+8	T	E		motor_delay	2					164	after key
+9	T	E	G	final_key	3	U+006C	l	U+006C	l		before duplicate
+10	T	E		mistake_key_gap	3					1323	duplicate extra key
+11	T	E	G	mistake_duplicate	3	U+006C	l	U+006C	l		extra duplicate
+12	T	E		motor_delay	3					45	after key
+13	T	E	G	final_key	4	U+006F	o	U+006F	o		normal
+14	T	E		motor_delay	4					114	after key
+15	T	E	G	final_key	5	U+002C	,	U+002C	,		normal
+16	T	E		notice_error	5					2121	kind=Duplicate;start=3;through=5
+17	T	E	G	repair_backspace	5	U+0008	<backspace>	U+0008	<backspace>		correction
+18	T	E		repair_delay	5					677	after backspace
+19	T	E	G	repair_backspace	4	U+0008	<backspace>	U+0008	<backspace>		correction
+20	T	E		repair_delay	5					1272	after backspace
+21	T	E	G	repair_backspace	3	U+0008	<backspace>	U+0008	<backspace>		correction
+22	T	E		repair_delay	5					1318	after backspace
+23	T	E	G	repair_backspace	2	U+0008	<backspace>	U+0008	<backspace>		correction
+24	T	E		repair_delay	5					1295	after backspace
+25	T	E	G	repair_retype	3	U+006C	l	U+006C	l		correction
+26	T	E		repair_delay	3					1348	after retype
+27	T	E	G	repair_retype	4	U+006F	o	U+006F	o		correction
+28	T	E		repair_delay	4					1300	after retype
+29	T	E	G	repair_retype	5	U+002C	,	U+002C	,		correction
+30	T	E		repair_delay	5					947	after retype
+31	T	E		resume_after_fix	5					1342	correction complete
+32	T	E		correction_done	-1						kind=Duplicate;start=3;through=5;backspaces=4
+33	T	E		motor_delay	5					189	after key
+34	T	E	G	final_key	6	U+0020	<space>	U+0020	<space>		normal
+35	T	E		motor_delay	6					1223	after key
+36	T	E	G	final_key	7	U+0057	W	U+0057	W		normal
+37	T	E		motor_delay	7					34	after key
+38	T	E	G	final_key	8	U+006F	o	U+006F	o		normal
+39	T	E		motor_delay	8					188	after key
+40	T	E	G	final_key	9	U+0072	r	U+0072	r		normal
+41	T	E		motor_delay	9					35	after key
+42	T	E	G	final_key	10	U+006C	l	U+006C	l		normal
+43	T	E		motor_delay	10					38	after key
+44	T	E	G	final_key	11	U+0064	d	U+0064	d		normal
+45	T	E		motor_delay	11					250	after key
+46	T	E	G	final_key	12	U+0021	!	U+0021	!		before duplicate
+47	T	E		mistake_key_gap	12					1338	duplicate extra key
+48	T	E	G	mistake_duplicate	12	U+0021	!	U+0021	!		extra duplicate
+49	T	E		motor_delay	12					5903	after key
+50	T	E	G	final_key	13	U+0020	<space>	U+0020	<space>		normal
+51	T	E		notice_error	13					3157	kind=Duplicate;start=12;through=13
+52	T	E	G	repair_backspace	13	U+0008	<backspace>	U+0008	<backspace>		correction
+53	T	E		repair_delay	13					851	after backspace
+54	T	E	G	repair_backspace	12	U+0008	<backspace>	U+0008	<backspace>		correction
+55	T	E		repair_delay	13					1249	after backspace
+56	T	E	G	repair_backspace	11	U+0008	<backspace>	U+0008	<backspace>		correction
+57	T	E		repair_delay	13					1298	after backspace
+58	T	E	G	repair_retype	12	U+0021	!	U+0021	!		correction
+59	T	E		repair_delay	12					1176	after retype
+60	T	E	G	repair_retype	13	U+0020	<space>	U+0020	<space>		correction
+61	T	E		repair_delay	13					1144	after retype
+62	T	E		resume_after_fix	13					1784	correction complete
+63	T	E		correction_done	-1						kind=Duplicate;start=12;through=13;backspaces=3
+64	T	E		motor_delay	13					1181	after key
+65	T	E	G	final_key	14	U+0031	1	U+0031	1		before duplicate
+66	T	E		mistake_key_gap	14					690	duplicate extra key
+67	T	E	G	mistake_duplicate	14	U+0031	1	U+0031	1		extra duplicate
+68	T	E		motor_delay	14					123	after key
+69	T	E	G	final_key	15	U+0032	2	U+0032	2		normal
+70	T	E		notice_error	15					2461	kind=Duplicate;start=14;through=15
+71	T	E	G	repair_backspace	15	U+0008	<backspace>	U+0008	<backspace>		correction
+72	T	E		repair_delay	15					1072	after backspace
+73	T	E	G	repair_backspace	14	U+0008	<backspace>	U+0008	<backspace>		correction
+74	T	E		repair_delay	15					1232	after backspace
+75	T	E	G	repair_backspace	13	U+0008	<backspace>	U+0008	<backspace>		correction
+76	T	E		repair_delay	15					963	after backspace
+77	T	E	G	repair_retype	14	U+0031	1	U+0031	1		correction
+78	T	E		repair_delay	14					1107	after retype
+79	T	E	G	repair_retype	15	U+0032	2	U+0032	2		correction
+80	T	E		repair_delay	15					1116	after retype
+81	T	E		resume_after_fix	15					2037	correction complete
+82	T	E		correction_done	-1						kind=Duplicate;start=14;through=15;backspaces=3
+83	T	E		motor_delay	15					313	after key
+84	T	E	G	final_key	16	U+0033	3	U+0033	3		normal
+85	T	E		motor_delay	16					56	after key
+86	T	E	G	final_key	17	U+0020	<space>	U+0020	<space>		normal
+87	T	E		motor_delay	17					1176	after key
+88	T	E	G	final_key	18	U+0028	(	U+0028	(		before duplicate
+89	T	E		mistake_key_gap	18					1281	duplicate extra key
+90	T	E	G	mistake_duplicate	18	U+0028	(	U+0028	(		extra duplicate
+91	T	E		motor_delay	18					76	after key
+92	T	E	G	final_key	19	U+0074	t	U+0074	t		normal
+93	T	E		notice_error	19					1979	kind=Duplicate;start=18;through=19
+94	T	E	G	repair_backspace	19	U+0008	<backspace>	U+0008	<backspace>		correction
+95	T	E		repair_delay	19					944	after backspace
+96	T	E	G	repair_backspace	18	U+0008	<backspace>	U+0008	<backspace>		correction
+97	T	E		repair_delay	19					1247	after backspace
+98	T	E	G	repair_backspace	17	U+0008	<backspace>	U+0008	<backspace>		correction
+99	T	E		repair_delay	19					814	after backspace
+100	T	E	G	repair_retype	18	U+0028	(	U+0028	(		correction
+101	T	E		repair_delay	18					769	after retype
+102	T	E	G	repair_retype	19	U+0074	t	U+0074	t		correction
+103	T	E		repair_delay	19					1025	after retype
+104	T	E		resume_after_fix	19					1595	correction complete
+105	T	E		correction_done	-1						kind=Duplicate;start=18;through=19;backspaces=3
+106	T	E		motor_delay	19					446	after key
+107	T	E	G	final_key	20	U+0065	e	U+0065	e		normal
+108	T	E		motor_delay	20					113	after key
+109	T	E	G	final_key	21	U+0073	s	U+0073	s		normal
+110	T	E		motor_delay	21					83	after key
+111	T	E	G	final_key	22	U+0074	t	U+0074	t		normal
+112	T	E		motor_delay	22					190	after key
+113	T	E	G	final_key	23	U+0029	)	U+0029	)		normal
+114	T	E		motor_delay	23					74	after key
+115	T	E	G	final_key	24	U+0020	<space>	U+0020	<space>		normal
+116	T	E		motor_delay	24					818	after key
+117	T	E	G	mistake_transpose	25	U+0023	#	U+0031	1		sent next char first
+118	T	E		mistake_key_gap	25					1068	transpose second key
+119	T	E	G	mistake_transpose	26	U+0031	1	U+0023	#		sent previous char second
+120	T	E		motor_delay	26					117	after key
+121	T	E	G	final_key	27	U+0020	<space>	U+0020	<space>		normal
+122	T	E		notice_error	27					2052	kind=Transpose;start=25;through=27
+123	T	E	G	repair_backspace	27	U+0008	<backspace>	U+0008	<backspace>		correction
+124	T	E		repair_delay	27					1223	after backspace
+125	T	E	G	repair_backspace	26	U+0008	<backspace>	U+0008	<backspace>		correction
+126	T	E		repair_delay	27					1207	after backspace
+127	T	E	G	repair_backspace	25	U+0008	<backspace>	U+0008	<backspace>		correction
+128	T	E		repair_delay	27					1045	after backspace
+129	T	E	G	repair_retype	25	U+0023	#	U+0023	#		correction
+130	T	E		repair_delay	25					925	after retype
+131	T	E	G	repair_retype	26	U+0031	1	U+0031	1		correction
+132	T	E		repair_delay	26					752	after retype
+133	T	E	G	repair_retype	27	U+0020	<space>	U+0020	<space>		correction
+134	T	E		repair_delay	27					1206	after retype
+135	T	E		resume_after_fix	27					2009	correction complete
+136	T	E		correction_done	-1						kind=Transpose;start=25;through=27;backspaces=3
+137	T	E		motor_delay	27					1675	after key
+138	T	E	G	mistake_transpose	28	U+0040	@	U+0068	h		sent next char first
+139	T	E		mistake_key_gap	28					725	transpose second key
+140	T	E	G	mistake_transpose	29	U+0068	h	U+0040	@		sent previous char second
+141	T	E		motor_delay	29					163	after key
+142	T	E	G	final_key	30	U+006F	o	U+006F	o		normal
+143	T	E		motor_delay	30					48	after key
+144	T	E	G	final_key	31	U+006D	m	U+006D	m		normal
+145	T	E		notice_error	31					2090	kind=Transpose;start=28;through=31
+146	T	E	G	repair_backspace	31	U+0008	<backspace>	U+0008	<backspace>		correction
+147	T	E		repair_delay	31					1059	after backspace
+148	T	E	G	repair_backspace	30	U+0008	<backspace>	U+0008	<backspace>		correction
+149	T	E		repair_delay	31					983	after backspace
+150	T	E	G	repair_backspace	29	U+0008	<backspace>	U+0008	<backspace>		correction
+151	T	E		repair_delay	31					1320	after backspace
+152	T	E	G	repair_backspace	28	U+0008	<backspace>	U+0008	<backspace>		correction
+153	T	E		repair_delay	31					1062	after backspace
+154	T	E	G	repair_retype	28	U+0040	@	U+0040	@		correction
+155	T	E		repair_delay	28					1211	after retype
+156	T	E	G	repair_retype	29	U+0068	h	U+0068	h		correction
+157	T	E		repair_delay	29					1256	after retype
+158	T	E	G	repair_retype	30	U+006F	o	U+006F	o		correction
+159	T	E		repair_delay	30					1181	after retype
+160	T	E	G	repair_retype	31	U+006D	m	U+006D	m		correction
+161	T	E		repair_delay	31					856	after retype
+162	T	E		resume_after_fix	31					1843	correction complete
+163	T	E		correction_done	-1						kind=Transpose;start=28;through=31;backspaces=4
+164	T	E		motor_delay	31					65	after key
+165	T	E	G	final_key	32	U+0065	e	U+0065	e		normal
+166	T	E		motor_delay	32					79	after key
+167	T	E	G	final_key	33	U+0020	<space>	U+0020	<space>		normal
+168	T	E		motor_delay	33					1342	after key
+169	T	E	G	mistake_transpose	34	U+007E	~	U+0035	5		sent next char first
+170	T	E		mistake_key_gap	34					1053	transpose second key
+171	T	E	G	mistake_transpose	35	U+0035	5	U+007E	~		sent previous char second
+172	T	E		motor_delay	35					86	after key
+173	T	E	G	final_key	36	U+0030	0	U+0030	0		normal
+174	T	E		motor_delay	36					322	after key
+175	T	E	G	final_key	37	U+0025	%	U+0025	%		normal
+176	T	E		notice_error	37					3843	kind=Transpose;start=34;through=37
+177	T	E	G	repair_backspace	37	U+0008	<backspace>	U+0008	<backspace>		correction
+178	T	E		repair_delay	37					1049	after backspace
+179	T	E	G	repair_backspace	36	U+0008	<backspace>	U+0008	<backspace>		correction
+180	T	E		repair_delay	37					830	after backspace
+181	T	E	G	repair_backspace	35	U+0008	<backspace>	U+0008	<backspace>		correction
+182	T	E		repair_delay	37					1018	after backspace
+183	T	E	G	repair_backspace	34	U+0008	<backspace>	U+0008	<backspace>		correction
+184	T	E		repair_delay	37					848	after backspace
+185	T	E	G	repair_retype	34	U+007E	~	U+007E	~		correction
+186	T	E		repair_delay	34					875	after retype
+187	T	E	G	repair_retype	35	U+0035	5	U+0035	5		correction
+188	T	E		repair_delay	35					946	after retype
+189	T	E	G	repair_retype	36	U+0030	0	U+0030	0		correction
+190	T	E		repair_delay	36					1226	after retype
+191	T	E	G	repair_retype	37	U+0025	%	U+0025	%		correction
+192	T	E		repair_delay	37					722	after retype
+193	T	E		resume_after_fix	37					2035	correction complete
+194	T	E		correction_done	-1						kind=Transpose;start=34;through=37;backspaces=4
+195	T	E		motor_delay	37					23	after key
+196	T	E	G	final_key	38	U+0020	<space>	U+0020	<space>		normal
+197	T	E		motor_delay	38					924	after key
+198	T	E	G	final_key	39	U+003C	<	U+003C	<		normal
+199	T	E		motor_delay	39					30	after key
+200	T	E	G	mistake_transpose	40	U+0074	t	U+0061	a		sent next char first
+201	T	E		mistake_key_gap	40					676	transpose second key
+202	T	E	G	mistake_transpose	41	U+0061	a	U+0074	t		sent previous char second
+203	T	E		motor_delay	41					38	after key
+204	T	E	G	final_key	42	U+0067	g	U+0067	g		normal
+205	T	E		notice_error	42					2102	kind=Transpose;start=40;through=42
+206	T	E	G	repair_backspace	42	U+0008	<backspace>	U+0008	<backspace>		correction
+207	T	E		repair_delay	42					1232	after backspace
+208	T	E	G	repair_backspace	41	U+0008	<backspace>	U+0008	<backspace>		correction
+209	T	E		repair_delay	42					1280	after backspace
+210	T	E	G	repair_backspace	40	U+0008	<backspace>	U+0008	<backspace>		correction
+211	T	E		repair_delay	42					1314	after backspace
+212	T	E	G	repair_retype	40	U+0074	t	U+0074	t		correction
+213	T	E		repair_delay	40					1028	after retype
+214	T	E	G	repair_retype	41	U+0061	a	U+0061	a		correction
+215	T	E		repair_delay	41					970	after retype
+216	T	E	G	repair_retype	42	U+0067	g	U+0067	g		correction
+217	T	E		repair_delay	42					946	after retype
+218	T	E		resume_after_fix	42					1298	correction complete
+219	T	E		correction_done	-1						kind=Transpose;start=40;through=42;backspaces=3
+220	T	E		motor_delay	42					99	after key
+221	T	E	G	final_key	43	U+003E	>	U+003E	>		before duplicate
+222	T	E		mistake_key_gap	43					1139	duplicate extra key
+223	T	E	G	mistake_duplicate	43	U+003E	>	U+003E	>		extra duplicate
+224	T	E		motor_delay	43					40	after key
+225	T	E	G	final_key	44	U+0020	<space>	U+0020	<space>		normal
+226	T	E		notice_error	44					3319	kind=Duplicate;start=43;through=44
+227	T	E	G	repair_backspace	44	U+0008	<backspace>	U+0008	<backspace>		correction
+228	T	E		repair_delay	44					689	after backspace
+229	T	E	G	repair_backspace	43	U+0008	<backspace>	U+0008	<backspace>		correction
+230	T	E		repair_delay	44					663	after backspace
+231	T	E	G	repair_backspace	42	U+0008	<backspace>	U+0008	<backspace>		correction
+232	T	E		repair_delay	44					1030	after backspace
+233	T	E	G	repair_retype	43	U+003E	>	U+003E	>		correction
+234	T	E		repair_delay	43					888	after retype
+235	T	E	G	repair_retype	44	U+0020	<space>	U+0020	<space>		correction
+236	T	E		repair_delay	44					983	after retype
+237	T	E		resume_after_fix	44					2756	correction complete
+238	T	E		correction_done	-1						kind=Duplicate;start=43;through=44;backspaces=3
+239	T	E		motor_delay	44					1272	after key
+240	T	E	G	final_key	45	U+007B	{	U+007B	{		normal
+241	T	E		motor_delay	45					20	after key
+242	T	E	G	final_key	46	U+0078	x	U+0078	x		normal
+243	T	E		motor_delay	46					45	after key
+244	T	E	G	final_key	47	U+007D	}	U+007D	}		before duplicate
+245	T	E		mistake_key_gap	47					867	duplicate extra key
+246	T	E	G	mistake_duplicate	47	U+007D	}	U+007D	}		extra duplicate
+247	T	E		motor_delay	47					37	after key
+248	T	E	G	final_key	48	U+0020	<space>	U+0020	<space>		normal
+249	T	E		notice_error	48					2927	kind=Duplicate;start=47;through=48
+250	T	E	G	repair_backspace	48	U+0008	<backspace>	U+0008	<backspace>		correction
+251	T	E		repair_delay	48					886	after backspace
+252	T	E	G	repair_backspace	47	U+0008	<backspace>	U+0008	<backspace>		correction
+253	T	E		repair_delay	48					1142	after backspace
+254	T	E	G	repair_backspace	46	U+0008	<backspace>	U+0008	<backspace>		correction
+255	T	E		repair_delay	48					1253	after backspace
+256	T	E	G	repair_retype	47	U+007D	}	U+007D	}		correction
+257	T	E		repair_delay	47					1176	after retype
+258	T	E	G	repair_retype	48	U+0020	<space>	U+0020	<space>		correction
+259	T	E		repair_delay	48					699	after retype
+260	T	E		resume_after_fix	48					2272	correction complete
+261	T	E		correction_done	-1						kind=Duplicate;start=47;through=48;backspaces=3
+262	T	E		motor_delay	48					5473	after key
+263	T	E	G	final_key	49	U+005B	[	U+005B	[		before duplicate
+264	T	E		mistake_key_gap	49					1279	duplicate extra key
+265	T	E	G	mistake_duplicate	49	U+005B	[	U+005B	[		extra duplicate
+266	T	E		motor_delay	49					69	after key
+267	T	E	G	final_key	50	U+0079	y	U+0079	y		normal
+268	T	E		notice_error	50					3266	kind=Duplicate;start=49;through=50
+269	T	E	G	repair_backspace	50	U+0008	<backspace>	U+0008	<backspace>		correction
+270	T	E		repair_delay	50					1227	after backspace
+271	T	E	G	repair_backspace	49	U+0008	<backspace>	U+0008	<backspace>		correction
+272	T	E		repair_delay	50					807	after backspace
+273	T	E	G	repair_backspace	48	U+0008	<backspace>	U+0008	<backspace>		correction
+274	T	E		repair_delay	50					1135	after backspace
+275	T	E	G	repair_retype	49	U+005B	[	U+005B	[		correction
+276	T	E		repair_delay	49					978	after retype
+277	T	E	G	repair_retype	50	U+0079	y	U+0079	y		correction
+278	T	E		repair_delay	50					872	after retype
+279	T	E		resume_after_fix	50					1577	correction complete
+280	T	E		correction_done	-1						kind=Duplicate;start=49;through=50;backspaces=3
+281	T	E		motor_delay	50					214	after key
+282	T	E	G	final_key	51	U+005D	]	U+005D	]		before duplicate
+283	T	E		mistake_key_gap	51					1044	duplicate extra key
+284	T	E	G	mistake_duplicate	51	U+005D	]	U+005D	]		extra duplicate
+285	T	E		motor_delay	51					29	after key
+286	T	E	G	final_key	52	U+0020	<space>	U+0020	<space>		normal
+287	T	E		notice_error	52					3676	kind=Duplicate;start=51;through=52
+288	T	E	G	repair_backspace	52	U+0008	<backspace>	U+0008	<backspace>		correction
+289	T	E		repair_delay	52					1329	after backspace
+290	T	E	G	repair_backspace	51	U+0008	<backspace>	U+0008	<backspace>		correction
+291	T	E		repair_delay	52					1221	after backspace
+292	T	E	G	repair_backspace	50	U+0008	<backspace>	U+0008	<backspace>		correction
+293	T	E		repair_delay	52					1175	after backspace
+294	T	E	G	repair_retype	51	U+005D	]	U+005D	]		correction
+295	T	E		repair_delay	51					1253	after retype
+296	T	E	G	repair_retype	52	U+0020	<space>	U+0020	<space>		correction
+297	T	E		repair_delay	52					858	after retype
+298	T	E		resume_after_fix	52					1381	correction complete
+299	T	E		correction_done	-1						kind=Duplicate;start=51;through=52;backspaces=3
+300	T	E		motor_delay	52					693	after key
+301	T	E	G	final_key	53	U+0061	a	U+0061	a		normal
+302	T	E		motor_delay	53					70	after key
+303	T	E	G	final_key	54	U+007C	|	U+007C	|		normal
+304	T	E		motor_delay	54					56	after key
+305	T	E	G	final_key	55	U+0062	b	U+0062	b		before duplicate
+306	T	E		mistake_key_gap	55					1340	duplicate extra key
+307	T	E	G	mistake_duplicate	55	U+0062	b	U+0062	b		extra duplicate
+308	T	E		motor_delay	55					17	after key
+309	T	E	G	final_key	56	U+0020	<space>	U+0020	<space>		normal
+310	T	E		notice_error	56					2692	kind=Duplicate;start=55;through=56
+311	T	E	G	repair_backspace	56	U+0008	<backspace>	U+0008	<backspace>		correction
+312	T	E		repair_delay	56					1105	after backspace
+313	T	E	G	repair_backspace	55	U+0008	<backspace>	U+0008	<backspace>		correction
+314	T	E		repair_delay	56					702	after backspace
+315	T	E	G	repair_backspace	54	U+0008	<backspace>	U+0008	<backspace>		correction
+316	T	E		repair_delay	56					1082	after backspace
+317	T	E	G	repair_retype	55	U+0062	b	U+0062	b		correction
+318	T	E		repair_delay	55					1005	after retype
+319	T	E	G	repair_retype	56	U+0020	<space>	U+0020	<space>		correction
+320	T	E		repair_delay	56					814	after retype
+321	T	E		resume_after_fix	56					1616	correction complete
+322	T	E		correction_done	-1						kind=Duplicate;start=55;through=56;backspaces=3
+323	T	E		motor_delay	56					785	after key
+324	T	E	G	final_key	57	U+0063	c	U+0063	c		normal
+325	T	E		motor_delay	57					503	after key
+326	T	E	G	final_key	58	U+005C	\\	U+005C	\\		before duplicate
+327	T	E		mistake_key_gap	58					1193	duplicate extra key
+328	T	E	G	mistake_duplicate	58	U+005C	\\	U+005C	\\		extra duplicate
+329	T	E		motor_delay	58					105	after key
+330	T	E	G	final_key	59	U+0064	d	U+0064	d		normal
+331	T	E		motor_delay	59					30	after key
+332	T	E	G	final_key	60	U+0020	<space>	U+0020	<space>		normal
+333	T	E		notice_error	60					3744	kind=Duplicate;start=58;through=60
+334	T	E	G	repair_backspace	60	U+0008	<backspace>	U+0008	<backspace>		correction
+335	T	E		repair_delay	60					1042	after backspace
+336	T	E	G	repair_backspace	59	U+0008	<backspace>	U+0008	<backspace>		correction
+337	T	E		repair_delay	60					738	after backspace
+338	T	E	G	repair_backspace	58	U+0008	<backspace>	U+0008	<backspace>		correction
+339	T	E		repair_delay	60					1019	after backspace
+340	T	E	G	repair_backspace	57	U+0008	<backspace>	U+0008	<backspace>		correction
+341	T	E		repair_delay	60					1199	after backspace
+342	T	E	G	repair_retype	58	U+005C	\\	U+005C	\\		correction
+343	T	E		repair_delay	58					1084	after retype
+344	T	E	G	repair_retype	59	U+0064	d	U+0064	d		correction
+345	T	E		repair_delay	59					805	after retype
+346	T	E	G	repair_retype	60	U+0020	<space>	U+0020	<space>		correction
+347	T	E		repair_delay	60					1081	after retype
+348	T	E		resume_after_fix	60					1940	correction complete
+349	T	E		correction_done	-1						kind=Duplicate;start=58;through=60;backspaces=4
+350	T	E		motor_delay	60					1911	after key
+351	T	E	G	final_key	61	U+0022	"	U+0022	"		normal
+352	T	E		motor_delay	61					89	after key
+353	T	E	G	final_key	62	U+0071	q	U+0071	q		normal
+354	T	E		motor_delay	62					117	after key
+355	T	E	G	final_key	63	U+0022	"	U+0022	"		normal
+356	T	E		motor_delay	63					17	after key
+357	T	E	G	final_key	64	U+0020	<space>	U+0020	<space>		normal
+358	T	E		motor_delay	64					1284	after key
+359	T	E	G	final_key	65	U+0027	'	U+0027	'		normal
+360	T	E		motor_delay	65					138	after key
+361	T	E	G	final_key	66	U+0072	r	U+0072	r		normal
+362	T	E		motor_delay	66					417	after key
+363	T	E	G	final_key	67	U+0027	'	U+0027	'		before duplicate
+364	T	E		mistake_key_gap	67					735	duplicate extra key
+365	T	E	G	mistake_duplicate	67	U+0027	'	U+0027	'		extra duplicate
+366	T	E		motor_delay	67					165	after key
+367	T	E	G	final_key	68	U+0020	<space>	U+0020	<space>		normal
+368	T	E		notice_error	68					2279	kind=Duplicate;start=67;through=68
+369	T	E	G	repair_backspace	68	U+0008	<backspace>	U+0008	<backspace>		correction
+370	T	E		repair_delay	68					1060	after backspace
+371	T	E	G	repair_backspace	67	U+0008	<backspace>	U+0008	<backspace>		correction
+372	T	E		repair_delay	68					1340	after backspace
+373	T	E	G	repair_backspace	66	U+0008	<backspace>	U+0008	<backspace>		correction
+374	T	E		repair_delay	68					665	after backspace
+375	T	E	G	repair_retype	67	U+0027	'	U+0027	'		correction
+376	T	E		repair_delay	67					1329	after retype
+377	T	E	G	repair_retype	68	U+0020	<space>	U+0020	<space>		correction
+378	T	E		repair_delay	68					1270	after retype
+379	T	E		resume_after_fix	68					1992	correction complete
+380	T	E		correction_done	-1						kind=Duplicate;start=67;through=68;backspaces=3
+381	T	E		motor_delay	68					818	after key
+382	T	E	G	final_key	69	U+0060	`	U+0060	`		before duplicate
+383	T	E		mistake_key_gap	69					853	duplicate extra key
+384	T	E	G	mistake_duplicate	69	U+0060	`	U+0060	`		extra duplicate
+385	T	E		motor_delay	69					10	after key
+386	T	E	G	final_key	70	U+0073	s	U+0073	s		normal
+387	T	E		motor_delay	70					622	after key
+388	T	E	G	final_key	71	U+0060	`	U+0060	`		normal
+389	T	E		motor_delay	71					53	after key
+390	T	E	G	final_key	72	U+0020	<space>	U+0020	<space>		normal
+391	T	E		notice_error	72					2209	kind=Duplicate;start=69;through=72
+392	T	E	G	repair_backspace	72	U+0008	<backspace>	U+0008	<backspace>		correction
+393	T	E		repair_delay	72					1112	after backspace
+394	T	E	G	repair_backspace	71	U+0008	<backspace>	U+0008	<backspace>		correction
+395	T	E		repair_delay	72					789	after backspace
+396	T	E	G	repair_backspace	70	U+0008	<backspace>	U+0008	<backspace>		correction
+397	T	E		repair_delay	72					917	after backspace
+398	T	E	G	repair_backspace	69	U+0008	<backspace>	U+0008	<backspace>		correction
+399	T	E		repair_delay	72					1067	after backspace
+400	T	E	G	repair_backspace	68	U+0008	<backspace>	U+0008	<backspace>		correction
+401	T	E		repair_delay	72					1254	after backspace
+402	T	E	G	repair_retype	69	U+0060	`	U+0060	`		correction
+403	T	E		repair_delay	69					778	after retype
+404	T	E	G	repair_retype	70	U+0073	s	U+0073	s		correction
+405	T	E		repair_delay	70					967	after retype
+406	T	E	G	repair_retype	71	U+0060	`	U+0060	`		correction
+407	T	E		repair_delay	71					1080	after retype
+408	T	E	G	repair_retype	72	U+0020	<space>	U+0020	<space>		correction
+409	T	E		repair_delay	72					904	after retype
+410	T	E		resume_after_fix	72					1677	correction complete
+411	T	E		correction_done	-1						kind=Duplicate;start=69;through=72;backspaces=5
+412	T	E		motor_delay	72					1386	after key
+413	T	E	G	final_key	73	U+005E	^	U+005E	^		before duplicate
+414	T	E		mistake_key_gap	73					1115	duplicate extra key
+415	T	E	G	mistake_duplicate	73	U+005E	^	U+005E	^		extra duplicate
+416	T	E		motor_delay	73					121	after key
+417	T	E	G	final_key	74	U+0020	<space>	U+0020	<space>		normal
+418	T	E		notice_error	74					2914	kind=Duplicate;start=73;through=74
+419	T	E	G	repair_backspace	74	U+0008	<backspace>	U+0008	<backspace>		correction
+420	T	E		repair_delay	74					1264	after backspace
+421	T	E	G	repair_backspace	73	U+0008	<backspace>	U+0008	<backspace>		correction
+422	T	E		repair_delay	74					1243	after backspace
+423	T	E	G	repair_backspace	72	U+0008	<backspace>	U+0008	<backspace>		correction
+424	T	E		repair_delay	74					1211	after backspace
+425	T	E	G	repair_retype	73	U+005E	^	U+005E	^		correction
+426	T	E		repair_delay	73					1068	after retype
+427	T	E	G	repair_retype	74	U+0020	<space>	U+0020	<space>		correction
+428	T	E		repair_delay	74					963	after retype
+429	T	E		resume_after_fix	74					1827	correction complete
+430	T	E		correction_done	-1						kind=Duplicate;start=73;through=74;backspaces=3
+431	T	E		motor_delay	74					1431	after key
+432	T	E	G	final_key	75	U+0026	&	U+0026	&		normal
+433	T	E		motor_delay	75					29	after key
+434	T	E	G	final_key	76	U+0020	<space>	U+0020	<space>		normal
+435	T	E		motor_delay	76					3950	after key
+436	T	E	G	final_key	77	U+002A	*	U+002A	*		normal
+437	T	E		motor_delay	77					176	after key
+438	T	E	G	final_key	78	U+0020	<space>	U+0020	<space>		normal
+439	T	E		motor_delay	78					1210	after key
+440	T	E	G	final_key	79	U+005F	_	U+005F	_		before duplicate
+441	T	E		mistake_key_gap	79					853	duplicate extra key
+442	T	E	G	mistake_duplicate	79	U+005F	_	U+005F	_		extra duplicate
+443	T	E		motor_delay	79					86	after key
+444	T	E	G	final_key	80	U+0020	<space>	U+0020	<space>		normal
+445	T	E		notice_error	80					2698	kind=Duplicate;start=79;through=80
+446	T	E	G	repair_backspace	80	U+0008	<backspace>	U+0008	<backspace>		correction
+447	T	E		repair_delay	80					1016	after backspace
+448	T	E	G	repair_backspace	79	U+0008	<backspace>	U+0008	<backspace>		correction
+449	T	E		repair_delay	80					788	after backspace
+450	T	E	G	repair_backspace	78	U+0008	<backspace>	U+0008	<backspace>		correction
+451	T	E		repair_delay	80					1272	after backspace
+452	T	E	G	repair_retype	79	U+005F	_	U+005F	_		correction
+453	T	E		repair_delay	79					1333	after retype
+454	T	E	G	repair_retype	80	U+0020	<space>	U+0020	<space>		correction
+455	T	E		repair_delay	80					791	after retype
+456	T	E		resume_after_fix	80					2201	correction complete
+457	T	E		correction_done	-1						kind=Duplicate;start=79;through=80;backspaces=3
+458	T	E		motor_delay	80					4465	after key
+459	T	E	G	final_key	81	U+002B	+	U+002B	+		before duplicate
+460	T	E		mistake_key_gap	81					1294	duplicate extra key
+461	T	E	G	mistake_duplicate	81	U+002B	+	U+002B	+		extra duplicate
+462	T	E		motor_delay	81					35	after key
+463	T	E	G	final_key	82	U+0020	<space>	U+0020	<space>		normal
+464	T	E		notice_error	82					3053	kind=Duplicate;start=81;through=82
+465	T	E	G	repair_backspace	82	U+0008	<backspace>	U+0008	<backspace>		correction
+466	T	E		repair_delay	82					799	after backspace
+467	T	E	G	repair_backspace	81	U+0008	<backspace>	U+0008	<backspace>		correction
+468	T	E		repair_delay	82					1215	after backspace
+469	T	E	G	repair_backspace	80	U+0008	<backspace>	U+0008	<backspace>		correction
+470	T	E		repair_delay	82					1058	after backspace
+471	T	E	G	repair_retype	81	U+002B	+	U+002B	+		correction
+472	T	E		repair_delay	81					1045	after retype
+473	T	E	G	repair_retype	82	U+0020	<space>	U+0020	<space>		correction
+474	T	E		repair_delay	82					702	after retype
+475	T	E		resume_after_fix	82					1600	correction complete
+476	T	E		correction_done	-1						kind=Duplicate;start=81;through=82;backspaces=3
+477	T	E		motor_delay	82					997	after key
+478	T	E	G	final_key	83	U+003D	=	U+003D	=		normal
+479	T	E		motor_delay	83					27	after key
+480	T	E	G	final_key	84	U+0020	<space>	U+0020	<space>		normal
+481	T	E		motor_delay	84					5859	after key
+482	T	E	G	final_key	85	U+003B	;	U+003B	;		before duplicate
+483	T	E		mistake_key_gap	85					1005	duplicate extra key
+484	T	E	G	mistake_duplicate	85	U+003B	;	U+003B	;		extra duplicate
+485	T	E		motor_delay	85					71	after key
+486	T	E	G	final_key	86	U+0020	<space>	U+0020	<space>		normal
+487	T	E		notice_error	86					2274	kind=Duplicate;start=85;through=86
+488	T	E	G	repair_backspace	86	U+0008	<backspace>	U+0008	<backspace>		correction
+489	T	E		repair_delay	86					681	after backspace
+490	T	E	G	repair_backspace	85	U+0008	<backspace>	U+0008	<backspace>		correction
+491	T	E		repair_delay	86					813	after backspace
+492	T	E	G	repair_backspace	84	U+0008	<backspace>	U+0008	<backspace>		correction
+493	T	E		repair_delay	86					819	after backspace
+494	T	E	G	repair_retype	85	U+003B	;	U+003B	;		correction
+495	T	E		repair_delay	85					1297	after retype
+496	T	E	G	repair_retype	86	U+0020	<space>	U+0020	<space>		correction
+497	T	E		repair_delay	86					787	after retype
+498	T	E		resume_after_fix	86					2655	correction complete
+499	T	E		correction_done	-1						kind=Duplicate;start=85;through=86;backspaces=3
+500	T	E		motor_delay	86					5137	after key
+501	T	E	G	final_key	87	U+003A	:	U+003A	:		before duplicate
+502	T	E		mistake_key_gap	87					907	duplicate extra key
+503	T	E	G	mistake_duplicate	87	U+003A	:	U+003A	:		extra duplicate
+504	T	E		motor_delay	87					60	after key
+505	T	E	G	final_key	88	U+0020	<space>	U+0020	<space>		normal
+506	T	E		notice_error	88					3709	kind=Duplicate;start=87;through=88
+507	T	E	G	repair_backspace	88	U+0008	<backspace>	U+0008	<backspace>		correction
+508	T	E		repair_delay	88					886	after backspace
+509	T	E	G	repair_backspace	87	U+0008	<backspace>	U+0008	<backspace>		correction
+510	T	E		repair_delay	88					897	after backspace
+511	T	E	G	repair_backspace	86	U+0008	<backspace>	U+0008	<backspace>		correction
+512	T	E		repair_delay	88					1321	after backspace
+513	T	E	G	repair_retype	87	U+003A	:	U+003A	:		correction
+514	T	E		repair_delay	87					824	after retype
+515	T	E	G	repair_retype	88	U+0020	<space>	U+0020	<space>		correction
+516	T	E		repair_delay	88					1105	after retype
+517	T	E		resume_after_fix	88					2331	correction complete
+518	T	E		correction_done	-1						kind=Duplicate;start=87;through=88;backspaces=3
+519	T	E		motor_delay	88					2046	after key
+520	T	E	G	final_key	89	U+002F	/	U+002F	/		normal
+521	T	E		motor_delay	89					114	after key
+522	T	E	G	final_key	90	U+0020	<space>	U+0020	<space>		normal
+523	T	E		motor_delay	90					1491	after key
+524	T	E	G	final_key	91	U+003F	?	U+003F	?		normal
+525	T	E		motor_delay	91					5140	after key
+526	T	E		run_done	-1						completed=92;total=92

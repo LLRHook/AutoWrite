@@ -1,0 +1,41 @@
+measuredWpm	80
+predictedWpm	0
+accuracy	8.4210526315789522
+minimumWpm	0
+maximumWpm	0
+baseDelay	0
+ordinaryGap	150
+predictedOrdinaryGap	0
+ordinaryGapCount	59
+correctedMistakes	0
+alignedCharacters	95
+summary	Measured speed: 80.0 WPM active; AutoWrite expected: 0.0 WPM     Accuracy: 8.4%     Corrected episodes: 0\nActive typing: first to last key; gaps under 10 s included. No long pauses omitted.
+warning	The typed text did not match the passage closely enough. A wrong starting point, a skipped line, or different text can cause this. All settings were kept; try again from the start.
+activity	Active typing: first to last key; gaps under 10 s included. No long pauses omitted.
+estimate	WordsPerMinute	Target WPM	80	80	False	False	Kept: text matched less than 70% of the passage.
+estimate	JitterPercent	Jitter %	55	55	False	False	Kept: text matched less than 70% of the passage.
+estimate	KeyPairRhythmPercent	Key-pair rhythm %	80	80	False	False	Kept: text matched less than 70% of the passage.
+estimate	BurstPercent	Burst drift %	30	30	False	False	Kept: text matched less than 70% of the passage.
+estimate	WordPauseMilliseconds	Word pause ms	120	120	False	False	Kept: text matched less than 70% of the passage.
+estimate	SentencePauseMilliseconds	Sentence pause ms	850	850	False	False	Kept: text matched less than 70% of the passage.
+estimate	ParagraphPauseMilliseconds	Paragraph pause ms	0	0	False	False	Kept: text matched less than 70% of the passage.
+estimate	ThinkingPauseChancePercent	Thinking pause %	4	4	False	False	Kept: text matched less than 70% of the passage.
+estimate	ThinkingPauseMilliseconds	Thinking max ms	2200	2200	False	False	Kept: text matched less than 70% of the passage.
+estimate	KeepTargetWpm	Keep target WPM	On	On	False	False	Kept: text matched less than 70% of the passage.
+estimate	UppercaseDelayPenaltyPercent	Uppercase delay %	10	10	False	False	Kept: text matched less than 70% of the passage.
+estimate	NumberDelayPenaltyPercent	Number delay %	25	25	False	False	Kept: text matched less than 70% of the passage.
+estimate	PunctuationDelayPenaltyPercent	Punctuation delay %	30	30	False	False	Kept: text matched less than 70% of the passage.
+estimate	ShiftSymbolDelayPenaltyPercent	Shift-symbol delay %	55	55	False	False	Kept: text matched less than 70% of the passage.
+estimate	NumberTypoMultiplierPercent	Number mistakes x	1.75x	1.75x	False	False	Kept: text matched less than 70% of the passage.
+estimate	PunctuationTypoMultiplierPercent	Punct. mistakes x	2.00x	2.00x	False	False	Kept: text matched less than 70% of the passage.
+estimate	ShiftSymbolTypoMultiplierPercent	Shift mistakes x	3.00x	3.00x	False	False	Kept: text matched less than 70% of the passage.
+estimate	EnableTypos	Corrected mistakes	On	On	False	False	Kept: text matched less than 70% of the passage.
+estimate	TypoChancePercent	Mistake rate %	1	1	False	False	Kept: text matched less than 70% of the passage.
+estimate	DuplicateChancePercent	Duplicate share %	0	0	False	False	Kept: text matched less than 70% of the passage.
+estimate	TransposeChancePercent	Transpose share %	0	0	False	False	Kept: text matched less than 70% of the passage.
+estimate	CorrectionNoticeMilliseconds	Notice delay ms	850	850	False	False	Kept: text matched less than 70% of the passage.
+estimate	CorrectionDetectChars	Detect after chars	3	3	False	False	Kept: text matched less than 70% of the passage.
+estimate	CorrectionPauseMilliseconds	Repair key pause ms	120	120	False	False	Kept: text matched less than 70% of the passage.
+estimate	CorrectionResumeMilliseconds	Resume pause ms	260	260	False	False	Kept: text matched less than 70% of the passage.
+estimate	ButtonDelaySeconds	Button delay s	3	3	False	False	Kept: text matched less than 70% of the passage.
+proposed	WordsPerMinute=80;JitterPercent=55;KeyPairRhythmPercent=80;BurstPercent=30;WordPauseMilliseconds=120;SentencePauseMilliseconds=850;ParagraphPauseMilliseconds=0;ThinkingPauseChancePercent=4;ThinkingPauseMilliseconds=2200;KeepTargetWpm=True;UppercaseDelayPenaltyPercent=10;NumberDelayPenaltyPercent=25;PunctuationDelayPenaltyPercent=30;ShiftSymbolDelayPenaltyPercent=55;NumberTypoMultiplierPercent=175;PunctuationTypoMultiplierPercent=200;ShiftSymbolTypoMultiplierPercent=300;EnableTypos=True;TypoChancePercent=1;DuplicateChancePercent=0;TransposeChancePercent=0;CorrectionNoticeMilliseconds=850;CorrectionDetectChars=3;CorrectionPauseMilliseconds=120;CorrectionResumeMilliseconds=260;ButtonDelaySeconds=3

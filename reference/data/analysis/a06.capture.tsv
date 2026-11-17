@@ -1,0 +1,273 @@
+# version=1;seconds=60;completed=True;ignored_keys=0
+# setting	WordsPerMinute	80
+# setting	JitterPercent	55
+# setting	KeyPairRhythmPercent	80
+# setting	BurstPercent	30
+# setting	WordPauseMilliseconds	120
+# setting	SentencePauseMilliseconds	850
+# setting	ParagraphPauseMilliseconds	0
+# setting	ThinkingPauseChancePercent	4
+# setting	ThinkingPauseMilliseconds	2200
+# setting	KeepTargetWpm	True
+# setting	UppercaseDelayPenaltyPercent	10
+# setting	NumberDelayPenaltyPercent	25
+# setting	PunctuationDelayPenaltyPercent	30
+# setting	ShiftSymbolDelayPenaltyPercent	55
+# setting	NumberTypoMultiplierPercent	175
+# setting	PunctuationTypoMultiplierPercent	200
+# setting	ShiftSymbolTypoMultiplierPercent	300
+# setting	EnableTypos	True
+# setting	TypoChancePercent	1
+# setting	DuplicateChancePercent	0
+# setting	TransposeChancePercent	0
+# setting	CorrectionNoticeMilliseconds	850
+# setting	CorrectionDetectChars	3
+# setting	CorrectionPauseMilliseconds	120
+# setting	CorrectionResumeMilliseconds	260
+# setting	ButtonDelaySeconds	3
+elapsed_ms	kind	character_code_or_reason
+0.000	character	83
+170.849	character	109
+408.177	character	105
+670.995	character	116
+848.870	character	104
+996.482	character	32
+1201.623	character	101
+1424.149	character	116
+1559.818	character	32
+1804.253	character	97
+1926.013	character	108
+2137.337	character	46
+2686.125	character	32
+3072.155	character	40
+3314.860	character	50
+3578.687	character	48
+3851.402	character	50
+4173.108	character	49
+4521.061	character	41
+4656.226	character	32
+4899.225	character	102
+5059.427	character	111
+5278.357	character	117
+5462.846	character	110
+5591.700	character	100
+5858.600	character	32
+6144.330	character	97
+6355.457	character	32
+6747.864	character	52
+7046.314	character	50
+7338.897	character	46
+8015.344	character	53
+8253.125	character	37
+8416.062	character	32
+8708.235	character	114
+8900.027	character	105
+9049.106	character	115
+9221.964	character	101
+9480.857	character	32
+9821.127	character	91
+10061.134	character	49
+10305.156	character	50
+10537.741	character	93
+10757.916	character	46
+11335.097	character	10
+11841.880	character	73
+11990.453	character	115
+12222.496	character	32
+12478.670	character	105
+12691.732	character	116
+12876.635	character	32
+13262.723	character	34
+13430.152	character	114
+13620.477	character	111
+13805.170	character	98
+13972.182	character	117
+14129.591	character	115
+14260.171	character	116
+14635.923	character	34
+14950.294	character	63
+15482.307	character	32
+15921.024	character	89
+16060.945	character	101
+16236.449	character	115
+16542.395	character	58
+16727.922	character	32
+17035.029	character	112
+17198.519	character	32
+17593.991	character	60
+17858.071	character	32
+18218.925	character	48
+18417.050	character	46
+19028.427	character	48
+19222.195	character	53
+19499.725	character	46
+20064.605	character	10
+20561.765	character	78
+20843.855	character	65
+21108.227	character	83
+21370.171	character	65
+21550.268	character	32
+21832.273	character	97
+22141.550	character	110
+22365.715	character	100
+22585.991	character	32
+22840.399	character	116
+23009.916	character	104
+23165.096	character	101
+23397.310	character	32
+23711.343	character	85
+23964.114	character	83
+24112.173	character	32
+24354.512	character	99
+24581.272	character	97
+24781.262	character	108
+24922.092	character	108
+25108.580	character	32
+25355.574	character	116
+25538.800	character	104
+25727.319	character	101
+25817.056	character	32
+26056.702	character	115
+26229.118	character	116
+26418.807	character	117
+26648.141	character	100
+26862.691	character	121
+27212.389	character	39
+27421.542	character	115
+27644.203	character	32
+27887.768	character	110
+28111.088	character	32
+28357.324	character	61
+28510.362	character	32
+28818.743	character	49
+29045.516	character	50
+29301.902	character	56
+29445.836	character	32
+29724.412	character	99
+29888.553	character	97
+30061.139	character	115
+30227.128	character	101
+30415.136	character	115
+30577.596	character	32
+30951.334	character	34
+31127.454	character	114
+31386.282	character	101
+31531.898	character	108
+31734.158	character	105
+31896.291	character	97
+32134.714	character	98
+32293.850	character	108
+32449.868	character	101
+32776.935	character	34
+33049.948	character	46
+33627.469	character	10
+34190.712	character	82
+34468.915	character	38
+34721.442	character	68
+34897.384	character	32
+35116.741	character	110
+35331.782	character	101
+35513.182	character	101
+35698.917	character	100
+35950.986	character	115
+36191.593	character	32
+36418.828	character	108
+36587.147	character	111
+36743.214	character	110
+36996.624	character	103
+37315.234	character	45
+37479.434	character	116
+37659.725	character	101
+37900.015	character	114
+38063.747	character	109
+38184.004	character	32
+38480.729	character	101
+38634.967	character	118
+38862.866	character	105
+39105.981	character	100
+39216.991	character	101
+39407.785	character	110
+39563.596	character	99
+39705.320	character	101
+39932.795	character	32
+40379.916	character	40
+40595.040	character	83
+40764.365	character	109
+40910.251	character	105
+41105.343	character	116
+41285.652	character	104
+41532.739	character	32
+41777.598	character	101
+41938.485	character	116
+42085.202	character	32
+42352.594	character	97
+42559.700	character	108
+42811.429	character	46
+43411.122	character	44
+43557.584	character	32
+43950.633	character	50
+44201.787	character	48
+44430.740	character	50
+44740.782	character	49
+45032.536	character	41
+45225.542	character	46
+45774.841	character	10
+46303.632	character	84
+46501.343	character	97
+46694.239	character	98
+46849.738	character	108
+47000.167	character	101
+47172.465	character	32
+47634.153	character	50
+47873.680	character	46
+48542.043	character	49
+48694.417	character	32
+48984.128	character	108
+49159.929	character	105
+49300.928	character	115
+49538.853	character	116
+49665.339	character	115
+49807.453	character	32
+50121.695	character	99
+50272.822	character	111
+50424.841	character	115
+50565.142	character	116
+50720.722	character	115
+50984.922	character	32
+51319.839	character	97
+51601.808	character	110
+51764.560	character	100
+52002.965	character	47
+52200.792	character	111
+52408.851	character	114
+52688.717	character	32
+52967.431	character	103
+53207.502	character	97
+53404.156	character	105
+53554.958	character	110
+53738.300	character	115
+53968.953	character	46
+54540.521	character	32
+54952.689	character	70
+55155.934	character	105
+55343.427	character	103
+55498.823	character	117
+55699.154	character	114
+55927.985	character	101
+56144.108	character	32
+56488.902	character	51
+56675.527	character	32
+56924.098	character	115
+57119.168	character	104
+57259.942	character	111
+57404.258	character	119
+57540.213	character	115
+57692.231	character	32
+57949.182	character	116
+58064.238	character	104
+58253.960	character	101
+58427.842	character	109
+58594.976	character	46
+59123.163	character	10
+59639.366	character	70
+59845.977	character	105

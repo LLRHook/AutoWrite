@@ -1,0 +1,41 @@
+measuredWpm	43.475357285962332
+predictedWpm	41.488512488233042
+accuracy	95.87155963302753
+minimumWpm	29.542482711308526
+maximumWpm	83.9606767892341
+baseDelay	128.87004530610963
+ordinaryGap	124
+predictedOrdinaryGap	125.83333333333334
+ordinaryGapCount	73
+correctedMistakes	9
+alignedCharacters	218
+summary	Measured speed: 43.5 WPM active; AutoWrite expected: 41.5 WPM     Accuracy: 95.9%     Corrected episodes: 9\nActive typing: first to last key; gaps under 10 s included. No long pauses omitted.
+warning	
+activity	Active typing: first to last key; gaps under 10 s included. No long pauses omitted.
+estimate	WordsPerMinute	Target WPM	80	48	True	False	Measured from 73 ordinary letter gaps: 124.0 ms; replay: 125.8 ms. Target chosen by forward replay.
+estimate	JitterPercent	Jitter %	55	72	True	False	Measured from 114 ordinary key gaps (few samples).
+estimate	KeyPairRhythmPercent	Key-pair rhythm %	80	81	True	False	Measured from 118 key pairs.
+estimate	BurstPercent	Burst drift %	30	0	True	False	Measured from 76 adjacent key pairs.
+estimate	WordPauseMilliseconds	Word pause ms	120	38	True	False	Measured from 37 word gaps.
+estimate	SentencePauseMilliseconds	Sentence pause ms	850	108	True	False	Measured from 7 sentence endings.
+estimate	ParagraphPauseMilliseconds	Paragraph pause ms	0	229	True	False	Measured from 4 paragraph breaks (few samples).
+estimate	ThinkingPauseChancePercent	Thinking pause %	4	13	True	False	Measured from 5 long pauses (few samples).
+estimate	ThinkingPauseMilliseconds	Thinking max ms	2200	2124	True	False	Measured from 5 long pauses (few samples).
+estimate	KeepTargetWpm	Keep target WPM	On	On	False	False	Kept: timing-budget preference is not identifiable from a single typing recording.
+estimate	UppercaseDelayPenaltyPercent	Uppercase delay %	10	57	True	False	Measured from 12 uppercase key gaps.
+estimate	NumberDelayPenaltyPercent	Number delay %	25	165	True	False	Measured from 16 digit key gaps.
+estimate	PunctuationDelayPenaltyPercent	Punctuation delay %	30	200	True	False	Measured from 11 punctuation key gaps (few samples) (limited to the 200% maximum).
+estimate	ShiftSymbolDelayPenaltyPercent	Shift-symbol delay %	55	202	True	False	Measured from 13 shifted-symbol key gaps.
+estimate	NumberTypoMultiplierPercent	Number mistakes x	1.75x	1.75x	False	False	Kept: class/letter errors=3/5; need at least 10 each and 30 class opportunities.
+estimate	PunctuationTypoMultiplierPercent	Punct. mistakes x	2.00x	2.00x	False	False	Kept: class/letter errors=1/5; need at least 10 each and 30 class opportunities.
+estimate	ShiftSymbolTypoMultiplierPercent	Shift mistakes x	3.00x	3.00x	False	False	Kept: class/letter errors=0/5; need at least 10 each and 30 class opportunities.
+estimate	EnableTypos	Corrected mistakes	On	On	True	False	Measured from 9 corrected mistakes.
+estimate	TypoChancePercent	Mistake rate %	1	4	True	False	Measured from 9 corrected mistakes.
+estimate	DuplicateChancePercent	Duplicate share %	0	0	False	False	Kept: 9 corrected episodes; need 20 to estimate kind shares.
+estimate	TransposeChancePercent	Transpose share %	0	0	False	False	Kept: 9 corrected episodes; need 20 to estimate kind shares.
+estimate	CorrectionNoticeMilliseconds	Notice delay ms	850	313	True	False	Measured from 9 first Backspace presses.
+estimate	CorrectionDetectChars	Detect after chars	3	3	False	False	Kept: boundary-censored detection distances do not distinguish maximum distances (likelihood ratio below 3).
+estimate	CorrectionPauseMilliseconds	Repair key pause ms	120	56	True	False	Measured from 29 repair key gaps.
+estimate	CorrectionResumeMilliseconds	Resume pause ms	260	119	True	False	Measured from 9 resumes after a correction.
+estimate	ButtonDelaySeconds	Button delay s	3	3	False	False	Kept: start-button preference is unrelated to typing.
+proposed	WordsPerMinute=48;JitterPercent=72;KeyPairRhythmPercent=81;BurstPercent=0;WordPauseMilliseconds=38;SentencePauseMilliseconds=108;ParagraphPauseMilliseconds=229;ThinkingPauseChancePercent=13;ThinkingPauseMilliseconds=2124;KeepTargetWpm=True;UppercaseDelayPenaltyPercent=57;NumberDelayPenaltyPercent=165;PunctuationDelayPenaltyPercent=200;ShiftSymbolDelayPenaltyPercent=202;NumberTypoMultiplierPercent=175;PunctuationTypoMultiplierPercent=200;ShiftSymbolTypoMultiplierPercent=300;EnableTypos=True;TypoChancePercent=4;DuplicateChancePercent=0;TransposeChancePercent=0;CorrectionNoticeMilliseconds=313;CorrectionDetectChars=3;CorrectionPauseMilliseconds=56;CorrectionResumeMilliseconds=119;ButtonDelaySeconds=3

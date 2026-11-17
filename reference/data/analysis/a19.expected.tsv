@@ -1,0 +1,41 @@
+measuredWpm	142.88615558894827
+predictedWpm	86.093863697794731
+accuracy	100
+minimumWpm	26.091033031844113
+maximumWpm	86.093863697794731
+baseDelay	28.131074607909444
+ordinaryGap	27.304000000000087
+predictedOrdinaryGap	43.722222222222229
+ordinaryGapCount	147
+correctedMistakes	0
+alignedCharacters	358
+summary	Measured speed: 142.9 WPM active; AutoWrite expected: 86.1 WPM     Accuracy: 100.0%     Corrected episodes: 0\nActive typing: first to last key; gaps under 10 s included. No long pauses omitted.
+warning	The 45 to 220 ms motor limit prevents matching your ordinary letter rhythm. Measured 142.9 WPM; AutoWrite will type approximately 86.1 WPM with the closest achievable Target WPM (104).
+activity	Active typing: first to last key; gaps under 10 s included. No long pauses omitted.
+estimate	WordsPerMinute	Target WPM	80	104	True	True	Closest achievable: Measured from 147 ordinary letter gaps: 27.3 ms; replay: 43.7 ms. Target chosen by forward replay.
+estimate	JitterPercent	Jitter %	55	29	True	False	Measured from 217 ordinary key gaps.
+estimate	KeyPairRhythmPercent	Key-pair rhythm %	80	1	True	False	Measured from 224 key pairs.
+estimate	BurstPercent	Burst drift %	30	16	True	False	Measured from 154 adjacent key pairs.
+estimate	WordPauseMilliseconds	Word pause ms	120	90	True	False	Measured from 66 word gaps.
+estimate	SentencePauseMilliseconds	Sentence pause ms	850	381	True	False	Measured from 16 sentence endings.
+estimate	ParagraphPauseMilliseconds	Paragraph pause ms	0	196	True	False	Measured from 5 paragraph breaks (few samples).
+estimate	ThinkingPauseChancePercent	Thinking pause %	4	4	False	False	Kept: 0 long pauses / 73 boundaries; need 4 / 30. Transcription reads composing pauses low.
+estimate	ThinkingPauseMilliseconds	Thinking max ms	2200	2200	False	False	Kept: 0 long pauses; need 4 across at least 30 boundaries.
+estimate	KeepTargetWpm	Keep target WPM	On	On	False	False	Kept: timing-budget preference is not identifiable from a single typing recording.
+estimate	UppercaseDelayPenaltyPercent	Uppercase delay %	10	200	True	False	Measured from 20 uppercase key gaps (limited to the 200% maximum).
+estimate	NumberDelayPenaltyPercent	Number delay %	25	200	True	False	Measured from 27 digit key gaps (limited to the 200% maximum).
+estimate	PunctuationDelayPenaltyPercent	Punctuation delay %	30	200	True	False	Measured from 25 punctuation key gaps (limited to the 200% maximum).
+estimate	ShiftSymbolDelayPenaltyPercent	Shift-symbol delay %	55	300	True	False	Measured from 17 shifted-symbol key gaps (limited to the 300% maximum).
+estimate	NumberTypoMultiplierPercent	Number mistakes x	1.75x	1.75x	False	False	Kept: class/letter errors=0/0; need at least 10 each and 30 class opportunities.
+estimate	PunctuationTypoMultiplierPercent	Punct. mistakes x	2.00x	2.00x	False	False	Kept: class/letter errors=0/0; need at least 10 each and 30 class opportunities.
+estimate	ShiftSymbolTypoMultiplierPercent	Shift mistakes x	3.00x	3.00x	False	False	Kept: class/letter errors=0/0; need at least 10 each and 30 class opportunities.
+estimate	EnableTypos	Corrected mistakes	On	On	False	False	Kept: fewer than 3 corrected episodes; no mistakes does not establish a zero mistake rate.
+estimate	TypoChancePercent	Mistake rate %	1	1	False	False	Kept: fewer than 3 corrected episodes; need 3.
+estimate	DuplicateChancePercent	Duplicate share %	0	0	False	False	Kept: 0 corrected episodes; need 20 to estimate kind shares.
+estimate	TransposeChancePercent	Transpose share %	0	0	False	False	Kept: 0 corrected episodes; need 20 to estimate kind shares.
+estimate	CorrectionNoticeMilliseconds	Notice delay ms	850	850	False	False	Kept: insufficient independent samples.
+estimate	CorrectionDetectChars	Detect after chars	3	3	False	False	Kept: insufficient independent samples.
+estimate	CorrectionPauseMilliseconds	Repair key pause ms	120	120	False	False	Kept: insufficient independent samples.
+estimate	CorrectionResumeMilliseconds	Resume pause ms	260	260	False	False	Kept: insufficient independent samples.
+estimate	ButtonDelaySeconds	Button delay s	3	3	False	False	Kept: start-button preference is unrelated to typing.
+proposed	WordsPerMinute=104;JitterPercent=29;KeyPairRhythmPercent=1;BurstPercent=16;WordPauseMilliseconds=90;SentencePauseMilliseconds=381;ParagraphPauseMilliseconds=196;ThinkingPauseChancePercent=4;ThinkingPauseMilliseconds=2200;KeepTargetWpm=True;UppercaseDelayPenaltyPercent=200;NumberDelayPenaltyPercent=200;PunctuationDelayPenaltyPercent=200;ShiftSymbolDelayPenaltyPercent=300;NumberTypoMultiplierPercent=175;PunctuationTypoMultiplierPercent=200;ShiftSymbolTypoMultiplierPercent=300;EnableTypos=True;TypoChancePercent=1;DuplicateChancePercent=0;TransposeChancePercent=0;CorrectionNoticeMilliseconds=850;CorrectionDetectChars=3;CorrectionPauseMilliseconds=120;CorrectionResumeMilliseconds=260;ButtonDelaySeconds=3

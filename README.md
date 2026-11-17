@@ -1,7 +1,10 @@
 # AutoWrite
 
-AutoWrite is a small Windows desktop app that types pasted text into the active field when the
-global `F7` hotkey is pressed.
+AutoWrite is a small desktop app for Windows and macOS that types pasted text into the active
+field when the global `F7` hotkey is pressed.
+
+The sections below describe the Windows version. The native macOS version behaves the same and
+has its own section: [macOS](#macos).
 
 ## Build
 
@@ -168,6 +171,10 @@ benchmark. Without an output argument it creates an isolated temporary directory
 `AUTOWRITE_TEST_SCOPE=estimators` explicitly skips the expensive recovery benchmark for focused debugging
 and reports that skip; leave it unset for the complete test suite.
 
+`reference/data` holds this build's output for fixed inputs: engine runs, file formats, recording rules and
+calibration analyses. Ports to other platforms are tested against it. `test.ps1` fails when the committed
+files no longer match this build; `.\reference.ps1` rewrites them. See `reference/README.md`.
+
 `e2e.ps1` drives the built `dist\AutoWrite.exe` through UI Automation and window messages, never
 through global input. Its windows are shown without activation; it verifies the foreground stays
 unchanged, selects 30 seconds from the default 60, enters the actual passage, reads all proposals,
@@ -268,3 +275,93 @@ Public references:
 - Pause thresholds in spontaneous writing: https://www.jowr.org/jowr/article/view/682
 - CMU Keystroke Dynamics benchmark: https://www.cs.cmu.edu/~keystroke/
 - PhysioNet Tappy keystroke data: https://physionet.org/content/tappy/1.0.0/
+
+## macOS
+
+The native Swift/AppKit version builds for Apple Silicon, macOS 14+, with the
+installed Xcode command-line toolchain. It downloads and installs nothing:
+
+```sh
+mac/build.sh
+```
+
+Open `dist/AutoWrite.app` in Finder. Closing the main window or choosing **Quit
+AutoWrite** saves settings and quits. The Edit menu has standard Command-key
+shortcuts. AutoWrite's editors preserve literal text without smart quotes,
+smart dashes, text replacement or autocorrection.
+
+**Accessibility:** the main window shows missing permission before you start.
+Choose **Allow Accessibility…**, or request typing. AutoWrite asks macOS to add
+it to **System Settings > Privacy & Security > Accessibility**; enable its switch.
+The explanation offers **Open Accessibility Settings**. A denied Fn+F7 request
+brings AutoWrite and that explanation to the front. Normal typing never takes
+focus. After rebuilding the ad hoc signed app, you may need to remove the old
+entry and allow the new build again. If macOS still blocks it, quit and reopen.
+
+Paste your text, focus the destination field, and press **Fn+F7** to start or
+stop. Use F7 alone with standard function-key settings. **Type in Ns** uses
+**Button delay s**. Typing pauses when the destination app's original frontmost
+window is no longer in front, or while modifiers, including Command and Fn,
+are held; it resumes without a burst.
+Switching tabs inside that same window is not detected. Stop also interrupts
+preparation of large texts. A second launch brings the running copy forward
+and exits.
+
+**Calibrate typing** offers 30 or 60 seconds, with 60 selected initially. The
+clock starts with the first character. Backspace corrects and Enter inserts a
+line break. **Escape is ignored and counted; it starts the clock if pressed
+first.** Paste, shortcuts, Tab, navigation, forward/word/line deletion and mouse
+repositioning are also ignored and counted. Repeated keys type normally without
+an accent chooser. The test and results are modal. **Apply** saves immediately
+and restores controls if saving fails; **Discard** and **Cancel** keep settings.
+A recording-save failure still lets you review results.
+Command-Q, Dock Quit and logout are refused while a calibration sheet is open;
+choose **Cancel** in the test or **Discard** in results first.
+
+Settings and logs use `~/Library/Application Support/AutoWrite/`: `settings.ini`,
+`telemetry/`, and `calibration/`. INI keys and values match Windows, with LF line
+endings; files can be copied between platforms. An absolute `AUTOWRITE_DATA_DIR`
+overrides this location. Automated diagnostics always use isolated data.
+
+```sh
+mac/test.sh
+```
+
+The complete suite compares the committed Windows reference data, exercises
+hidden native windows and failures, checks outgoing events without posting,
+and measures background timing through the production runtime. It prints each
+PASS/FAIL, computed reference counts and totals. It never activates an app or
+raises a permission prompt. Evidence goes to a temporary directory printed by
+the script; set absolute `AUTOWRITE_EVIDENCE_DIR` to retain it elsewhere.
+
+Build first and **quit AutoWrite before either proof**. There are two explicit
+live proofs:
+
+```sh
+mac/smoke.sh --live-typing
+mac/smoke.sh --live-typing --require-idle-seconds 240
+```
+
+The first is **for the owner at the keyboard**. Quit the normal AutoWrite app
+first. The proof starts AutoWrite.app through Launch Services, as Finder does,
+and tests the app's own Accessibility permission. If permission is missing, it
+explains how to grant it; grant it and run the proof again. The second is **for
+automation**: it starts from the shell,
+uses the terminal's permission, and sends nothing unless the unlocked desktop
+has been idle for at least N seconds (240–86400). It skips rather than waiting.
+
+Both type a fixed text, including repaired mistakes, only into a window they
+create. They require its keyboard focus within half a second, stop on focus
+loss, limit the app run to 15 seconds, and restore the previous app if they still
+own focus. The shell watchdog allows an additional launch and cleanup margin.
+Received text is never printed or saved: only lengths, differing position,
+repair count and outcome. `hotkey=F7` means the global F7 hotkey started the run;
+`hotkey=direct-fallback` proves typing only. Exit codes: 0 pass, 2 failure/permission/
+focus loss, 3 active or locked, 4 bad arguments.
+
+**Limits:** destination apps differ in Tab handling, substitutions and editing.
+The engine counts Backspaces per UTF-16 unit, as on Windows. A repair crossing
+a multi-part character—an emoji with a skin tone, a flag, or a base letter plus
+combining accent—may remove one character too many or too few depending on the
+app. Turn **Corrected mistakes** off for such text. Test plain text first, then
+the destination apps you intend to use.

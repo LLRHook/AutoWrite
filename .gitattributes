@@ -1,0 +1,2 @@
+# Reference data is compared byte for byte on every platform.
+reference/data/** text eol=lf
