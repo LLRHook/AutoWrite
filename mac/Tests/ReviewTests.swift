@@ -214,6 +214,7 @@ extension TestRunner {
             cat > "$target" <<'PROGRAM'
             #!/bin/bash
             printf '%s\\n' "$2" > "$AUTOWRITE_SCRIPT_RESULT"
+            printf 'TOTAL: 1 PASS, 0 FAIL; stand-in\\n'
             PROGRAM
             chmod 755 "$target"
             """
@@ -237,6 +238,47 @@ extension TestRunner {
                 try require(printed.contains("Evidence: " + path), "evidence location not printed")
                 try require(URL(fileURLWithPath: build).deletingLastPathComponent().lastPathComponent.hasPrefix("AutoWrite-tests."), "build temporary name is not product based")
                 try require(!FileManager.default.fileExists(atPath: URL(fileURLWithPath: build).deletingLastPathComponent().path), "test work directory not cleaned")
+            }
+        }
+        test("test script fails a run that stops early or reports failures, and passes the binary's exit code through") {
+            let root = directory.appendingPathComponent("script-totals"), mac = root.appendingPathComponent("mac"), bin = root.appendingPathComponent("bin"), temporary = root.appendingPathComponent("temporary")
+            for folder in [mac,bin,temporary] { try FileManager.default.createDirectory(at: folder, withIntermediateDirectories: true) }
+            let source = URL(fileURLWithPath: #filePath).deletingLastPathComponent().deletingLastPathComponent()
+            let script = mac.appendingPathComponent("test.sh")
+            try FileManager.default.copyItem(at: source.appendingPathComponent("test.sh"), to: script)
+            // The stand-in test binary runs whatever AUTOWRITE_STANDIN_BODY says.
+            let compiler = bin.appendingPathComponent("swiftc")
+            let fixture = """
+            #!/bin/bash
+            set -eu
+            target=''
+            while [[ "$#" -gt 0 ]]; do
+              if [[ "$1" == -o ]]; then target="$2"; shift 2; else shift; fi
+            done
+            printf '#!/bin/bash\\n%s\\n' "$AUTOWRITE_STANDIN_BODY" > "$target"
+            chmod 755 "$target"
+            """
+            try fixture.write(to: compiler, atomically: true, encoding: .utf8)
+            try FileManager.default.setAttributes([.posixPermissions:0o755], ofItemAtPath: compiler.path)
+            let early = "FAIL test run stopped before its TOTAL line", failed = "FAIL test run reported failures in its TOTAL line"
+            let cases: [(String, Int32, String)] = [
+                ("printf 'PASS one\\n'; exit 0", 1, early + " (exit code 0)"),
+                ("printf 'PASS one\\nTOTAL: 1 PASS, 2 FAIL; stand-in\\n'; exit 0", 1, failed + " (exit code 0)"),
+                ("printf 'PASS one\\n'; exit 7", 7, early + " (exit code 7)"),
+                ("printf 'PASS one\\nTOTAL: 1 PASS, 0 FAIL; stand-in\\n'; exit 0", 0, "TOTAL: 1 PASS, 0 FAIL; stand-in"),
+            ]
+            for (body, expected, last) in cases {
+                let process = Process(), output = Pipe()
+                var env = ProcessInfo.processInfo.environment
+                env["PATH"] = bin.path + ":" + (env["PATH"] ?? "/usr/bin:/bin")
+                env["TMPDIR"] = temporary.path; env["AUTOWRITE_STANDIN_BODY"] = body
+                env["AUTOWRITE_EVIDENCE_DIR"] = root.appendingPathComponent("evidence").path
+                process.environment = env; process.executableURL = URL(fileURLWithPath: "/bin/bash"); process.arguments = [script.path]
+                process.standardOutput = output; process.standardError = output
+                try process.run(); let printed = String(decoding: output.fileHandleForReading.readDataToEndOfFile(), as: UTF8.self); process.waitUntilExit()
+                try equal(process.terminationStatus, expected, "test script exit for: " + body + "\n" + printed)
+                try require(printed.contains("PASS one\n"), "per-test output not passed through: " + printed)
+                try equal(printed.split(separator: "\n").last.map(String.init) ?? "", last, "test script last line for: " + body)
             }
         }
         test("smoke script rejects bad arguments and missing builds without launching") {
